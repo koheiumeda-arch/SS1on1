@@ -47,7 +47,7 @@ input:focus{border-color:#5dafa7;box-shadow:0 0 0 3px rgba(93,175,167,.15);backg
 
 <script>
 // GAS WebApp URL（サーバーサイドから動的取得）
-var GAS_API_URL = 'https://script.google.com/a/macros/agent-network.com/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
+var GAS_API_URL = '';
 
 // ── 認証モジュール ──
 var Auth = {
@@ -77,11 +77,11 @@ function redirectByRole(user) {
   if (!user) return;
   var role = user.role;
   if (role === 'admin') {
-    window.location.href = GAS_API_URL + '?page=admin';
+    window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/admin.html';
   } else if (role === 'mentor') {
-    window.location.href = GAS_API_URL + '?page=mentor';
+    window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/mentor.html';
   } else {
-    window.location.href = GAS_API_URL + '?page=mentee';
+    window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/mentee.html';
   }
 }
 

@@ -741,7 +741,7 @@ td{padding:10px 14px;font-size:13px}
 //  設定値
 // ══════════════════════════════════════════════════════════
 // GAS WebApp URL（サーバーサイドから動的取得）
-var GAS_URL = 'https://script.google.com/a/macros/agent-network.com/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
+var GAS_URL = '';
 
 // ══════════════════════════════════════════════════════════
 //  認証モジュール
@@ -757,11 +757,11 @@ const Auth = {
 // API共通リクエスト（JWT自動付与）
 // ── GAS Gateway設定 ──────────────────────────────────────
 // GASデプロイ後、以下のURLを実際のデプロイURLに変更してください
-const GAS_URL = 'https://script.google.com/a/macros/agent-network.com/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
+const GAS_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 
 // GAS用APIリクエスト（n8nのapiRequestを置き換え）
 async // ── GAS API通信（fetch使用）───────────────────────────────
-const GAS_API_URL = 'https://script.google.com/a/macros/agent-network.com/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec'; // ← デプロイ後に変更
+const GAS_API_URL = 'YOUR_GAS_WEBAPP_URL'; // ← デプロイ後に変更
 
 async function apiRequest(endpoint, options = {}) {
   const method = (options.method || 'GET').toUpperCase();
@@ -795,7 +795,7 @@ async function apiRequest(endpoint, options = {}) {
     if (!res.ok) {
       if (res.status === 401 || res.status === 403) {
         Auth.clearAuth();
-        window.location.href = 'login.html';
+        window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html';
         return null;
       }
       throw new Error('HTTP ' + res.status);
@@ -810,7 +810,7 @@ async function apiRequest(endpoint, options = {}) {
 
 function logout() {
   Auth.clearAuth();
-  window.location.href = 'login.html';
+  window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -818,11 +818,11 @@ function logout() {
 // ══════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
   // 認証チェック
-  if (!Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+  if (!Auth.isLoggedIn()) { window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html'; return; }
 
   // メンターロールチェック
   const userRole = (Auth.getUser() || {}).role;
-  if (userRole && userRole !== 'mentor' && userRole !== 'admin') { window.location.href = 'login.html'; return; }
+  if (userRole && userRole !== 'mentor' && userRole !== 'admin') { window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html'; return; }
 
   // ページビュー記録（F-07）
   apiRequest('/api/analytics/page-view', {
