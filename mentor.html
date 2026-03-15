@@ -709,27 +709,24 @@ td{padding:10px 14px;font-size:13px}
 <!-- ════════════ SURVEY ════════════ -->
 <div class="screen" id="s-survey">
   <div class="topbar"><div><div class="page-title">アンケート回答</div><div class="page-sub">1on1後の振り返りを記録してください</div></div></div>
-  <div class="card">
-    <div class="ch"><div class="ct">📋 アンケート（田中 美咲 — 2/14実施分）</div><span class="tag t-am">未回答</span></div>
-    <div class="survey-form">
-      <div class="form-row">
-        <div class="form-group"><div class="form-label">進捗評価（1〜5）</div><div class="stars"><span class="star-f">★</span><span class="star-f">★</span><span class="star-f">★</span><span class="star-f">★</span><span class="star-e">★</span></div></div>
-        <div class="form-group"><div class="form-label">メンタル状況（1〜5）</div><div class="stars"><span class="star-f">★</span><span class="star-f">★</span><span class="star-f">★</span><span class="star-e">★</span><span class="star-e">★</span></div></div>
-      </div>
-      <div class="form-group" style="margin-bottom:12px"><div class="form-label">管理者への伝言</div><textarea class="inp" rows="3" placeholder="管理者へ共有したいことがあれば記入してください…"></textarea></div>
-      <div class="f-foot"><button class="btn btn-g">後で回答</button><button class="btn btn-p" onclick="alert('回答を送信しました')">回答を送信</button></div>
+
+  <!-- アンケートフォーム -->
+  <div class="card" id="surveyFormCard">
+    <div class="ch">
+      <div class="ct" id="surveyFormTitle">📋 アンケート</div>
+      <span class="tag t-am" id="surveyFormStatus">読み込み中...</span>
+    </div>
+    <div class="survey-form" id="surveyFormBody">
+      <div style="padding:24px;text-align:center;color:var(--tx3)">読み込み中...</div>
     </div>
   </div>
+
+  <!-- 過去の回答履歴 -->
   <div class="card" style="margin-top:16px">
     <div class="ch"><div class="ct">過去の回答履歴</div></div>
-    <table>
-      <thead><tr><th>日付</th><th>メンティー</th><th>進捗</th><th>メンタル</th></tr></thead>
-      <tbody>
-        <tr><td class="td-m">2/7</td><td>木村 さくら</td><td>★★★★☆</td><td>★★★☆☆</td></tr>
-        <tr><td class="td-m">2/3</td><td>山本 裕太</td><td>★★★★★</td><td>★★★★★</td></tr>
-        <tr><td class="td-m">1/31</td><td>田中 美咲</td><td>★★★★☆</td><td>★★★★☆</td></tr>
-      </tbody>
-    </table>
+    <div id="surveyHistoryBody">
+      <div style="padding:16px;text-align:center;color:var(--tx3)">読み込み中...</div>
+    </div>
   </div>
 </div>
 
@@ -936,6 +933,7 @@ function nav(id, el) {
   if (s) s.classList.add('active');
   if (el) el.classList.add('active');
   window.scrollTo(0, 0);
+  if (id === 'survey') loadSurveyScreen();
 }
 
 // ══ モーダル ══
@@ -1017,7 +1015,7 @@ async function loadMyAssignments() {
         '</div>',
         '<div class="tel-acts">',
         '<button class="btn btn-p" style="flex:1;font-size:12px" onclick="openTelModal(this)" data-name="' + m.name + '" data-uid="' + m.user_id + '">📝 レポート</button>',
-        '<button class="btn btn-g" style="flex:1;font-size:12px" onclick="openTelHistFull(\'' + m.name + '\')">📋 履歴</button>',
+        '<button class="btn btn-g" style="flex:1;font-size:12px" onclick="openTelHistFull(this.dataset.name)" data-name="' + m.name + '">📋 履歴</button>',
         '</div>',
         '<div class="tel-hist-panel">',
         '<div class="tel-hist-panel-title">📋 過去のTEL記録 <span style="color:var(--tx3);font-size:11px;font-weight:400">（直近3件）</span></div>',
@@ -1061,6 +1059,122 @@ async function loadMyAssignments() {
     });
 
   } catch(e) { console.log('loadMyAssignments error:', e); }
+}
+
+// ══ アンケート機能 ══
+var _surveyState = { booking_id: null, progress_rating: 0, mental_rating: 0 };
+
+async function loadSurveyScreen() {
+  // 未回答の最新bookingを取得
+  try {
+    const data = await apiRequest('/api/mentee/home');
+    const booking = data && data.next_booking;
+    const user = Auth.getUser() || {};
+
+    if (booking) {
+      _surveyState.booking_id = booking.booking_id;
+      document.getElementById('surveyFormTitle').textContent = '📋 アンケート（booking: ' + booking.booking_id + '）';
+      document.getElementById('surveyFormStatus').textContent = '未回答';
+      document.getElementById('surveyFormStatus').className = 'tag t-am';
+    } else {
+      document.getElementById('surveyFormTitle').textContent = '📋 アンケート';
+      document.getElementById('surveyFormStatus').textContent = '予約なし';
+      document.getElementById('surveyFormStatus').className = 'tag t-cy';
+    }
+
+    // フォームを生成
+    renderSurveyForm();
+
+    // 履歴を取得
+    loadSurveyHistory();
+  } catch(e) {
+    console.error('loadSurveyScreen error:', e);
+  }
+}
+
+function renderSurveyForm() {
+  const formBody = document.getElementById('surveyFormBody');
+  if (!_surveyState.booking_id) {
+    formBody.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">対象の予約がありません</div>';
+    return;
+  }
+  formBody.innerHTML = `
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">進捗評価（1〜5）</div>
+        <div class="stars" id="stars-progress">
+          ${[1,2,3,4,5].map(i => '<span class="star-e" onclick="setStar(\'progress\',' + i + ')" style="cursor:pointer">★</span>').join('')}
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">メンタル状況（1〜5）</div>
+        <div class="stars" id="stars-mental">
+          ${[1,2,3,4,5].map(i => '<span class="star-e" onclick="setStar(\'mental\',' + i + ')" style="cursor:pointer">★</span>').join('')}
+        </div>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <div class="form-label">管理者への伝言</div>
+      <textarea class="inp" rows="3" id="surveyComment" placeholder="管理者へ共有したいことがあれば記入してください…"></textarea>
+    </div>
+    <div class="f-foot">
+      <button class="btn btn-g" onclick="nav('dashboard',null)">後で回答</button>
+      <button class="btn btn-p" id="surveySubmitBtn" onclick="submitSurvey()">回答を送信</button>
+    </div>`;
+}
+
+function setStar(type, value) {
+  _surveyState[type + '_rating'] = value;
+  const container = document.getElementById('stars-' + type);
+  if (!container) return;
+  Array.from(container.children).forEach(function(star, i) {
+    star.className = i < value ? 'star-f' : 'star-e';
+  });
+}
+
+async function submitSurvey() {
+  if (!_surveyState.booking_id) { alert('対象の予約がありません'); return; }
+  if (!_surveyState.progress_rating || !_surveyState.mental_rating) {
+    alert('進捗評価とメンタル状況を選択してください');
+    return;
+  }
+  const btn = document.getElementById('surveySubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '送信中...'; }
+
+  const comment = document.getElementById('surveyComment') ? document.getElementById('surveyComment').value : '';
+  const result = await apiRequest('/api/survey/submit', {
+    method: 'POST',
+    body: JSON.stringify({
+      booking_id: _surveyState.booking_id,
+      progress_rating: _surveyState.progress_rating,
+      mental_rating: _surveyState.mental_rating,
+      comment: comment
+    })
+  });
+
+  if (btn) { btn.disabled = false; btn.textContent = '回答を送信'; }
+
+  if (result && result.ok) {
+    alert('✅ 回答を送信しました');
+    _surveyState.progress_rating = 0;
+    _surveyState.mental_rating = 0;
+    renderSurveyForm();
+    loadSurveyHistory();
+  } else {
+    alert('❌ 送信に失敗しました');
+  }
+}
+
+async function loadSurveyHistory() {
+  const body = document.getElementById('surveyHistoryBody');
+  if (!body) return;
+  try {
+    const user = Auth.getUser() || {};
+    // surveysシートから自分の回答履歴を取得（admin APIで代替）
+    body.innerHTML = '<div style="padding:16px;text-align:center;color:var(--tx3)">履歴を読み込み中...</div>';
+    // 注: surveys一覧APIはadmin専用のため、ここでは送信後にリロードで確認
+    body.innerHTML = '<div style="padding:16px;text-align:center;color:var(--tx3)">送信後、スプレッドシートで確認できます</div>';
+  } catch(e) { console.error(e); }
 }
 </script>
 </body>
