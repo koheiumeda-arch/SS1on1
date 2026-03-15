@@ -503,36 +503,6 @@ async function apiRequest(endpoint, options = {}) {
   const token = Auth.getToken();
   const path = endpoint.replace(/^\//, '');
 
-  const body = {};
-  try { Object.assign(body, JSON.parse(options.body || '{}')); } catch(e) {}
-  body._token = token || '';
-  body._method = method;
-
-  try {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(Object.assign({ path }, body))
-    });
-    if (!res.ok) {
-      if (res.status === 401 || res.status === 403) {
-        Auth.clearAuth();
-        window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html';
-        return null;
-      }
-      throw new Error('HTTP ' + res.status);
-    }
-    return await res.json();
-  } catch(e) {
-    console.error('API Error [' + path + ']:', e);
-    return null;
-  }
-}) {
-  const method = (options.method || 'GET').toUpperCase();
-  const token = Auth.getToken();
-  const path = endpoint.replace(/^\//, '');
-
   // GETもPOSTに統一（CORSプリフライト回避のためtext/plain使用）
   const body = {};
   try { Object.assign(body, JSON.parse(options.body || '{}')); } catch(e) {}
@@ -754,6 +724,248 @@ async function loadLeaderInfo() {
     if (chipEl) chipEl.style.display = 'inline-flex';
   } catch(e) {}
 }
-</script>
-</body>
-</html>
+
+// ══ 画面遷移 ══
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const s = document.getElementById('s-' + id);
+  if (s) s.classList.add('active');
+}
+
+function goNav(id) {
+  goScreen(id);
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
+  const ni = document.getElementById('ni-' + id);
+  if (ni) ni.classList.add('active');
+  if (id === 'booking') loadAvailableSlots();
+}
+
+// ══ モーダル ══
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ══ Meet参加 ══
+function openMeet(link) {
+  if (link) window.open(link, '_blank');
+  else alert('Meet リンクが設定されていません');
+}
+
+// ══ 星評価 ══
+var _ratings = { progress: 0, mental: 0 };
+function rateStar(type, val) {
+  _ratings[type] = val;
+  const container = document.getElementById('stars-' + type);
+  if (!container) return;
+  Array.from(container.children).forEach((s, i) => {
+    s.className = i < val ? 'star-f' : 'star-e';
+  });
+}
+
+// ══ アンケート送信 ══
+async function submitSurvey() {
+  const bookingId = document.getElementById('survey-booking-id')?.value || '';
+  if (!bookingId) { showToast('❌ 対象の予約がありません'); return; }
+  if (!_ratings.progress || !_ratings.mental) {
+    showToast('❌ 進捗とメンタルを選択してください'); return;
+  }
+  const comment = document.getElementById('survey-comment')?.value || '';
+  const result = await apiRequest('/api/survey/submit', {
+    method: 'POST',
+    body: JSON.stringify({
+      booking_id: bookingId,
+      progress_rating: _ratings.progress,
+      mental_rating: _ratings.mental,
+      comment: comment
+    })
+  });
+  if (result && result.ok) {
+    showToast('✅ 回答を送信しました');
+    _ratings = { progress: 0, mental: 0 };
+    loadSurveyData();
+  } else {
+    showToast('❌ 送信に失敗しました');
+  }
+}
+
+async function loadSurveyData() {
+  // 次回予約を取得してsurveyフォームに設定
+  const data = await apiRequest('/api/mentee/home');
+  const booking = data?.next_booking;
+  const bookingInput = document.getElementById('survey-booking-id');
+  if (bookingInput) {
+    bookingInput.value = booking?.booking_id || '';
+  }
+  const titleEl = document.getElementById('survey-title');
+  if (titleEl) {
+    titleEl.textContent = booking
+      ? '📋 アンケート（booking: ' + booking.booking_id + '）'
+      : '📋 アンケート（予約なし）';
+  }
+}
+
+// ══ 事前レポート送信 ══
+async function submitPreReport() {
+  const fields = ['pr-project', 'pr-goal-work', 'pr-goal-skill', 'pr-result', 'pr-study-content', 'pr-good', 'pr-improve', 'pr-next-project', 'pr-next-study'];
+  const body = {
+    target_month: new Date().toISOString().slice(0, 7),
+    session_date: document.getElementById('pr-session-date')?.value || '',
+    current_project: document.getElementById('pr-project')?.value || '',
+    goal_work_6m: document.getElementById('pr-goal-work')?.value || '',
+    goal_skill_6m: document.getElementById('pr-goal-skill')?.value || '',
+    project_result: document.getElementById('pr-result')?.value || '',
+    study_hours: parseInt(document.getElementById('pr-study-hours')?.value) || 0,
+    study_content: document.getElementById('pr-study-content')?.value || '',
+    good_points: document.getElementById('pr-good')?.value || '',
+    improvement_points: document.getElementById('pr-improve')?.value || '',
+    next_month_project_goal: document.getElementById('pr-next-project')?.value || '',
+    next_month_study_goal: document.getElementById('pr-next-study')?.value || ''
+  };
+  const result = await apiRequest('/api/mentee/pre-report', {
+    method: 'POST', body: JSON.stringify(body)
+  });
+  if (result && result.ok) {
+    showToast('✅ 事前レポートを提出しました');
+    goNav('home');
+  } else {
+    showToast('❌ 提出に失敗しました');
+  }
+}
+
+// ══ プロフィール保存 ══
+async function saveProfile() {
+  const name = document.getElementById('profile-name')?.value || '';
+  const phone = document.getElementById('profile-phone')?.value || '';
+  const result = await apiRequest('/api/mentee/profile', {
+    method: 'PATCH', body: JSON.stringify({ name, phone_number: phone })
+  });
+  if (result && result.ok) showToast('✅ プロフィールを保存しました');
+  else showToast('❌ 保存に失敗しました');
+}
+
+// ══ 予約 ══
+async function loadAvailableSlots() {
+  const data = await apiRequest('/api/mentee/available-slots');
+  if (!data || !data.slots) return;
+  const container = document.getElementById('booking-slots');
+  if (!container) return;
+  const slots = data.slots;
+  const dates = Object.keys(slots).sort();
+  if (dates.length === 0) {
+    container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">空き時間がありません</div>';
+    return;
+  }
+  container.innerHTML = dates.map(date => {
+    const daySlots = slots[date].filter(s => s.available);
+    if (daySlots.length === 0) return '';
+    return '<div style="margin-bottom:16px">' +
+      '<div style="font-size:13px;font-weight:700;margin-bottom:8px">' + date + '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+      daySlots.map(s => '<button class="btn btn-g btn-sm" onclick="bookSlot(\'' + date + 'T' + s.time + '\')">' + s.time + '</button>').join('') +
+      '</div></div>';
+  }).join('');
+}
+
+async function bookSlot(datetime) {
+  const user = Auth.getUser();
+  if (!user) return;
+  const mentorId = user.mentor_id || '';
+  if (!mentorId) { showToast('❌ 担当メンターが設定されていません'); return; }
+  const result = await apiRequest('/api/mentee/booking', {
+    method: 'POST',
+    body: JSON.stringify({ mentor_id: mentorId, scheduled_at: datetime, duration_minutes: 30 })
+  });
+  if (result && result.ok) {
+    showToast('✅ 予約しました: ' + datetime);
+    loadAvailableSlots();
+    loadHomeData();
+  } else {
+    showToast('❌ 予約に失敗しました');
+  }
+}
+
+// ══ ホームデータ読み込み ══
+async function loadHomeData() {
+  const data = await apiRequest('/api/mentee/home');
+  if (!data) return;
+  renderHome(data);
+  loadLeaderInfo();
+}
+
+function renderHome(data) {
+  if (data.mentor) {
+    const el = document.getElementById('mentorName');
+    if (el) el.textContent = data.mentor.name || '未設定';
+  }
+  if (data.leader) {
+    const nameEl = document.getElementById('leaderName');
+    const chipEl = document.getElementById('leaderChip');
+    if (nameEl) nameEl.textContent = data.leader.name || '未設定';
+    if (chipEl) chipEl.style.display = 'inline-flex';
+  }
+  if (data.next_booking) {
+    const b = data.next_booking;
+    const dt = new Date(b.scheduled_at);
+    const month = dt.getMonth() + 1;
+    const day = dt.getDate();
+    const weekdays = ['日','月','火','水','木','金','土'];
+    const wd = weekdays[dt.getDay()];
+    const hour = String(dt.getHours()).padStart(2,'0');
+    const min = String(dt.getMinutes()).padStart(2,'0');
+    const dateEl = document.getElementById('nextDate');
+    const timeEl = document.getElementById('nextTime');
+    const meetEl = document.getElementById('meetLink');
+    if (dateEl) dateEl.textContent = month + '月' + day + '日（' + wd + '）';
+    if (timeEl) timeEl.textContent = hour + ':' + min + '〜';
+    if (meetEl) { meetEl.href = b.meet_link || '#'; meetEl.onclick = () => openMeet(b.meet_link); }
+  }
+}
+
+// ══ クイックリンク ══
+async function loadQuickLinks() {
+  const data = await apiRequest('/api/admin/links');
+  if (!data || !data.links) return;
+  const container = document.getElementById('quick-links');
+  if (!container) return;
+  container.innerHTML = data.links.map(l =>
+    '<a href="' + l.url + '" target="_blank" class="ql-item">' +
+    '<span>' + (l.icon || '🔗') + '</span>' +
+    '<span>' + l.title + '</span></a>'
+  ).join('');
+}
+
+// ══ レポート一覧 ══
+async function loadReports() {
+  const data = await apiRequest('/api/mentee/reports');
+  if (!data) return;
+  const container = document.getElementById('reports-list');
+  if (!container) return;
+  const reports = data.reports || [];
+  if (reports.length === 0) {
+    container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">レポートがありません</div>';
+    return;
+  }
+  container.innerHTML = reports.map(r => {
+    const dt = new Date(r.created_at);
+    return '<div class="rep-item" onclick="showReport(\'' + r.report_id + '\')">' +
+      '<div class="rep-date"><div class="rep-d">' + dt.getDate() + '</div><div class="rep-m">' + (dt.getMonth()+1) + '月</div></div>' +
+      '<div class="rep-info"><div class="rep-title">' + (r.ai_summary || 'レポート').substring(0,40) + '</div>' +
+      '<div class="rep-sub">' + r.created_at.slice(0,10) + '</div></div>' +
+      '<div class="rep-arr">›</div></div>';
+  }).join('');
+}
+
+function showReport(reportId) {
+  goScreen('reportDetail');
+}
+
+
