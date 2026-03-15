@@ -529,48 +529,6 @@ async function apiRequest(endpoint, options = {}) {
     console.error('API Error [' + path + ']:', e);
     return null;
   }
-}) {
-  const method = (options.method || 'GET').toUpperCase();
-  const token = Auth.getToken();
-  const path = endpoint.replace(/^\//, '');
-
-  try {
-    let url, fetchOptions;
-
-    if (method === 'GET') {
-      url = GAS_URL + '?path=' + encodeURIComponent(path);
-      fetchOptions = {
-        method: 'GET',
-        redirect: 'follow',
-        headers: token ? { 'Authorization': 'Bearer ' + token } : {}
-      };
-    } else {
-      const body = {};
-      try { Object.assign(body, JSON.parse(options.body || '{}')); } catch(e) {}
-      body._token = token || '';
-      url = GAS_URL;
-      fetchOptions = {
-        method: 'POST',
-        redirect: 'follow',
-        headers: { 'Content-Type': 'text/plain' }, // GASはtext/plainでCORSプリフライト回避
-        body: JSON.stringify(Object.assign({ path }, body))
-      };
-    }
-
-    const res = await fetch(url, fetchOptions);
-    if (!res.ok) {
-      if (res.status === 401 || res.status === 403) {
-        Auth.clearAuth();
-        window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html';
-        return null;
-      }
-      throw new Error('HTTP ' + res.status);
-    }
-    return await res.json();
-  } catch(e) {
-    console.error('API Error [' + path + ']:', e);
-    return null;
-  }
 }
 
 
