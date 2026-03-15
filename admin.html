@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1on1管理システム｜管理者</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7faf9;--bg2:#ffffff;--bg3:#f0f6f5;--bg4:#e8f2f0;--bd:#d4e5e2;--bd2:#b8d4cf;--tx:#2c3e3a;--tx2:#5a6e68;--tx3:#8fa39d;--pr:#5dafa7;--pr2:#4a9890;--pr-light:#e8f5f4;--gr:#52c997;--gr-light:#e6f9f2;--am:#e8a852;--am-light:#fef5e6;--rd:#e87171;--rd-light:#fef2f2;--cy:#52c9e8;--cy-light:#e6f6f9;--r:14px;--sh:0 2px 12px rgba(93,175,167,.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--bg2);border-right:1px solid var(--bd);display:flex;flex-direction:column;z-index:100}
+.logo{padding:22px 20px;border-bottom:1px solid var(--bd)}
+.logo-mark{font-size:11px;color:var(--pr);letter-spacing:2px;text-transform:uppercase;margin-bottom:3px;font-weight:600}
+.logo-name{font-size:16px;font-weight:700;color:var(--tx)}
+.nav{padding:16px 12px;flex:1;overflow-y:auto}
+.nav-sec{font-size:10px;letter-spacing:1.5px;color:var(--tx3);text-transform:uppercase;padding:10px 8px 6px;margin-top:10px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:10px;cursor:pointer;font-size:13px;color:var(--tx2);transition:all .2s;margin-bottom:3px}
+.nav-item:hover{background:var(--bg3);color:var(--tx)}
+.nav-item.active{background:var(--pr-light);color:var(--pr);font-weight:600}
+.nav-item .ic{font-size:16px;width:20px;text-align:center}
+.nav-item .badge{margin-left:auto;background:var(--rd);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700}
+.sidebar-foot{padding:16px 18px;border-top:1px solid var(--bd)}
+.user-pill{display:flex;align-items:center;gap:10px}
+.ava{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--pr2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+.u-name{font-size:13px;font-weight:600}.u-role{font-size:11px;color:var(--tx3)}
+.main{margin-left:240px;padding:28px 32px;min-height:100vh}
+.screen{display:none}.screen.active{display:block;animation:fi .3s ease}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.page-title{font-size:22px;font-weight:700;color:var(--tx)}.page-sub{font-size:13px;color:var(--tx2);margin-top:3px}
+.topbar-r{display:flex;align-items:center;gap:10px}
+.btn{padding:8px 18px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:'Noto Sans JP',sans-serif}
+.btn-p{background:var(--pr);color:#fff;box-shadow:0 3px 12px rgba(93,175,167,.25)}.btn-p:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(93,175,167,.35)}
+.btn-g{background:var(--bg3);color:var(--tx2);border:1px solid var(--bd)}.btn-g:hover{border-color:var(--bd2);color:var(--tx)}
+.btn-sm{padding:6px 14px;font-size:12px}
+.nb{width:36px;height:36px;border-radius:10px;background:var(--bg3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;font-size:15px}
+.nd{position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--rd);border:2px solid var(--bg2)}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kpi{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:20px;box-shadow:var(--sh);transition:all .2s}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(93,175,167,.12)}
+.kpi-lb{font-size:12px;color:var(--tx2);margin-bottom:10px;font-weight:500}
+.kpi-v{font-family:'Space Mono',monospace;font-size:32px;font-weight:700;line-height:1;color:var(--pr)}
+.kpi-v.gr{color:var(--gr)}.kpi-v.am{color:var(--am)}.kpi-v.rd{color:var(--rd)}
+.kpi-sub{font-size:12px;color:var(--tx3);margin-top:6px}
+.grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
+.ch{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bd)}
+.ct{font-size:15px;font-weight:700;color:var(--tx)}.ca{font-size:13px;color:var(--pr);cursor:pointer;font-weight:500}
+.ca:hover{color:var(--pr2)}
+.tag{font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600}
+.t-rd{background:var(--rd-light);color:var(--rd)}.t-am{background:var(--am-light);color:var(--am)}
+.t-gr{background:var(--gr-light);color:var(--gr)}.t-pr{background:var(--pr-light);color:var(--pr)}.t-cy{background:var(--cy-light);color:var(--cy)}
+.bar-chart{display:flex;gap:12px;align-items:flex-end;height:130px;padding:20px}
+.bg{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.bw{flex:1;display:flex;align-items:flex-end;width:100%}
+.bar{width:100%;border-radius:6px 6px 0 0;cursor:pointer;transition:opacity .2s;background:linear-gradient(180deg,var(--pr),var(--pr2))}.bar:hover{opacity:.85}
+.bl-{font-size:11px;color:var(--tx3);text-align:center}.bv{font-size:12px;color:var(--tx2);font-family:'Space Mono',monospace;font-weight:600}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:11px;color:var(--tx3);font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:11px 16px;text-align:left;background:var(--bg3)}
+tbody tr{border-bottom:1px solid var(--bd);cursor:pointer;transition:background .15s}
+tbody tr:hover{background:var(--bg3)}
+tbody tr:last-child{border-bottom:none}
+td{padding:12px 16px;font-size:13px}
+.td-name{font-weight:500;display:flex;align-items:center;gap:10px}
+.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.d-rd{background:var(--rd);box-shadow:0 0 0 3px var(--rd-light)}
+.d-am{background:var(--am);box-shadow:0 0 0 3px var(--am-light)}
+.d-gr{background:var(--gr);box-shadow:0 0 0 3px var(--gr-light)}
+.d-pr{background:var(--pr);box-shadow:0 0 0 3px var(--pr-light)}
+.d-cy{background:var(--cy);box-shadow:0 0 0 3px var(--cy-light)}
+.td-m{color:var(--tx2);font-size:12px}
+.ai{display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid var(--bd);cursor:pointer;transition:background .15s}
+.ai:hover{background:var(--bg3)}.ai:last-child{border-bottom:none}
+.ai-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ai-ic.rd{background:var(--rd-light)}.ai-ic.am{background:var(--am-light)}.ai-ic.pr{background:var(--pr-light)}
+.ai-b{flex:1;min-width:0}.ai-n{font-size:14px;font-weight:600}.ai-d{font-size:12px;color:var(--tx3);margin-top:2px}.ai-t{font-size:11px;color:var(--tx3);flex-shrink:0}
+.bc{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx3);margin-bottom:16px}
+.bc-link{color:var(--pr);cursor:pointer;font-weight:500}
+.bc-link:hover{color:var(--pr2)}
+.detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.dc{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px 16px}
+.dc-lb{font-size:11px;color:var(--tx3);margin-bottom:5px;font-weight:500}
+.dc-v{font-size:17px;font-weight:700;color:var(--tx)}
+.dc-v.ac{color:var(--pr)}
+.modal{display:none;position:fixed;inset:0;background:rgba(44,62,58,.5);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.modal.open{display:flex}
+.modal-content{background:var(--bg2);border-radius:16px;padding:28px;max-width:550px;width:90%;box-shadow:0 10px 40px rgba(93,175,167,.2)}
+.modal-title{font-size:19px;font-weight:700;margin-bottom:18px;color:var(--tx)}
+.form-group{margin-bottom:16px}
+.form-label{font-size:13px;font-weight:600;color:var(--tx2);margin-bottom:7px;display:block}
+.inp,textarea.inp{width:100%;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--tx);font-family:'Noto Sans JP',sans-serif;outline:none;transition:all .2s}
+.inp:focus,textarea.inp:focus{border-color:var(--pr);background:var(--bg2);box-shadow:0 0 0 3px var(--pr-light)}
+textarea.inp{resize:vertical;min-height:90px}
+.f-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.gap-item{padding:16px 20px;border-bottom:1px solid var(--bd);cursor:pointer;transition:background .15s}
+.gap-item:hover{background:var(--bg3)}.gap-item:last-child{border-bottom:none}
+.gh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.gn{font-size:14px;font-weight:600}
+.gb{display:flex;align-items:center;gap:10px}
+.gl{font-size:12px;color:var(--tx2);width:80px}
+.bl2{flex:1;height:7px;background:var(--bg4);border-radius:4px;overflow:hidden}
+.bf{height:100%;border-radius:4px}
+.bn{font-size:12px;font-family:'Space Mono',monospace;width:25px;text-align:right;font-weight:600}
+.content-item{display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid var(--bd);cursor:pointer;transition:background .15s}
+.content-item:hover{background:var(--bg3)}.content-item:last-child{border-bottom:none}
+.ci-ic{width:48px;height:48px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.ci-info{flex:1}.ci-title{font-size:14px;font-weight:600;margin-bottom:3px}.ci-meta{font-size:12px;color:var(--tx3)}
+.form-area{padding:18px 20px}
+</style>
+</head>
+<body>
+
+<div class="modal" id="msgModal">
+  <div class="modal-content">
+    <div class="modal-title">📨 個別メッセージを送信</div>
+    <div class="form-label" id="msgTo" style="font-size:14px;margin-bottom:14px"></div>
+    <textarea class="inp" rows="4" placeholder="メッセージを入力してください…"></textarea>
+    <div class="f-foot"><button class="btn btn-g" onclick="closeModal('msgModal')">キャンセル</button><button class="btn btn-p" onclick="alert('送信');closeModal('msgModal')">送信</button></div>
+  </div>
+
+<div class="modal" id="contentModal">
+  <div class="modal-content">
+    <div class="modal-title">🎬 コンテンツ追加</div>
+    <div class="form-group"><label class="form-label">タイトル*</label><input class="inp" id="ct-title" placeholder="TypeScript基礎講座" /></div>
+    <div class="form-group"><label class="form-label">種別</label>
+      <select class="inp" id="ct-type"><option value="video">動画</option><option value="document">資料</option><option value="link">リンク</option></select></div>
+    <div class="form-group"><label class="form-label">URL*</label><input class="inp" id="ct-url" placeholder="https://..." /></div>
+    <div class="form-group"><label class="form-label">説明</label><textarea class="inp" id="ct-desc" rows="2"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group"><label class="form-label">時間（分）</label><input class="inp" id="ct-duration" placeholder="45" /></div>
+      <div class="form-group"><label class="form-label">レベル</label>
+        <select class="inp" id="ct-level"><option>初級</option><option>中級</option><option>上級</option></select></div>
+    </div>
+    <div class="f-foot"><button class="btn btn-g" onclick="closeModal('contentModal')">キャンセル</button><button class="btn btn-p" onclick="addContent()">追加</button></div>
+  </div>
+</div>
+
+<div class="modal" id="linkModal">
+  <div class="modal-content">
+    <div class="modal-title">🔗 リンク追加</div>
+    <div class="form-group"><label class="form-label">タイトル*</label><input class="inp" id="lk-title" placeholder="社内Wiki" /></div>
+    <div class="form-group"><label class="form-label">URL*</label><input class="inp" id="lk-url" placeholder="https://..." /></div>
+    <div class="form-group"><label class="form-label">アイコン（絵文字）</label><input class="inp" id="lk-icon" placeholder="🔗" /></div>
+    <div class="f-foot"><button class="btn btn-g" onclick="closeModal('linkModal')">キャンセル</button><button class="btn btn-p" onclick="addLink()">追加</button></div>
+  </div>
+</div>
+
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">ADMIN PANEL</div>
+    <div class="logo-name">1on1管理システム</div>
+  </div>
+  <div class="nav">
+    <div class="nav-sec">メイン</div>
+    <div class="nav-item active" onclick="nav('dashboard',this)"><span class="ic">📊</span>ダッシュボード</div>
+    <div class="nav-item" onclick="nav('survey',this)"><span class="ic">📋</span>アンケート分析<span class="badge">3</span></div>
+    <div class="nav-item" onclick="nav('members',this)"><span class="ic">👥</span>メンバー管理</div>
+    <div class="nav-sec">コンテンツ</div>
+    <div class="nav-item" onclick="nav('contents',this)"><span class="ic">🎬</span>研修コンテンツ</div>
+    <div class="nav-item" onclick="nav('links',this)"><span class="ic">🔗</span>リンク集</div>
+    <div class="nav-sec">配信</div>
+    <div class="nav-item" onclick="nav('notices',this)"><span class="ic">📢</span>お知らせ配信</div>
+    <div class="nav-sec">電話レポート</div>
+    <div class="nav-item" onclick="nav('callReports',this)"><span class="ic">📞</span>電話レポート</div>
+    <div class="nav-sec">Leader管理</div>
+    <div class="nav-item" onclick="nav('leaderAssignments',this)"><span class="ic">📞</span>担当割り当て</div>
+    <div class="nav-sec">設定</div>
+    <div class="nav-item" onclick="nav('users',this)"><span class="ic">⚙️</span>ユーザー管理</div>
+    <div class="nav-item" onclick="nav('addUser',this)"><span class="ic">➕</span>ユーザー追加</div>
+  </div>
+  <div class="sidebar-foot">
+    <div class="user-pill"><div class="ava">管</div><div><div class="u-name">システム管理者</div><div class="u-role">ADMIN</div></div></div>
+  </div>
+</div>
+
+<main class="main">
+
+<div class="screen active" id="s-dashboard">
+  <div class="topbar"><div><div class="page-title">ダッシュボード</div><div class="page-sub">2025年2月 — 組織全体の1on1・週次TEL状況</div></div><div class="topbar-r"><div class="nb">🔔<div class="nd"></div></div></div></div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-lb">1on1実施率（今月）</div><div class="kpi-v">78<span style="font-size:16px;color:var(--tx2)">%</span></div><div class="kpi-sub">▲ 5% 先月比</div></div>
+    <div class="kpi"><div class="kpi-lb">週次TEL実施率</div><div class="kpi-v gr">85<span style="font-size:16px;color:var(--tx2)">%</span></div><div class="kpi-sub">▲ 3% 先週比</div></div>
+    <div class="kpi"><div class="kpi-lb">未実施件数</div><div class="kpi-v am">12</div><div class="kpi-sub">要フォロー</div></div>
+    <div class="kpi"><div class="kpi-lb">アクティブアラート</div><div class="kpi-v rd">3</div><div class="kpi-sub">要対応</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="ch"><div class="ct">メンター別 1on1実施率</div></div>
+      <div class="bar-chart">
+        <div class="bg"><div class="bv">92%</div><div class="bw"><div class="bar" style="height:92%"></div></div><div class="bl-">田中</div></div>
+        <div class="bg"><div class="bv">85%</div><div class="bw"><div class="bar" style="height:85%"></div></div><div class="bl-">佐藤</div></div>
+        <div class="bg"><div class="bv">78%</div><div class="bw"><div class="bar" style="height:78%"></div></div><div class="bl-">鈴木</div></div>
+        <div class="bg"><div class="bv">61%</div><div class="bw"><div class="bar" style="height:61%;background:linear-gradient(180deg,var(--am),#d89000)"></div></div><div class="bl-">山田</div></div>
+        <div class="bg"><div class="bv">88%</div><div class="bw"><div class="bar" style="height:88%"></div></div><div class="bl-">渡辺</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><div class="ct">🚨 アラート</div><div class="ca" onclick="nav('survey')">全て見る</div></div>
+      <div class="ai" onclick="openMsg('木村 さくら')"><div class="ai-ic rd">⚠️</div><div class="ai-b"><div class="ai-n">木村 さくら <span class="tag t-rd">要注意</span></div><div class="ai-d">アンケートギャップ検知 — 満足度差：-3</div></div><div class="ai-t">本日</div></div>
+      <div class="ai" onclick="openMsg('松本 健一')"><div class="ai-ic am">📝</div><div class="ai-b"><div class="ai-n">松本 健一</div><div class="ai-d">週次TEL 2週間未実施</div></div><div class="ai-t">3日前</div></div>
+      <div class="ai"><div class="ai-ic pr">💬</div><div class="ai-b"><div class="ai-n">伊藤リーダー</div><div class="ai-d">TELレポートに管理者への伝言あり</div></div><div class="ai-t">昨日</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">メンティー一覧</div><div class="ca" onclick="nav('members')">全員表示 →</div></div>
+    <table>
+      <thead><tr><th>氏名</th><th>ステータス</th><th>担当メンター</th><th>担当リーダー</th><th>最終1on1</th><th>週次TEL</th></tr></thead>
+      <tbody>
+        <tr onclick="nav('memberDetail')"><td><div class="td-name"><div class="dot d-rd"></div>木村 さくら</div></td><td><span class="tag t-rd">🔴 要注意</span></td><td class="td-m">田中</td><td class="td-m">伊藤</td><td class="td-m">2週間前</td><td class="td-m">3日前</td></tr>
+        <tr onclick="nav('memberDetail')"><td><div class="td-name"><div class="dot d-am"></div>松本 健一</div></td><td><span class="tag t-am">🟡 注意</span></td><td class="td-m">佐藤</td><td class="td-m">伊藤</td><td class="td-m">2週間前</td><td class="td-m">2週間前</td></tr>
+        <tr onclick="nav('memberDetail')"><td><div class="td-name"><div class="dot d-gr"></div>田中 美咲</div></td><td><span class="tag t-gr">🟢 順調</span></td><td class="td-m">鈴木</td><td class="td-m">田中</td><td class="td-m">5日前</td><td class="td-m">昨日</td></tr>
+        <tr onclick="nav('memberDetail')"><td><div class="td-name"><div class="dot d-cy"></div>山本 裕太</div></td><td><span class="tag t-cy">🔵 快調</span></td><td class="td-m">渡辺</td><td class="td-m">田中</td><td class="td-m">昨日</td><td class="td-m">2日前</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="screen" id="s-survey">
+  <div class="topbar"><div><div class="page-title">アンケート分析</div><div class="page-sub">メンター・メンティー双方の回答突合</div></div></div>
+  <div class="card">
+    <div class="ch"><div class="ct">📊 平均満足度（今月）</div></div>
+    <div style="padding:28px;text-align:center">
+      <div style="font-size:56px;font-weight:700;color:var(--pr);margin-bottom:8px">3.8<span style="font-size:24px;color:var(--tx3)">/5.0</span></div>
+      <div style="font-size:14px;color:var(--tx2)">全体平均スコア</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="ch"><div class="ct">⚠️ ギャップ検知</div></div>
+    <div class="gap-item">
+      <div class="gh"><div class="gn">木村 さくら</div><span class="tag t-rd">差異大</span></div>
+      <div class="gb"><div class="gl">メンター評価</div><div class="bl2"><div class="bf" style="width:80%;background:linear-gradient(90deg,var(--pr),var(--pr2))"></div></div><div class="bn">4</div></div>
+      <div class="gb"><div class="gl">メンティー評価</div><div class="bl2"><div class="bf" style="width:20%;background:linear-gradient(90deg,var(--rd),#d86060)"></div></div><div class="bn">1</div></div>
+    </div>
+    <div class="gap-item">
+      <div class="gh"><div class="gn">松本 健一</div><span class="tag t-am">差異あり</span></div>
+      <div class="gb"><div class="gl">メンター評価</div><div class="bl2"><div class="bf" style="width:80%;background:linear-gradient(90deg,var(--pr),var(--pr2))"></div></div><div class="bn">4</div></div>
+      <div class="gb"><div class="gl">メンティー評価</div><div class="bl2"><div class="bf" style="width:60%;background:linear-gradient(90deg,var(--am),#d89000)"></div></div><div class="bn">3</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="s-members">
+  <div class="topbar"><div><div class="page-title">メンバー管理</div><div class="page-sub">全メンティー一覧・ステータス確認</div></div></div>
+  <div class="card">
+    <div class="ch"><div class="ct">メンティー一覧（8名）</div></div>
+    <table>
+      <thead><tr><th>氏名</th><th>ステータス</th><th>担当メンター</th><th>担当リーダー</th><th>稼働場所</th></tr></thead>
+      <tbody>
+        <tr onclick="nav('memberDetail')"><td><div class="td-name"><div class="dot d-rd"></div>木村 さくら</div></td><td><span class="tag t-rd">🔴 要注意</span></td><td class="td-m">田中</td><td class="td-m">伊藤</td><td class="td-m">渋谷</td></tr>
+        <tr onclick="nav('memberDetail')"><td><div class="td-name"><div class="dot d-am"></div>松本 健一</div></td><td><span class="tag t-am">🟡 注意</span></td><td class="td-m">佐藤</td><td class="td-m">伊藤</td><td class="td-m">在宅</td></tr>
+        <tr onclick="nav('memberDetail')"><td><div class="td-name"><div class="dot d-gr"></div>田中 美咲</div></td><td><span class="tag t-gr">🟢 順調</span></td><td class="td-m">鈴木</td><td class="td-m">田中</td><td class="td-m">渋谷</td></tr>
+        <tr onclick="nav('memberDetail')"><td><div class="td-name"><div class="dot d-cy"></div>山本 裕太</div></td><td><span class="tag t-cy">🔵 快調</span></td><td class="td-m">渡辺</td><td class="td-m">田中</td><td class="td-m">渋谷</td></tr>
+        <tr><td><div class="td-name"><div class="dot d-gr"></div>中村 愛</div></td><td><span class="tag t-gr">🟢 順調</span></td><td class="td-m">田中</td><td class="td-m">渡辺</td><td class="td-m">新宿</td></tr>
+        <tr><td><div class="td-name"><div class="dot d-gr"></div>小林 健太</div></td><td><span class="tag t-gr">🟢 順調</span></td><td class="td-m">佐藤</td><td class="td-m">佐藤</td><td class="td-m">渋谷</td></tr>
+        <tr><td><div class="td-name"><div class="dot d-pr"></div>高橋 花子</div></td><td><span class="tag t-pr">🟣 新規</span></td><td class="td-m">山田</td><td class="td-m">山田</td><td class="td-m">在宅</td></tr>
+        <tr><td><div class="td-name"><div class="dot d-gr"></div>佐々木 翔</div></td><td><span class="tag t-gr">🟢 順調</span></td><td class="td-m">渡辺</td><td class="td-m">渡辺</td><td class="td-m">新宿</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="screen" id="s-contents">
+  <div class="topbar"><div><div class="page-title">研修コンテンツ管理</div><div class="page-sub">動画・資料の登録・管理</div></div><div class="topbar-r"><button class="btn btn-p" onclick="openModal('contentModal')">＋ 新規追加</button></div></div>
+  <div class="card">
+    <div class="ch"><div class="ct">登録済みコンテンツ（4件）</div></div>
+    <div class="content-item"><div class="ci-ic">📹</div><div class="ci-info"><div class="ci-title">TypeScript基礎講座</div><div class="ci-meta">動画 45分 — 2025/01/15登録</div></div></div>
+    <div class="content-item"><div class="ci-ic">📄</div><div class="ci-info"><div class="ci-title">React Hooks完全ガイド</div><div class="ci-meta">資料 PDF — 2025/01/10登録</div></div></div>
+    <div class="content-item"><div class="ci-ic">📹</div><div class="ci-info"><div class="ci-title">Git実践ワークフロー</div><div class="ci-meta">動画 30分 — 2024/12/20登録</div></div></div>
+    <div class="content-item"><div class="ci-ic">🔗</div><div class="ci-info"><div class="ci-title">公式ドキュメント集</div><div class="ci-meta">リンク集 — 2024/12/15登録</div></div></div>
+  </div>
+</div>
+
+<div class="screen" id="s-links">
+  <div class="topbar"><div><div class="page-title">リンク集管理</div><div class="page-sub">業務リンクの登録・管理</div></div><div class="topbar-r"><button class="btn btn-p" onclick="openModal('linkModal')">＋ 新規追加</button></div></div>
+  <div class="card">
+    <div class="ch"><div class="ct">登録済みリンク（4件）</div></div>
+    <div class="content-item"><div class="ci-ic">🔗</div><div class="ci-info"><div class="ci-title">社内Wiki</div><div class="ci-meta">業務 — https://wiki.company.com</div></div></div>
+    <div class="content-item"><div class="ci-ic">🔗</div><div class="ci-info"><div class="ci-title">勤怠管理システム</div><div class="ci-meta">業務 — https://attendance.company.com</div></div></div>
+    <div class="content-item"><div class="ci-ic">🔗</div><div class="ci-info"><div class="ci-title">プロジェクト管理</div><div class="ci-meta">業務 — https://pm.company.com</div></div></div>
+    <div class="content-item"><div class="ci-ic">🔗</div><div class="ci-info"><div class="ci-title">経費精算</div><div class="ci-meta">業務 — https://expense.company.com</div></div></div>
+  </div>
+</div>
+
+<div class="screen" id="s-users">
+  <div class="topbar"><div><div class="page-title">ユーザー管理</div><div class="page-sub">ユーザー追加・削除・ロール設定</div></div><div class="topbar-r"><button class="btn btn-p">＋ ユーザー追加</button></div></div>
+  <div class="card">
+    <div class="ch"><div class="ct">登録ユーザー（14名）</div></div>
+    <table>
+      <thead><tr><th>氏名</th><th>ロール</th><th>メール</th><th>登録日</th></tr></thead>
+      <tbody>
+        <tr><td class="td-name">システム管理者</td><td><span class="tag t-rd">管理者</span></td><td class="td-m"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="90f1f4fdf9fed0f3fffde0f1fee9bef3fffd">[email&#160;protected]</a></td><td class="td-m">2024/12/01</td></tr>
+        <tr><td class="td-name">田中メンター</td><td><span class="tag t-pr">メンター</span></td><td class="td-m"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0276636c63696342616d6f72636c7b2c616d6f">[email&#160;protected]</a></td><td class="td-m">2024/12/01</td></tr>
+        <tr><td class="td-name">佐藤メンター</td><td><span class="tag t-pr">メンター</span></td><td class="td-m"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f08391849fb0939f9d80919e89de939f9d">[email&#160;protected]</a></td><td class="td-m">2024/12/01</td></tr>
+        <tr><td class="td-name">木村 さくら</td><td><span class="tag t-gr">メンティー</span></td><td class="td-m"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="89e2e0e4fcfbe8c9eae6e4f9e8e7f0a7eae6e4">[email&#160;protected]</a></td><td class="td-m">2024/12/10</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="screen" id="s-memberDetail">
+  <div class="bc"><span class="bc-link" onclick="nav('members')">メンバー管理</span><span>›</span><span>木村 さくら</span></div>
+  <div class="topbar"><div><div class="page-title">木村 さくら <span class="tag t-rd" style="font-size:13px;vertical-align:middle">🔴 要注意</span></div><div class="page-sub">メンター: 田中　/　リーダー: 伊藤</div></div><div class="topbar-r"><button class="btn btn-p" onclick="openMsg('木村 さくら')">📨 メッセージ送信</button></div></div>
+  <div class="detail-grid">
+    <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v">渋谷オフィス</div></div>
+    <div class="dc"><div class="dc-lb">稼働状況</div><div class="dc-v">フルタイム</div></div>
+    <div class="dc"><div class="dc-lb">現在の賃金</div><div class="dc-v ac">¥1,200/h</div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">📋 過去の1on1レポート</div></div>
+    <table>
+      <thead><tr><th>日付</th><th>内容</th><th>満足度</th></tr></thead>
+      <tbody>
+        <tr><td class="td-m">2/14</td><td>TypeScript型設計・進捗確認</td><td>★☆☆☆☆</td></tr>
+        <tr><td class="td-m">1/31</td><td>目標設定・1月振り返り</td><td>★★★☆☆</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- お知らせ配信画面 -->
+<div class="screen" id="s-notices">
+  <div class="topbar">
+    <div><div class="page-title">お知らせ配信</div><div class="page-sub">メンティー・メンター全員または個別にお知らせを配信</div></div>
+    <div class="topbar-r"><button class="btn btn-p" onclick="openNoticeForm()">＋ 新規配信</button></div>
+  </div>
+  <div class="card" style="margin-bottom:16px" id="noticeFormCard" style="display:none">
+    <div class="ch"><div class="ct">📢 新しいお知らせを作成</div></div>
+    <div class="form-area">
+      <div class="form-group">
+        <label class="form-label">配信対象</label>
+        <select class="inp" id="notice-target">
+          <option value="all">全員</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">お知らせ内容<span style="color:var(--rd)">*</span></label>
+        <textarea class="inp" id="notice-content" rows="4" placeholder="お知らせ内容を入力してください…"></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px">
+        <button class="btn btn-g" onclick="closeNoticeForm()">キャンセル</button>
+        <button class="btn btn-p" onclick="sendNotice()">📢 配信する</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">配信済みお知らせ</div></div>
+    <div id="noticeList"><div style="padding:20px;text-align:center;color:var(--tx3)">読み込み中...</div></div>
+  </div>
+</div>
+
+<!-- ユーザー追加画面 -->
+<div class="screen" id="s-addUser">
+  <div class="topbar"><div><div class="page-title">ユーザー追加</div><div class="page-sub">新しいユーザーを登録します</div></div></div>
+  <div class="card">
+    <div class="ch"><div class="ct">新規ユーザー情報</div></div>
+    <div class="form-area">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="form-group">
+          <label class="form-label">氏名<span style="color:var(--rd)">*</span></label>
+          <input class="inp" id="add-name" placeholder="田中 メンター" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">メールアドレス<span style="color:var(--rd)">*</span></label>
+          <input class="inp" id="add-email" type="email" placeholder="mentor@example.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">パスワード<span style="color:var(--rd)">*</span></label>
+          <input class="inp" id="add-password" type="password" placeholder="8文字以上" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">ロール<span style="color:var(--rd)">*</span></label>
+          <select class="inp" id="add-role">
+            <option value="mentee">メンティー</option>
+            <option value="mentor">メンター</option>
+            <option value="admin">管理者</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">担当メンターID</label>
+          <input class="inp" id="add-mentor-id" placeholder="mentor の user_id" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">稼働場所</label>
+          <input class="inp" id="add-workplace" placeholder="東京本社" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">稼働状況</label>
+          <select class="inp" id="add-work-status">
+            <option value="フルタイム">フルタイム</option>
+            <option value="パートタイム">パートタイム</option>
+            <option value="業務委託">業務委託</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">電話番号</label>
+          <input class="inp" id="add-phone" placeholder="000-0000-0000" />
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+        <button class="btn btn-g" onclick="nav('users')">キャンセル</button>
+        <button class="btn btn-p" onclick="addUser()">➕ ユーザーを追加</button>
+      </div>
+      <div id="addUserMsg" style="margin-top:12px;font-size:13px"></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ══════════════════════════════════════════════════════════
+//  設定値
+// ══════════════════════════════════════════════════════════
+// GAS WebApp URL（サーバーサイドから動的取得）
+var GAS_URL = '';
+
+// ══════════════════════════════════════════════════════════
+//  認証モジュール
+// ══════════════════════════════════════════════════════════
+const Auth = {
+  getToken:  () => localStorage.getItem('1on1_token'),
+  getUser:   () => { try { return JSON.parse(localStorage.getItem('1on1_user') || 'null'); } catch { return null; } },
+  setAuth:   (token, user) => { localStorage.setItem('1on1_token', token); localStorage.setItem('1on1_user', JSON.stringify(user)); },
+  clearAuth: () => { localStorage.removeItem('1on1_token'); localStorage.removeItem('1on1_user'); },
+  isLoggedIn:() => !!localStorage.getItem('1on1_token'),
+};
+
+// API共通リクエスト（JWT自動付与）
+// ── GAS Gateway設定 ──────────────────────────────────────
+// GASデプロイ後、以下のURLを実際のデプロイURLに変更してください
+const GAS_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+
+// GAS用APIリクエスト（n8nのapiRequestを置き換え）
+async // ── GAS API通信（fetch使用）───────────────────────────────
+const GAS_API_URL = 'https://script.google.com/a/macros/agent-network.com/s/AKfycbzJjOvYtF3cjHFJycMeQSfD9iWKtqd0_bmZ2t5k3-lJv8RdLpfWtZllUePuqOBtcRnZ'; // ← デプロイ後に変更
+
+async function apiRequest(endpoint, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const token = Auth.getToken();
+  const path = endpoint.replace(/^\//, '');
+
+  try {
+    let url, fetchOptions;
+
+    if (method === 'GET') {
+      url = GAS_API_URL + '?path=' + encodeURIComponent(path);
+      fetchOptions = {
+        method: 'GET',
+        redirect: 'follow',
+        headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+      };
+    } else {
+      const body = {};
+      try { Object.assign(body, JSON.parse(options.body || '{}')); } catch(e) {}
+      body._token = token || '';
+      url = GAS_API_URL;
+      fetchOptions = {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain' }, // GASはtext/plainでCORSプリフライト回避
+        body: JSON.stringify(Object.assign({ path }, body))
+      };
+    }
+
+    const res = await fetch(url, fetchOptions);
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        Auth.clearAuth();
+        window.location.href = 'login.html';
+        return null;
+      }
+      throw new Error('HTTP ' + res.status);
+    }
+    return await res.json();
+  } catch(e) {
+    console.error('API Error [' + path + ']:', e);
+    return null;
+  }
+}
+
+
+function logout() {
+  Auth.clearAuth();
+  window.location.href = 'login.html';
+}
+
+// ══════════════════════════════════════════════════════════
+//  初期化（認証チェック）
+// ══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+
+  // 認証チェック
+  if (!Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+
+  // 管理者ロールチェック
+  const user = Auth.getUser();
+  if (user && user.role !== 'admin') { window.location.href = 'login.html'; return; }
+
+  // ユーザー情報表示
+  if (user) {
+    const avaEl = document.querySelector('.sidebar-foot .ava');
+    const nameEl = document.querySelector('.sidebar-foot .u-name');
+    if (avaEl) avaEl.textContent = (user.name || '').slice(0, 1) || '管';
+    if (nameEl) nameEl.textContent = user.name || '管理者';
+  }
+
+  // ページビュー記録（F-07）
+  apiRequest('/api/analytics/page-view', {
+    method: 'POST',
+    body: JSON.stringify({ page: 'admin', action: 'load' })
+  }).catch(() => {});
+
+  // メンバー一覧をAPIから動的取得
+  await loadMembersTable();
+
+  // ユーザー管理テーブルをAPIから動的取得
+  await loadUsersTable();
+});
+
+// ══════════════════════════════════════════════════════════
+//  データ読み込み関数
+// ══════════════════════════════════════════════════════════
+
+async function loadMembersTable() {
+  const data = await apiRequest('/api/admin/members', { method: 'GET' });
+  if (!data || !Array.isArray(data.members)) return;
+
+  const statusMap = {
+    red:    { label: '🔴 要注意', cls: 't-rd', dot: 'd-rd' },
+    yellow: { label: '🟡 注意',   cls: 't-am', dot: 'd-am' },
+    green:  { label: '🟢 順調',   cls: 't-gr', dot: 'd-gr' },
+    blue:   { label: '🔵 快調',   cls: 't-cy', dot: 'd-cy' },
+  };
+
+  const rows = data.members.map(m => {
+    const s = statusMap[m.status] || statusMap.green;
+    const lastOn = m.last_booking_at ? new Date(m.last_booking_at).toLocaleDateString('ja-JP') : '—';
+    const lastTel = m.last_call_at   ? new Date(m.last_call_at).toLocaleDateString('ja-JP')    : '—';
+    return `<tr onclick="nav('memberDetail')">
+      <td><div class="td-name"><div class="dot ${s.dot}"></div>${escHtml(m.name)}</div></td>
+      <td><span class="tag ${s.cls}">${s.label}</span></td>
+      <td class="td-m">${escHtml(m.mentor_name || '—')}</td>
+      <td class="td-m">${escHtml(m.leader_name || '—')}</td>
+      <td class="td-m">${lastOn}</td>
+      <td class="td-m">${lastTel}</td>
+    </tr>`;
+  }).join('');
+
+  const tbody = document.querySelector('#s-dashboard table tbody');
+  if (tbody && rows) tbody.innerHTML = rows;
+
+  const membersCard = document.querySelector('#s-members table tbody');
+  if (membersCard && rows) {
+    membersCard.innerHTML = data.members.map(m => {
+      const s = statusMap[m.status] || statusMap.green;
+      return `<tr onclick="nav('memberDetail')">
+        <td><div class="td-name"><div class="dot ${s.dot}"></div>${escHtml(m.name)}</div></td>
+        <td><span class="tag ${s.cls}">${s.label}</span></td>
+        <td class="td-m">${escHtml(m.mentor_name || '—')}</td>
+        <td class="td-m">${escHtml(m.leader_name || '—')}</td>
+        <td class="td-m">${escHtml(m.workplace || '—')}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+async function loadUsersTable() {
+  const data = await apiRequest('/api/admin/users', { method: 'GET' });
+  if (!data || !Array.isArray(data.users)) return;
+
+  const roleMap = { admin: '管理者', mentor: 'メンター', mentee: 'メンティー' };
+  const roleCls = { admin: 't-rd', mentor: 't-pr', mentee: 't-gr' };
+
+  const rows = data.users.map(u => {
+    const label = roleMap[u.role] || u.role;
+    const cls   = roleCls[u.role] || 't-gr';
+    const createdAt = u.created_at ? u.created_at.split('T')[0] : '—';
+    return `<tr>
+      <td class="td-name">${escHtml(u.name)}</td>
+      <td><span class="tag ${cls}">${label}</span></td>
+      <td class="td-m">${escHtml(u.email)}</td>
+      <td class="td-m">${createdAt}</td>
+    </tr>`;
+  }).join('');
+
+  const tbody = document.querySelector('#s-users table tbody');
+  if (tbody && rows) tbody.innerHTML = rows;
+
+  const countEl = document.querySelector('#s-users .ct');
+  if (countEl) countEl.textContent = `登録ユーザー（${data.users.length}名）`;
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════════════════════
+//  画面遷移・モーダル
+// ══════════════════════════════════════════════════════════
+function nav(id, el) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const screen = document.getElementById('s-' + id);
+  if (screen) screen.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (id === 'callReports') loadCallReports();
+  if (id === 'leaderAssignments') loadLeaderAssignments();
+  if (el) el.classList.add('active');
+  // 画面別の初期化
+  if (id === 'survey') loadSurveys();
+  if (id === 'contents') loadContents();
+  if (id === 'links') loadLinks();
+  if (id === 'notices') loadNotices();
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openMsg(name) {
+  document.getElementById('msgTo').textContent = '宛先: ' + name;
+  openModal('msgModal');
+}
+
+// ══════════════════════════════════════════════════════════
+//  アンケート分析
+// ══════════════════════════════════════════════════════════
+async function loadSurveys() {
+  const data = await apiRequest('/api/admin/surveys');
+  if (!data) return;
+
+  // 平均スコア更新
+  const avgEl = document.querySelector('#s-survey .kpi-v, #s-survey [style*="56px"]');
+  if (avgEl) avgEl.innerHTML = `${data.avg_score}<span style="font-size:24px;color:var(--tx3)">/5.0</span>`;
+
+  // ギャップ一覧
+  const gapContainer = document.querySelector('#s-survey .card:last-child');
+  if (!gapContainer || !data.gaps) return;
+  const levelMap = { large: { cls: 't-rd', label: '差異大' }, medium: { cls: 't-am', label: '差異あり' }, small: { cls: 't-gr', label: '正常' } };
+  const html = data.gaps.map(g => {
+    const lv = levelMap[g.level] || levelMap.small;
+    const mentorPct = Math.round(g.mentor_rating / 5 * 100);
+    const menteePct = Math.round(g.mentee_rating / 5 * 100);
+    return `<div class="gap-item">
+      <div class="gh"><div class="gn">${escHtml(g.mentee_name)}</div><span class="tag ${lv.cls}">${lv.label}</span></div>
+      <div class="gb"><div class="gl">メンター評価</div><div class="bl2"><div class="bf" style="width:${mentorPct}%;background:linear-gradient(90deg,var(--pr),var(--pr2))"></div></div><div class="bn">${g.mentor_rating}</div></div>
+      <div class="gb"><div class="gl">メンティー評価</div><div class="bl2"><div class="bf" style="width:${menteePct}%;background:linear-gradient(90deg,var(--rd),#d86060)"></div></div><div class="bn">${g.mentee_rating}</div></div>
+    </div>`;
+  }).join('') || '<div style="padding:20px;text-align:center;color:var(--tx3)">データがありません</div>';
+  const gapCard = gapContainer.querySelector('.ch') ? gapContainer : null;
+  if (gapCard) gapCard.innerHTML = '<div class="ch"><div class="ct">⚠️ ギャップ検知</div></div>' + html;
+}
+
+// ══════════════════════════════════════════════════════════
+//  研修コンテンツ管理
+// ══════════════════════════════════════════════════════════
+async function loadContents() {
+  const data = await apiRequest('/api/admin/contents');
+  if (!data || !data.contents) return;
+  const iconMap = { video: '📹', document: '📄', link: '🔗' };
+  const container = document.querySelector('#s-contents .card');
+  if (!container) return;
+  const items = data.contents.map(c => `
+    <div class="content-item">
+      <div class="ci-ic">${iconMap[c.type] || '🔗'}</div>
+      <div class="ci-info">
+        <div class="ci-title">${escHtml(c.title)}</div>
+        <div class="ci-meta">${escHtml(c.type)} ${c.duration ? c.duration+'分' : ''} — ${c.created_at ? c.created_at.split('T')[0] : ''}登録</div>
+      </div>
+    </div>`).join('') || '<div style="padding:20px;text-align:center;color:var(--tx3)">コンテンツがありません</div>';
+  container.innerHTML = `<div class="ch"><div class="ct">登録済みコンテンツ（${data.contents.length}件）</div></div>` + items;
+}
+
+async function addContent() {
+  const payload = {
+    title: document.getElementById('ct-title').value.trim(),
+    type: document.getElementById('ct-type').value,
+    url: document.getElementById('ct-url').value.trim(),
+    description: document.getElementById('ct-desc').value.trim(),
+    duration: document.getElementById('ct-duration').value.trim(),
+    level: document.getElementById('ct-level').value
+  };
+  if (!payload.title || !payload.url) { alert('タイトルとURLは必須です'); return; }
+  const result = await apiRequest('/api/admin/contents', { method: 'POST', body: JSON.stringify(payload) });
+  if (result) { closeModal('contentModal'); await loadContents(); }
+}
+
+// ══════════════════════════════════════════════════════════
+//  リンク集管理
+// ══════════════════════════════════════════════════════════
+async function loadLinks() {
+  const data = await apiRequest('/api/admin/links');
+  if (!data || !data.links) return;
+  const container = document.querySelector('#s-links .card');
+  if (!container) return;
+  const items = data.links.map(l => `
+    <div class="content-item">
+      <div class="ci-ic">${escHtml(l.icon || '🔗')}</div>
+      <div class="ci-info">
+        <div class="ci-title">${escHtml(l.title)}</div>
+        <div class="ci-meta">リンク — ${escHtml(l.url)}</div>
+      </div>
+    </div>`).join('') || '<div style="padding:20px;text-align:center;color:var(--tx3)">リンクがありません</div>';
+  container.innerHTML = `<div class="ch"><div class="ct">登録済みリンク（${data.links.length}件）</div></div>` + items;
+}
+
+async function addLink() {
+  const payload = {
+    title: document.getElementById('lk-title').value.trim(),
+    url: document.getElementById('lk-url').value.trim(),
+    icon: document.getElementById('lk-icon').value.trim() || '🔗'
+  };
+  if (!payload.title || !payload.url) { alert('タイトルとURLは必須です'); return; }
+  const result = await apiRequest('/api/admin/links', { method: 'POST', body: JSON.stringify(payload) });
+  if (result) { closeModal('linkModal'); await loadLinks(); }
+}
+
+// ══════════════════════════════════════════════════════════
+//  お知らせ配信
+// ══════════════════════════════════════════════════════════
+async function loadNotices() {
+  const data = await apiRequest('/api/mentee/notices');
+  if (!data || !data.notices) return;
+  const list = document.getElementById('noticeList');
+  if (!list) return;
+  if (data.notices.length === 0) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--tx3)">お知らせはありません</div>';
+    return;
+  }
+  list.innerHTML = data.notices.map(n => `
+    <div style="padding:16px 20px;border-bottom:1px solid var(--bd)">
+      <div style="font-size:11px;color:var(--tx3);margin-bottom:6px">${new Date(n.created_at).toLocaleString('ja-JP')} / 対象: ${n.target_id === 'all' ? '全員' : n.target_id}</div>
+      <div style="font-size:14px;color:var(--tx);line-height:1.6">${escHtml(n.content)}</div>
+    </div>`).join('');
+}
+
+function openNoticeForm() {
+  document.getElementById('noticeFormCard').style.display = 'block';
+}
+function closeNoticeForm() {
+  document.getElementById('noticeFormCard').style.display = 'none';
+  document.getElementById('notice-content').value = '';
+}
+
+async function sendNotice() {
+  const content = document.getElementById('notice-content').value.trim();
+  const target_id = document.getElementById('notice-target').value;
+  if (!content) { alert('内容を入力してください'); return; }
+  const result = await apiRequest('/api/admin/notices', { method: 'POST', body: JSON.stringify({ content, target_id }) });
+  if (result) {
+    closeNoticeForm();
+    await loadNotices();
+    alert('お知らせを配信しました');
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  ユーザー追加
+// ══════════════════════════════════════════════════════════
+async function addUser() {
+  const payload = {
+    name:        document.getElementById('add-name').value.trim(),
+    email:       document.getElementById('add-email').value.trim(),
+    password:    document.getElementById('add-password').value,
+    role:        document.getElementById('add-role').value,
+    mentor_id:   document.getElementById('add-mentor-id').value.trim(),
+    workplace:   document.getElementById('add-workplace').value.trim(),
+    work_status: document.getElementById('add-work-status').value,
+    phone_number: document.getElementById('add-phone').value.trim()
+  };
+  const msg = document.getElementById('addUserMsg');
+  if (!payload.name || !payload.email || !payload.password) {
+    msg.style.color = 'var(--rd)'; msg.textContent = '氏名・メール・パスワードは必須です'; return;
+  }
+  if (payload.password.length < 8) {
+    msg.style.color = 'var(--rd)'; msg.textContent = 'パスワードは8文字以上です'; return;
+  }
+  msg.style.color = 'var(--tx3)'; msg.textContent = '登録中...';
+  const result = await apiRequest('/api/admin/users/add', { method: 'POST', body: JSON.stringify(payload) });
+  if (result && result.user_id) {
+    msg.style.color = 'var(--gr)'; msg.textContent = `✅ ユーザーを追加しました（ID: ${result.user_id}）`;
+    await loadUsersTable();
+  } else {
+    msg.style.color = 'var(--rd)'; msg.textContent = '❌ 追加に失敗しました';
+  }
+}
+
+// ══ 電話レポート ══
+var _allCallReports = [];
+var _crUsers = {};
+
+async function loadCallReports() {
+  const tableEl = document.getElementById('callReportsTable');
+  if (!tableEl) return;
+  tableEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">読み込み中...</div>';
+
+  const [crData, usersData] = await Promise.all([
+    apiRequest('/api/mentor/call-reports'),
+    apiRequest('/api/admin/users')
+  ]);
+
+  const reports = (crData && crData.reports) ? crData.reports : [];
+  const users = (usersData && usersData.users) ? usersData.users : [];
+
+  // ユーザーマップ
+  _crUsers = {};
+  users.forEach(u => { _crUsers[u.user_id] = u; });
+
+  _allCallReports = reports.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+
+  // フィルターにメンティーを追加
+  const filterEl = document.getElementById('cr-filter-mentee');
+  if (filterEl) {
+    const mentees = [...new Set(reports.map(r => r.mentee_id))].filter(Boolean);
+    filterEl.innerHTML = '<option value="">全員</option>' +
+      mentees.map(id => {
+        const u = _crUsers[id];
+        return `<option value="${id}">${u ? u.name : id}</option>`;
+      }).join('');
+  }
+
+  // KPI
+  const now = new Date();
+  const weekStart = new Date(now); weekStart.setDate(now.getDate() - (now.getDay()||7) + 1); weekStart.setHours(0,0,0,0);
+  const thisWeek = reports.filter(r => new Date(r.created_at) >= weekStart);
+  const withRecording = reports.filter(r => r.recording_url);
+  const kpiTotal = document.getElementById('cr-kpi-total');
+  const kpiRec = document.getElementById('cr-kpi-recording');
+  const kpiWeek = document.getElementById('cr-kpi-thisweek');
+  if (kpiTotal) kpiTotal.textContent = reports.length + '件';
+  if (kpiRec) kpiRec.textContent = withRecording.length + '件';
+  if (kpiWeek) kpiWeek.textContent = thisWeek.length + '件';
+
+  renderCallReportsTable(_allCallReports);
+}
+
+function filterCallReports() {
+  const menteeId = document.getElementById('cr-filter-mentee').value;
+  const period = document.getElementById('cr-filter-period').value;
+  const now = new Date();
+
+  let filtered = _allCallReports;
+  if (menteeId) filtered = filtered.filter(r => r.mentee_id === menteeId);
+
+  if (period === 'thisweek') {
+    const ws = new Date(now); ws.setDate(now.getDate() - (now.getDay()||7) + 1); ws.setHours(0,0,0,0);
+    filtered = filtered.filter(r => new Date(r.created_at) >= ws);
+  } else if (period === 'lastweek') {
+    const ws = new Date(now); ws.setDate(now.getDate() - (now.getDay()||7) - 6); ws.setHours(0,0,0,0);
+    const we = new Date(ws); we.setDate(ws.getDate() + 6); we.setHours(23,59,59,999);
+    filtered = filtered.filter(r => { const d = new Date(r.created_at); return d >= ws && d <= we; });
+  } else if (period === 'thismonth') {
+    const ms = new Date(now.getFullYear(), now.getMonth(), 1);
+    filtered = filtered.filter(r => new Date(r.created_at) >= ms);
+  }
+  renderCallReportsTable(filtered);
+}
+
+function renderCallReportsTable(reports) {
+  const tableEl = document.getElementById('callReportsTable');
+  if (!tableEl) return;
+  if (reports.length === 0) {
+    tableEl.innerHTML = '<div style="padding:32px;text-align:center;color:var(--tx3)">レポートがありません</div>';
+    return;
+  }
+  tableEl.innerHTML = `
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:var(--bg3);font-size:12px;color:var(--tx3)">
+          <th style="padding:10px 16px;text-align:left;font-weight:600">日時</th>
+          <th style="padding:10px 16px;text-align:left;font-weight:600">リーダー</th>
+          <th style="padding:10px 16px;text-align:left;font-weight:600">メンティー</th>
+          <th style="padding:10px 16px;text-align:left;font-weight:600">AIサマリー</th>
+          <th style="padding:10px 16px;text-align:left;font-weight:600">録音</th>
+          <th style="padding:10px 16px;text-align:left;font-weight:600"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${reports.map(r => {
+          const dt = new Date(r.created_at);
+          const dateStr = dt.getFullYear() + '/' + (dt.getMonth()+1) + '/' + dt.getDate();
+          const leader = _crUsers[r.leader_id];
+          const mentee = _crUsers[r.mentee_id];
+          const summary = (r.ai_summary || '').substring(0, 60) + (r.ai_summary && r.ai_summary.length > 60 ? '…' : '');
+          return `<tr style="border-bottom:1px solid var(--bd);cursor:pointer" onclick="showCallReportDetail(${JSON.stringify(r).replace(/"/g,'&quot;')})">
+            <td style="padding:12px 16px;font-size:13px">${dateStr}</td>
+            <td style="padding:12px 16px;font-size:13px;font-weight:500">${leader ? leader.name : (r.leader_id || '—')}</td>
+            <td style="padding:12px 16px;font-size:13px;font-weight:500">${mentee ? mentee.name : (r.mentee_id || '—')}</td>
+            <td style="padding:12px 16px;font-size:12px;color:var(--tx2);max-width:280px">${summary || '—'}</td>
+            <td style="padding:12px 16px">${r.recording_url ? '<span style="font-size:18px">🎙️</span>' : '<span style="font-size:12px;color:var(--tx3)">なし</span>'}</td>
+            <td style="padding:12px 16px"><span style="font-size:12px;color:var(--pr);font-weight:600">詳細 →</span></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function showCallReportDetail(report) {
+  const leader = _crUsers[report.leader_id];
+  const mentee = _crUsers[report.mentee_id];
+  const dt = new Date(report.created_at);
+  const dateStr = dt.getFullYear() + '/' + (dt.getMonth()+1) + '/' + dt.getDate();
+
+  document.getElementById('cr-detail-title').textContent = '📞 ' + (mentee ? mentee.name : '—') + ' さんとの電話レポート';
+  document.getElementById('cr-detail-summary').textContent = report.ai_summary || '—';
+  document.getElementById('cr-detail-status').textContent = report.ai_mentee_status || '—';
+  document.getElementById('cr-detail-action').textContent = report.next_action || '—';
+  document.getElementById('cr-detail-talk').textContent = report.talk_content || '—';
+  document.getElementById('cr-detail-concerns').textContent = report.concerns || '—';
+  document.getElementById('cr-detail-good').textContent = report.good_points || '—';
+  document.getElementById('cr-detail-memo').textContent = report.memo || '—';
+  document.getElementById('cr-detail-leader').textContent = leader ? leader.name : (report.leader_id || '—');
+  document.getElementById('cr-detail-mentee').textContent = mentee ? mentee.name : (report.mentee_id || '—');
+  document.getElementById('cr-detail-date').textContent = dateStr;
+  document.getElementById('cr-detail-id').textContent = report.report_id || '—';
+
+  const recBox = document.getElementById('cr-detail-recording-box');
+  const noRec = document.getElementById('cr-detail-no-recording');
+  const recLink = document.getElementById('cr-detail-recording-link');
+  if (report.recording_url) {
+    recLink.href = report.recording_url;
+    recBox.style.display = 'block';
+    noRec.style.display = 'none';
+  } else {
+    recBox.style.display = 'none';
+    noRec.style.display = 'block';
+  }
+
+  nav('callReportDetail');
+}
+
+
+// ══ Leader担当割り当て管理 ══
+var _allAssignments = [];
+var _leaderList = [];
+var _menteeList = [];
+
+async function loadLeaderAssignments() {
+  const tableEl = document.getElementById('assignmentsTable');
+  if (!tableEl) return;
+  tableEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">読み込み中...</div>';
+
+  const data = await apiRequest('/api/admin/leader-assignments');
+  if (!data) { tableEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--rd)">取得に失敗しました</div>'; return; }
+
+  _allAssignments = data.assignments || [];
+  _leaderList = data.leaders || [];
+  _menteeList = data.mentees || [];
+
+  // KPI
+  const leaderIds = [...new Set(_allAssignments.map(a => a.leader_id))];
+  const menteeIds = [...new Set(_allAssignments.map(a => a.mentee_id))];
+  const kpiL = document.getElementById('la-kpi-leaders');
+  const kpiM = document.getElementById('la-kpi-mentees');
+  const kpiT = document.getElementById('la-kpi-total');
+  if (kpiL) kpiL.textContent = leaderIds.length + '名';
+  if (kpiM) kpiM.textContent = menteeIds.length + '名';
+  if (kpiT) kpiT.textContent = _allAssignments.length + '件';
+
+  // テーブル
+  if (_allAssignments.length === 0) {
+    tableEl.innerHTML = '<div style="padding:32px;text-align:center;color:var(--tx3)">割り当てがありません。「新規割り当て」から追加してください。</div>';
+  } else {
+    tableEl.innerHTML = '<table><thead><tr><th>Leader</th><th>担当Mentee</th><th>割り当て日</th><th></th></tr></thead><tbody>' +
+      _allAssignments.map(function(a) {
+        const dt = new Date(a.created_at);
+        const dateStr = dt.getFullYear() + '/' + (dt.getMonth()+1) + '/' + dt.getDate();
+        return '<tr>' +
+          '<td><strong>' + (a.leader_name || a.leader_id) + '</strong></td>' +
+          '<td>' + (a.mentee_name || a.mentee_id) + '</td>' +
+          '<td style="color:var(--tx3)">' + dateStr + '</td>' +
+          '<td><button class="btn btn-sm" style="background:var(--rd-light);color:var(--rd);border:none" onclick="deleteAssignment(\'' + a.assignment_id + '\')">削除</button></td>' +
+          '</tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  // Leader別サマリー
+  const summaryEl = document.getElementById('leaderSummary');
+  if (summaryEl) {
+    const byLeader = {};
+    _allAssignments.forEach(function(a) {
+      if (!byLeader[a.leader_id]) byLeader[a.leader_id] = { name: a.leader_name || a.leader_id, mentees: [] };
+      byLeader[a.leader_id].mentees.push(a.mentee_name || a.mentee_id);
+    });
+    summaryEl.innerHTML = Object.values(byLeader).map(function(l) {
+      return '<div class="card" style="padding:14px">' +
+        '<div style="font-size:14px;font-weight:700;margin-bottom:8px">📞 ' + l.name + '</div>' +
+        '<div style="font-size:12px;color:var(--tx2)">担当: ' + l.mentees.join('、') + '</div>' +
+        '<div style="font-size:11px;color:var(--tx3);margin-top:4px">' + l.mentees.length + '名担当</div>' +
+        '</div>';
+    }).join('');
+  }
+}
+
+function openAssignModal() {
+  // Leader選択肢
+  const leaderSel = document.getElementById('assign-leader-select');
+  leaderSel.innerHTML = '<option value="">選択してください</option>' +
+    _leaderList.map(function(u) {
+      return '<option value="' + u.user_id + '">' + u.name + ' (' + (u.role || '') + ')</option>';
+    }).join('');
+
+  // Mentee選択肢
+  const menteeSel = document.getElementById('assign-mentee-select');
+  menteeSel.innerHTML = '<option value="">選択してください</option>' +
+    _menteeList.map(function(u) {
+      return '<option value="' + u.user_id + '">' + u.name + '</option>';
+    }).join('');
+
+  document.getElementById('assignModal').classList.add('open');
+}
+
+async function submitAssignment() {
+  const leaderId = document.getElementById('assign-leader-select').value;
+  const menteeId = document.getElementById('assign-mentee-select').value;
+  if (!leaderId || !menteeId) { alert('LeaderとMenteeを両方選択してください'); return; }
+
+  // 重複チェック
+  const dup = _allAssignments.find(function(a) { return a.leader_id === leaderId && a.mentee_id === menteeId; });
+  if (dup) { alert('この組み合わせはすでに割り当て済みです'); return; }
+
+  const btn = document.getElementById('assignSubmitBtn');
+  btn.textContent = '追加中...'; btn.disabled = true;
+
+  const result = await apiRequest('/api/admin/leader-assignments', {
+    method: 'POST',
+    body: JSON.stringify({ leader_id: leaderId, mentee_id: menteeId })
+  });
+
+  btn.textContent = '割り当て追加'; btn.disabled = false;
+
+  if (result) {
+    closeModal('assignModal');
+    loadLeaderAssignments();
+  } else {
+    alert('追加に失敗しました');
+  }
+}
+
+async function deleteAssignment(assignmentId) {
+  if (!confirm('この割り当てを削除しますか？')) return;
+  const result = await apiRequest('/api/admin/leader-assignments/' + assignmentId, { method: 'DELETE' });
+  if (result) {
+    loadLeaderAssignments();
+  } else {
+    alert('削除に失敗しました');
+  }
+}
+
+</script>
+</body>
+</html
+<div class="screen" id="s-leaderAssignments">
+  <div class="topbar">
+    <div><div class="page-title">📞 Leader担当割り当て</div><div class="page-sub">LeaderとMenteeの週次TEL担当関係を管理</div></div>
+    <div class="topbar-r">
+      <button class="btn btn-p" onclick="openAssignModal()">＋ 新規割り当て</button>
+    </div>
+  </div>
+
+  <!-- 統計 -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">
+    <div class="kpi-card"><div class="kpi-lb">Leader数</div><div class="kpi-v" id="la-kpi-leaders">—</div></div>
+    <div class="kpi-card"><div class="kpi-lb">割り当て済みMentee</div><div class="kpi-v" id="la-kpi-mentees" style="color:var(--gr)">—</div></div>
+    <div class="kpi-card"><div class="kpi-lb">総割り当て数</div><div class="kpi-v" id="la-kpi-total">—</div></div>
+  </div>
+
+  <!-- 割り当て一覧 -->
+  <div class="card">
+    <div class="ch"><div class="ct">担当割り当て一覧</div></div>
+    <div id="assignmentsTable">
+      <div style="padding:24px;text-align:center;color:var(--tx3)">読み込み中...</div>
+    </div>
+  </div>
+
+  <!-- Leader別サマリー -->
+  <div style="margin-top:16px">
+    <div style="font-size:14px;font-weight:700;margin-bottom:12px">Leader別担当状況</div>
+    <div id="leaderSummary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
+  </div>
+</div>
+
+<!-- 割り当てモーダル -->
+<div class="modal" id="assignModal">
+  <div class="modal-content" style="max-width:480px">
+    <span class="modal-close" onclick="closeModal('assignModal')">✕</span>
+    <div class="modal-title">📞 担当割り当て追加</div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Leader（has_leader_role=TRUE）</label>
+      <select class="inp" id="assign-leader-select"><option value="">選択してください</option></select>
+    </div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label class="form-label">担当Mentee</label>
+      <select class="inp" id="assign-mentee-select"><option value="">選択してください</option></select>
+    </div>
+    <div class="f-foot">
+      <button class="btn btn-g" onclick="closeModal('assignModal')">キャンセル</button>
+      <button class="btn btn-p" id="assignSubmitBtn" onclick="submitAssignment()">割り当て追加</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="screen" id="s-callReports">
+  <div class="topbar">
+    <div><div class="page-title">📞 電話レポート</div><div class="page-sub">週次電話の録音・AI要約・フォローアクション</div></div>
+    <div class="topbar-r">
+      <select class="inp" id="cr-filter-mentee" style="width:160px;font-size:13px" onchange="filterCallReports()">
+        <option value="">全員</option>
+      </select>
+      <select class="inp" id="cr-filter-period" style="width:140px;font-size:13px" onchange="filterCallReports()">
+        <option value="all">全期間</option>
+        <option value="thisweek">今週</option>
+        <option value="lastweek">先週</option>
+        <option value="thismonth">今月</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">
+    <div class="kpi-card"><div class="kpi-lb">総電話レポート数</div><div class="kpi-v" id="cr-kpi-total">—</div></div>
+    <div class="kpi-card"><div class="kpi-lb">録音あり</div><div class="kpi-v" id="cr-kpi-recording" style="color:var(--gr)">—</div></div>
+    <div class="kpi-card"><div class="kpi-lb">今週のレポート</div><div class="kpi-v" id="cr-kpi-thisweek">—</div></div>
+  </div>
+
+  <!-- レポート一覧テーブル -->
+  <div class="card">
+    <div class="ch"><div class="ct">電話レポート一覧</div></div>
+    <div id="callReportsTable" style="padding:0">
+      <div style="padding:24px;text-align:center;color:var(--tx3)">読み込み中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 電話レポート詳細 ── -->
+<div class="screen" id="s-callReportDetail">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="btn btn-g btn-sm" onclick="nav('callReports')">← 一覧に戻る</button>
+      <div><div class="page-title" id="cr-detail-title">電話レポート詳細</div></div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:16px">
+    <!-- 左カラム: AI要約 -->
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="ch"><div class="ct">🤖 AI要約</div></div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--tx3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">通話サマリー</div>
+            <div id="cr-detail-summary" style="font-size:13px;color:var(--tx);line-height:1.8;background:var(--bg3);border-radius:9px;padding:11px">—</div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--tx3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">メンティーの状況</div>
+            <div id="cr-detail-status" style="font-size:13px;color:var(--tx);line-height:1.8;background:var(--bg3);border-radius:9px;padding:11px">—</div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--tx3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">フォローアクション</div>
+            <div id="cr-detail-action" style="font-size:13px;color:var(--pr);line-height:1.8;background:var(--pr-light);border-radius:9px;padding:11px;font-weight:600">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- リーダーレポート -->
+      <div class="card">
+        <div class="ch"><div class="ct">📝 リーダーレポート</div></div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+          <div><div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:4px">話した内容</div><div id="cr-detail-talk" style="font-size:13px;color:var(--tx);line-height:1.7">—</div></div>
+          <div><div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:4px">悩み・課題</div><div id="cr-detail-concerns" style="font-size:13px;color:var(--tx);line-height:1.7">—</div></div>
+          <div><div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:4px">良かった点</div><div id="cr-detail-good" style="font-size:13px;color:var(--tx);line-height:1.7">—</div></div>
+          <div><div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:4px">メモ</div><div id="cr-detail-memo" style="font-size:13px;color:var(--tx);line-height:1.7">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右カラム: 録音・メタ情報 -->
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="ch"><div class="ct">🎙️ 録音ファイル</div></div>
+        <div style="padding:16px">
+          <div id="cr-detail-recording-box">
+            <a id="cr-detail-recording-link" href="#" target="_blank" class="btn btn-p" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;margin-bottom:12px">🎙️ 録音を開く</a>
+          </div>
+          <div id="cr-detail-no-recording" style="display:none;color:var(--tx3);font-size:13px">録音ファイルなし</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="ch"><div class="ct">📋 基本情報</div></div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--tx3)">リーダー</span><span style="font-size:13px;font-weight:600" id="cr-detail-leader">—</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--tx3)">メンティー</span><span style="font-size:13px;font-weight:600" id="cr-detail-mentee">—</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--tx3)">実施日</span><span style="font-size:13px" id="cr-detail-date">—</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="font-size:12px;color:var(--tx3)">レポートID</span><span style="font-size:11px;color:var(--tx3);font-family:monospace" id="cr-detail-id">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+>

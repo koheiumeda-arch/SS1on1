@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ログイン｜1on1管理システム</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans JP',sans-serif;background:linear-gradient(135deg,#e8f5f4 0%,#f0f6f5 50%,#e8f2f0 100%);min-height:100vh;display:flex;align-items:center;justify-content:center}
+.card{background:#fff;border-radius:20px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 8px 40px rgba(93,175,167,.15)}
+.logo{text-align:center;margin-bottom:32px}
+.logo-mark{font-size:11px;color:#5dafa7;letter-spacing:2px;text-transform:uppercase;font-weight:600;margin-bottom:6px}
+.logo-name{font-size:22px;font-weight:700;color:#2c3e3a}
+.form-group{margin-bottom:16px}
+label{display:block;font-size:13px;color:#5a6e68;font-weight:600;margin-bottom:6px}
+input{width:100%;background:#f0f6f5;border:1.5px solid #d4e5e2;border-radius:10px;padding:11px 14px;font-size:14px;color:#2c3e3a;font-family:'Noto Sans JP',sans-serif;outline:none;transition:all .2s}
+input:focus{border-color:#5dafa7;box-shadow:0 0 0 3px rgba(93,175,167,.15);background:#fff}
+.btn{width:100%;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:'Noto Sans JP',sans-serif;transition:all .2s;margin-top:8px}
+.btn-primary{background:#5dafa7;color:#fff;box-shadow:0 4px 16px rgba(93,175,167,.3)}
+.btn-primary:hover{background:#4a9890;transform:translateY(-1px);box-shadow:0 6px 20px rgba(93,175,167,.4)}
+.btn-primary:disabled{background:#b8d4cf;transform:none;box-shadow:none;cursor:not-allowed}
+.error{background:#fef2f2;border:1px solid rgba(232,113,113,.3);border-radius:10px;padding:11px 14px;font-size:13px;color:#e87171;margin-top:12px;display:none}
+.loading{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.footer{text-align:center;margin-top:24px;font-size:12px;color:#8fa39d}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-mark">1ON1 MANAGEMENT</div>
+    <div class="logo-name">ログイン</div>
+  </div>
+  <div class="form-group">
+    <label for="email">メールアドレス</label>
+    <input type="email" id="email" placeholder="your@email.com" autocomplete="email" />
+  </div>
+  <div class="form-group">
+    <label for="password">パスワード</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
+  </div>
+  <button class="btn btn-primary" id="loginBtn" onclick="login()">ログイン</button>
+  <div class="error" id="errorMsg"></div>
+  <div class="footer">© 1on1管理システム</div>
+</div>
+
+<script>
+// GAS WebApp URL（サーバーサイドから動的取得）
+var GAS_API_URL = '';
+
+// ── 認証モジュール ──
+var Auth = {
+  getToken:  function() { return localStorage.getItem('1on1_token'); },
+  getUser:   function() { try { return JSON.parse(localStorage.getItem('1on1_user') || 'null'); } catch(e) { return null; } },
+  setAuth:   function(token, user) {
+    localStorage.setItem('1on1_token', token);
+    localStorage.setItem('1on1_user', JSON.stringify(user));
+  },
+  clearAuth: function() { localStorage.removeItem('1on1_token'); localStorage.removeItem('1on1_user'); },
+  isLoggedIn: function() { return !!localStorage.getItem('1on1_token'); }
+};
+
+// 既にログイン済みならロールに応じてリダイレクト
+window.addEventListener('DOMContentLoaded', function() {
+  // Enterキー対応
+  document.getElementById('password').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') login();
+  });
+  document.getElementById('email').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') document.getElementById('password').focus();
+  });
+  // WebApp URLを取得してからログイン済みチェック
+  });
+
+function redirectByRole(user) {
+  if (!user) return;
+  var role = user.role;
+  if (role === 'admin') {
+    window.location.href = GAS_API_URL + '?page=admin';
+  } else if (role === 'mentor') {
+    window.location.href = GAS_API_URL + '?page=mentor';
+  } else {
+    window.location.href = GAS_API_URL + '?page=mentee';
+  }
+}
+
+async function login() {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('errorMsg');
+
+  errEl.style.display = 'none';
+  if (!email || !password) { showError('メールアドレスとパスワードを入力してください'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span>ログイン中...';
+
+  try {
+    const res = await fetch(GAS_API_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ path: 'auth/login', email, password })
+    });
+    const data = await res.json();
+    if (!data || data.error || !data.token) {
+      const msgs = {
+        'EMAIL_AND_PASSWORD_REQUIRED': 'メールアドレスとパスワードを入力してください',
+        'USER_NOT_FOUND': 'メールアドレスまたはパスワードが正しくありません',
+        'INVALID_PASSWORD': 'メールアドレスまたはパスワードが正しくありません'
+      };
+      showError(msgs[data && data.error] || 'ログインに失敗しました');
+      return;
+    }
+    Auth.setAuth(data.token, data.user);
+    redirectByRole(data.user);
+  } catch(e) {
+    showError('通信エラーが発生しました。再度お試しください。');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'ログイン';
+  }
+}
+
+function showError(msg) {
+  var el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+</script>
+</body>
+</html>
