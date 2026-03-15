@@ -1937,7 +1937,7 @@ input[type="month"].inp{padding:11px 14px}
 <div class="toast" id="toast"></div>
 
 <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
+const GAS_URL = 'https://script.google.com/a/macros/agent-network.com/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
 // ══════════════════════════════════════════════════════════
 //  設定値（本番時は環境変数 or ビルド時に埋め込む）
 // ══════════════════════════════════════════════════════════
@@ -2387,12 +2387,17 @@ function renderHome(data) {
 async function loadQuickLinks() {
   const data = await apiRequest('/api/mentee/links');
   if (!data || !data.links) return;
-  const container = document.getElementById('quick-links');
+  const container = document.getElementById('quickLinksBar');
   if (!container) return;
-  container.innerHTML = data.links.map(l =>
-    '<a href="' + l.url + '" target="_blank" class="ql-item">' +
+  const activeLinks = data.links.filter(l => l.is_active === 'true' || l.is_active === 'TRUE');
+  if (activeLinks.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = activeLinks.map(l =>
+    '<a href="' + (l.url || '#') + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg3);border-radius:8px;font-size:12px;text-decoration:none;color:var(--tx2);border:1px solid var(--bd)">' +
     '<span>' + (l.icon || '🔗') + '</span>' +
-    '<span>' + l.title + '</span></a>'
+    '<span>' + (l.title || '') + '</span></a>'
   ).join('');
 }
 
