@@ -423,14 +423,6 @@ const Auth = {
   clearAuth: () => { localStorage.removeItem('1on1_token'); localStorage.removeItem('1on1_user'); },
   isLoggedIn:() => !!localStorage.getItem('1on1_token'),
 };
-
-// API共通リクエスト（JWT自動付与）
-// ── GAS Gateway設定 ──────────────────────────────────────
-// GASデプロイ後、以下のURLを実際のデプロイURLに変更してください
-// GAS用APIリクエスト（n8nのapiRequestを置き換え）
-async // ── GAS API通信（fetch使用）───────────────────────────────
- // ← デプロイ後に変更
-
 async function apiRequest(endpoint, options = {}) {
   const method = (options.method || 'GET').toUpperCase();
   const token = Auth.getToken();
@@ -440,7 +432,7 @@ async function apiRequest(endpoint, options = {}) {
     let url, fetchOptions;
 
     if (method === 'GET') {
-      url = GAS_API_URL + '?path=' + encodeURIComponent(path);
+      url = GAS_URL + '?path=' + encodeURIComponent(path);
       fetchOptions = {
         method: 'GET',
         redirect: 'follow',
@@ -450,7 +442,7 @@ async function apiRequest(endpoint, options = {}) {
       const body = {};
       try { Object.assign(body, JSON.parse(options.body || '{}')); } catch(e) {}
       body._token = token || '';
-      url = GAS_API_URL;
+      url = GAS_URL;
       fetchOptions = {
         method: 'POST',
         redirect: 'follow',
