@@ -16,10 +16,10 @@
   --sh:0 2px 12px rgba(93,175,167,.08)
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;max-width:430px;margin:0 auto;line-height:1.6;overflow-x:hidden}
+html,body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;max-width:430px;margin:0 auto;line-height:1.6;overflow-x:hiddenpadding-top:56px;}
 
 /* ── トップバー（クイックリンク含む固定エリア） ── */
-.topbar-wrap{position:sticky;top:0;z-index:100;background:var(--bg2);border-bottom:1px solid var(--bd);box-shadow:var(--sh)}
+.topbar-wrap{position:fixed;width:100%;top:0;z-index:100;background:var(--bg2);border-bottom:1px solid var(--bd);box-shadow:var(--sh)}
 .topbar{padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
 .logo{font-weight:800;font-size:17px;color:var(--pr)}
 .tb-r{display:flex;align-items:center;gap:11px}
