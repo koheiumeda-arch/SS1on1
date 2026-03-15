@@ -47,7 +47,7 @@ input:focus{border-color:#5dafa7;box-shadow:0 0 0 3px rgba(93,175,167,.15);backg
 
 <script>
 // GAS WebApp URL
-var GAS_API_URL = 'https://script.google.com/a/macros/agent-network.com/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
+const GAS_URL = 'https://script.google.com/a/macros/agent-network.com/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
 
 // ── 認証モジュール ──
 var Auth = {
@@ -63,6 +63,8 @@ var Auth = {
 
 // 既にログイン済みならロールに応じてリダイレクト
 window.addEventListener('DOMContentLoaded', function() {
+  // ログイン済みならリダイレクト
+  if (Auth.isLoggedIn()) { redirectByRole(Auth.getUser()); return; }
   // Enterキー対応
   document.getElementById('password').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') login();
@@ -70,8 +72,7 @@ window.addEventListener('DOMContentLoaded', function() {
   document.getElementById('email').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') document.getElementById('password').focus();
   });
-  // WebApp URLを取得してからログイン済みチェック
-  });
+});
 
 function redirectByRole(user) {
   if (!user) return;
@@ -98,7 +99,7 @@ async function login() {
   btn.innerHTML = '<span class="loading"></span>ログイン中...';
 
   try {
-    const res = await fetch(GAS_API_URL, {
+    const res = await fetch(GAS_URL, {
       method: 'POST',
       redirect: 'follow',
       headers: { 'Content-Type': 'text/plain' },
