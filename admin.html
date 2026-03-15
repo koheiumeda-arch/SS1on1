@@ -428,6 +428,37 @@ async function apiRequest(endpoint, options = {}) {
   const token = Auth.getToken();
   const path = endpoint.replace(/^\//, '');
 
+  // GETもPOSTに統一（CORSプリフライト回避のためtext/plain使用）
+  const body = {};
+  try { Object.assign(body, JSON.parse(options.body || '{}')); } catch(e) {}
+  body._token = token || '';
+  body._method = method; // 元のメソッドを伝える
+
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(Object.assign({ path }, body))
+    });
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        Auth.clearAuth();
+        window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html';
+        return null;
+      }
+      throw new Error('HTTP ' + res.status);
+    }
+    return await res.json();
+  } catch(e) {
+    console.error('API Error [' + path + ']:', e);
+    return null;
+  }
+}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const token = Auth.getToken();
+  const path = endpoint.replace(/^\//, '');
+
   try {
     let url, fetchOptions;
 
