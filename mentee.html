@@ -2385,7 +2385,7 @@ function renderHome(data) {
 
 // ══ クイックリンク ══
 async function loadQuickLinks() {
-  const data = await apiRequest('/api/admin/links');
+  const data = await apiRequest('/api/mentee/links');
   if (!data || !data.links) return;
   const container = document.getElementById('quick-links');
   if (!container) return;
