@@ -504,11 +504,11 @@ const Auth = {
 // API共通リクエスト（JWT自動付与）
 // ── GAS Gateway設定 ──────────────────────────────────────
 // GASデプロイ後、以下のURLを実際のデプロイURLに変更してください
-const GAS_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+const GAS_URL = 'https://script.google.com/a/macros/agent-network.com/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
 
 // GAS用APIリクエスト（n8nのapiRequestを置き換え）
 async // ── GAS API通信（fetch使用）───────────────────────────────
-const GAS_API_URL = 'https://script.google.com/a/macros/agent-network.com/s/AKfycbyrujMFgBRiqrUDWTo6BHX7RQChTiRzpR9GJV9BErdiT0j2nUBnCNwZtK0NP_pkiJNKdQ/exec'; // ← デプロイ後に変更
+const GAS_API_URL = 'https://script.google.com/a/macros/agent-network.com/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec'; // ← デプロイ後に変更
 
 async function apiRequest(endpoint, options = {}) {
   const method = (options.method || 'GET').toUpperCase();
