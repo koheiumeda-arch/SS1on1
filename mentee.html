@@ -16,10 +16,10 @@
   --sh:0 2px 12px rgba(93,175,167,.08)
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;max-width:430px;margin:0 auto;line-height:1.6;overflow-x:hiddenpadding-top:56px;}
+html,body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;max-width:430px;margin:0 auto;line-height:1.6;overflow-x:hidden;}
 
 /* ── トップバー（クイックリンク含む固定エリア） ── */
-.topbar-wrap{position:fixed;width:100%;top:0;z-index:100;background:var(--bg2);border-bottom:1px solid var(--bd);box-shadow:var(--sh)}
+.topbar-wrap{position:sticky;top:0;z-index:100;background:var(--bg2);border-bottom:1px solid var(--bd);box-shadow:var(--sh)}
 .topbar{padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
 .logo{font-weight:800;font-size:17px;color:var(--pr)}
 .tb-r{display:flex;align-items:center;gap:11px}
@@ -134,6 +134,16 @@ input[type="month"].inp{padding:11px 14px}
 .loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--tx3);font-size:14px}
 .spinner{width:22px;height:22px;border:2px solid var(--bd);border-top-color:var(--pr);border-radius:50%;animation:spin .7s linear infinite;margin-right:10px}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ─── ヘッダー2段構成 ─── */
+.topbar-upper{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg2)}
+.topbar-upper-l{display:flex;align-items:center;gap:8px}
+.topbar-upper-r{display:flex;align-items:center;gap:8px}
+.logo-text{font-size:16px;font-weight:700;color:var(--pr)}
+.tb-icon{width:34px;height:34px;border-radius:10px;background:var(--bg3);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;position:relative;transition:all .2s}
+.tb-icon:hover{background:var(--bg4)}
+.badge{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--rd);font-size:0}
+.ava-sm{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--pr2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;cursor:pointer}
 </style>
 </head>
 <body>
@@ -142,17 +152,26 @@ input[type="month"].inp{padding:11px 14px}
      トップバー固定エリア（クイックリンク含む）
      ══════════════════════════════════════ -->
 <div class="topbar-wrap">
-  <div class="topbar">
-    <div class="logo">1on1</div>
-    <div class="tb-r">
-      <div class="nb" onclick="showToast('通知はありません')">🔔<div class="nd" id="notiBadge" style="display:none"></div></div>
-      <div class="ava" id="userAva" onclick="goNav('settings')">木</div>
+  <!-- 上段：お知らせ・チャット・サインアウト -->
+  <div class="topbar-upper">
+    <div class="topbar-upper-l">
+      <span class="logo-text">1on1</span>
+    </div>
+    <div class="topbar-upper-r">
+      <div class="tb-icon" id="noticeBtn" onclick="toggleNoticePanel()">
+        🔔<span class="badge" id="notiBadge" style="display:none">●</span>
+      </div>
+      <div class="tb-icon" onclick="goNav('settings')">💬</div>
+      <div class="tb-icon" onclick="logout()">🚪</div>
+      <div class="ava-sm" id="userAva" onclick="goNav('settings')">木</div>
     </div>
   </div>
-
-  <!-- クイックリンクバー：管理者設定により最大5件表示 -->
+  <!-- お知らせパネル -->
+  <div id="noticePanel" style="display:none;background:var(--bg2);border-bottom:1px solid var(--bd);padding:12px 16px;font-size:13px;color:var(--tx2)">
+    <div id="noticePanelContent">読み込み中...</div>
+  </div>
+  <!-- 下段：クイックリンクバー -->
   <div class="quick-links" id="quickLinksBar">
-    <!-- JS で動的生成 -->
     <div class="loading"><div class="spinner"></div></div>
   </div>
 </div>
@@ -570,7 +589,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   const firstName = (user.name || '').slice(0, 1);
   document.getElementById('userAva').textContent = firstName || '木';
-  document.getElementById('greetName').textContent = `${user.name || '木村 さくら'} さん`;
+  document.getElementById('greetName').textContent = (user.name || '木村 さくら') + ' さん';
+  const userAvaEl = document.getElementById('userAva');
+  if (userAvaEl) userAvaEl.textContent = (user.name || '').slice(0, 1) || '木';
 
   // ③ クイックリンク読み込み（要件②）
   await loadQuickLinks();
@@ -974,6 +995,29 @@ function showReport(reportId) {
   goScreen('reportDetail');
 }
 
+
+// ══ お知らせパネル ══
+async function toggleNoticePanel() {
+  const panel = document.getElementById('noticePanel');
+  if (!panel) return;
+  if (panel.style.display !== 'none') {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  const content = document.getElementById('noticePanelContent');
+  const data = await apiRequest('/api/mentee/notices');
+  if (!data || !data.notices || data.notices.length === 0) {
+    content.innerHTML = '<div style="text-align:center;color:var(--tx3)">お知らせはありません</div>';
+    return;
+  }
+  content.innerHTML = data.notices.map(n =>
+    '<div style="padding:8px 0;border-bottom:1px solid var(--bd)">' +
+    '<div style="font-size:12px;color:var(--tx3)">' + (n.created_at || '').slice(0,10) + '</div>' +
+    '<div>' + (n.content || '') + '</div>' +
+    '</div>'
+  ).join('');
+}
 </script>
 </body>
 </html>
