@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYP>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -38,7 +38,7 @@ html,body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(-
 .ql-item.empty .ql-label{opacity:.3}
 
 /* ── 画面共通 ── */
-.screen{display:none;padding:16px 16px 100px;flex-direction:column;gap:15px;max-width:600px;margin:0 auto;width:100%}
+.screen{display:none;padding:16px 16px 80px;flex-direction:column;gap:15px;max-width:600px;margin:0 auto;width:100%}
 .screen.active{display:flex;animation:fi .3s ease}
 @keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
@@ -121,7 +121,7 @@ input[type="month"].inp{padding:11px 14px}
 .section-title{font-size:12px;font-weight:700;letter-spacing:.8px;color:var(--tx3);text-transform:uppercase;padding:4px 0 2px;margin-top:6px}
 
 /* ── ボトムナビ ── */
-.bottom-nav{max-width:600px;margin:0 auto;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--bg2);border-top:1px solid var(--bd);display:flex;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 18px rgba(93,175,167,.08);z-index:100}
+.bottom-nav{max-width:600px;margin:0 auto;position:fixed;bottom:0;left:0;right:0;z-index:150;background:var(--bg2);position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--bg2);border-top:1px solid var(--bd);display:flex;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -4px 18px rgba(93,175,167,.08);z-index:100}
 .ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:11px 0 9px;cursor:pointer}
 .ni-ic{font-size:21px}.ni-lb{font-size:10px;color:var(--tx3);margin-top:4px;font-weight:500}
 .ni.active .ni-lb{color:var(--pr);font-weight:700}
@@ -144,6 +144,15 @@ input[type="month"].inp{padding:11px 14px}
 .tb-icon:hover{background:var(--bg4)}
 .badge{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--rd);font-size:0}
 .ava-sm{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--pr2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;cursor:pointer}
+
+/* ─── モーダル ─── */
+.modal{display:none;position:fixed;inset:0;background:rgba(44,62,58,.5);z-index:200;align-items:flex-end;justify-content:center;backdrop-filter:blur(2px);padding-bottom:env(safe-area-inset-bottom)}
+.modal.open{display:flex}
+.modal-content{background:var(--bg2);border-radius:16px 16px 0 0;padding:20px 16px calc(80px + env(safe-area-inset-bottom));width:100%;max-width:480px;max-height:85vh;overflow-y:auto;box-shadow:0 -4px 30px rgba(93,175,167,.2)}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:14px}
+.modal-close{display:none}
+.f-foot{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}
+.form-label{font-size:13px;color:var(--tx2);font-weight:600;display:block;margin-bottom:5px}
 </style>
 </head>
 <body>
@@ -483,7 +492,7 @@ input[type="month"].inp{padding:11px 14px}
 <!-- ══ モーダル：TEL後レポート（Leader兼務Mentee用） ══ -->
 <div class="modal" id="wtTelModal">
   <div class="modal-content">
-    <span class="modal-close" onclick="closeModal('wtTelModal')">✕</span>
+    <div style="width:40px;height:4px;background:var(--bd2);border-radius:2px;margin:0 auto 16px;cursor:pointer" onclick="closeModal('wtTelModal')"></div>
     <div class="modal-title">📝 TEL後レポート</div>
     <div style="font-size:14px;margin-bottom:14px;color:var(--pr);font-weight:600" id="wtTelTarget"></div>
     <div id="wtTelAiSection" style="display:none;background:var(--pr-light);border:1px solid rgba(93,175,167,.3);border-radius:11px;padding:13px;margin-bottom:14px">
@@ -506,7 +515,6 @@ input[type="month"].inp{padding:11px 14px}
 
 <div class="toast" id="toast"></div>
 
-E html
 <script>
 const GAS_URL = 'https://script.google.com/a/macros/agent-network.com/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
 // ══════════════════════════════════════════════════════════
