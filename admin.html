@@ -166,8 +166,7 @@ textarea.inp{resize:vertical;min-height:90px}
     <div class="nav-sec">Leader管理</div>
     <div class="nav-item" onclick="nav('leaderAssignments',this)"><span class="ic">📞</span>担当割り当て</div>
     <div class="nav-sec">設定</div>
-    <div class="nav-item" onclick="nav('users',this)"><span class="ic">⚙️</span>ユーザー管理</div>
-    <div class="nav-item" onclick="nav('addUser',this)"><span class="ic">➕</span>ユーザー追加</div>
+    <div class="nav-item" id="nav-userManagement" onclick="nav('userManagement',this)"><span class="ic">👤</span>ユーザー管理</div>
   </div>
   <div class="sidebar-foot">
     <div class="user-pill"><div class="ava">管</div><div><div class="u-name">システム管理者</div><div class="u-role">ADMIN</div></div></div>
@@ -282,129 +281,16 @@ textarea.inp{resize:vertical;min-height:90px}
   </div>
 </div>
 
-<div class="screen" id="s-users">
-  <div class="topbar"><div><div class="page-title">ユーザー管理</div><div class="page-sub">ユーザー追加・削除・ロール設定</div></div><div class="topbar-r"><button class="btn btn-p">＋ ユーザー追加</button></div></div>
-  <div class="card">
-    <div class="ch"><div class="ct">登録ユーザー（14名）</div></div>
-    <table>
-      <thead><tr><th>氏名</th><th>ロール</th><th>メール</th><th>登録日</th></tr></thead>
-      <tbody>
-        <tr><td class="td-name">システム管理者</td><td><span class="tag t-rd">管理者</span></td><td class="td-m"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="90f1f4fdf9fed0f3fffde0f1fee9bef3fffd">[email&#160;protected]</a></td><td class="td-m">2024/12/01</td></tr>
-        <tr><td class="td-name">田中メンター</td><td><span class="tag t-pr">メンター</span></td><td class="td-m"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0276636c63696342616d6f72636c7b2c616d6f">[email&#160;protected]</a></td><td class="td-m">2024/12/01</td></tr>
-        <tr><td class="td-name">佐藤メンター</td><td><span class="tag t-pr">メンター</span></td><td class="td-m"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f08391849fb0939f9d80919e89de939f9d">[email&#160;protected]</a></td><td class="td-m">2024/12/01</td></tr>
-        <tr><td class="td-name">木村 さくら</td><td><span class="tag t-gr">メンティー</span></td><td class="td-m"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="89e2e0e4fcfbe8c9eae6e4f9e8e7f0a7eae6e4">[email&#160;protected]</a></td><td class="td-m">2024/12/10</td></tr>
-      </tbody>
-    </table>
-  </div>
+<!-- ユーザー管理: user-management.html をiframeで埋め込み -->
+<div class="screen" id="s-userManagement" style="padding:0;margin:-28px -32px;height:calc(100vh - 58px);overflow:hidden">
+  <iframe
+    id="userManagementFrame"
+    src=""
+    style="width:100%;height:100%;border:none;display:block"
+    title="ユーザー管理"
+  ></iframe>
 </div>
 
-<div class="screen" id="s-memberDetail">
-  <div class="bc"><span class="bc-link" onclick="nav('members')">メンバー管理</span><span>›</span><span>木村 さくら</span></div>
-  <div class="topbar"><div><div class="page-title">木村 さくら <span class="tag t-rd" style="font-size:13px;vertical-align:middle">🔴 要注意</span></div><div class="page-sub">メンター: 田中　/　リーダー: 伊藤</div></div><div class="topbar-r"><button class="btn btn-p" onclick="openMsg('木村 さくら')">📨 メッセージ送信</button></div></div>
-  <div class="detail-grid">
-    <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v">渋谷オフィス</div></div>
-    <div class="dc"><div class="dc-lb">稼働状況</div><div class="dc-v">フルタイム</div></div>
-    <div class="dc"><div class="dc-lb">現在の賃金</div><div class="dc-v ac">¥1,200/h</div></div>
-  </div>
-  <div class="card">
-    <div class="ch"><div class="ct">📋 過去の1on1レポート</div></div>
-    <table>
-      <thead><tr><th>日付</th><th>内容</th><th>満足度</th></tr></thead>
-      <tbody>
-        <tr><td class="td-m">2/14</td><td>TypeScript型設計・進捗確認</td><td>★☆☆☆☆</td></tr>
-        <tr><td class="td-m">1/31</td><td>目標設定・1月振り返り</td><td>★★★☆☆</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- お知らせ配信画面 -->
-<div class="screen" id="s-notices">
-  <div class="topbar">
-    <div><div class="page-title">お知らせ配信</div><div class="page-sub">メンティー・メンター全員または個別にお知らせを配信</div></div>
-    <div class="topbar-r"><button class="btn btn-p" onclick="openNoticeForm()">＋ 新規配信</button></div>
-  </div>
-  <div class="card" style="margin-bottom:16px" id="noticeFormCard" style="display:none">
-    <div class="ch"><div class="ct">📢 新しいお知らせを作成</div></div>
-    <div class="form-area">
-      <div class="form-group">
-        <label class="form-label">配信対象</label>
-        <select class="inp" id="notice-target">
-          <option value="all">全員</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">お知らせ内容<span style="color:var(--rd)">*</span></label>
-        <textarea class="inp" id="notice-content" rows="4" placeholder="お知らせ内容を入力してください…"></textarea>
-      </div>
-      <div style="display:flex;justify-content:flex-end;gap:10px">
-        <button class="btn btn-g" onclick="closeNoticeForm()">キャンセル</button>
-        <button class="btn btn-p" onclick="sendNotice()">📢 配信する</button>
-      </div>
-    </div>
-  </div>
-  <div class="card">
-    <div class="ch"><div class="ct">配信済みお知らせ</div></div>
-    <div id="noticeList"><div style="padding:20px;text-align:center;color:var(--tx3)">読み込み中...</div></div>
-  </div>
-</div>
-
-<!-- ユーザー追加画面 -->
-<div class="screen" id="s-addUser">
-  <div class="topbar"><div><div class="page-title">ユーザー追加</div><div class="page-sub">新しいユーザーを登録します</div></div></div>
-  <div class="card">
-    <div class="ch"><div class="ct">新規ユーザー情報</div></div>
-    <div class="form-area">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div class="form-group">
-          <label class="form-label">氏名<span style="color:var(--rd)">*</span></label>
-          <input class="inp" id="add-name" placeholder="田中 メンター" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">メールアドレス<span style="color:var(--rd)">*</span></label>
-          <input class="inp" id="add-email" type="email" placeholder="mentor@example.com" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">パスワード<span style="color:var(--rd)">*</span></label>
-          <input class="inp" id="add-password" type="password" placeholder="8文字以上" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">ロール<span style="color:var(--rd)">*</span></label>
-          <select class="inp" id="add-role">
-            <option value="mentee">メンティー</option>
-            <option value="mentor">メンター</option>
-            <option value="admin">管理者</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">担当メンターID</label>
-          <input class="inp" id="add-mentor-id" placeholder="mentor の user_id" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">稼働場所</label>
-          <input class="inp" id="add-workplace" placeholder="東京本社" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">稼働状況</label>
-          <select class="inp" id="add-work-status">
-            <option value="フルタイム">フルタイム</option>
-            <option value="パートタイム">パートタイム</option>
-            <option value="業務委託">業務委託</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">電話番号</label>
-          <input class="inp" id="add-phone" placeholder="000-0000-0000" />
-        </div>
-      </div>
-      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
-        <button class="btn btn-g" onclick="nav('users')">キャンセル</button>
-        <button class="btn btn-p" onclick="addUser()">➕ ユーザーを追加</button>
-      </div>
-      <div id="addUserMsg" style="margin-top:12px;font-size:13px"></div>
-    </div>
-  </div>
-</div>
 
 </main>
 
@@ -473,9 +359,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // メンバー一覧をAPIから動的取得
   await loadMembersTable();
-
-  // ユーザー管理テーブルをAPIから動的取得
-  await loadUsersTable();
 });
 
 // ══════════════════════════════════════════════════════════
@@ -525,32 +408,6 @@ async function loadMembersTable() {
   }
 }
 
-async function loadUsersTable() {
-  const data = await apiRequest('/api/admin/users', { method: 'GET' });
-  if (!data || !Array.isArray(data.users)) return;
-
-  const roleMap = { admin: '管理者', mentor: 'メンター', mentee: 'メンティー' };
-  const roleCls = { admin: 't-rd', mentor: 't-pr', mentee: 't-gr' };
-
-  const rows = data.users.map(u => {
-    const label = roleMap[u.role] || u.role;
-    const cls   = roleCls[u.role] || 't-gr';
-    const createdAt = u.created_at ? u.created_at.split('T')[0] : '—';
-    return `<tr>
-      <td class="td-name">${escHtml(u.name)}</td>
-      <td><span class="tag ${cls}">${label}</span></td>
-      <td class="td-m">${escHtml(u.email)}</td>
-      <td class="td-m">${createdAt}</td>
-    </tr>`;
-  }).join('');
-
-  const tbody = document.querySelector('#s-users table tbody');
-  if (tbody && rows) tbody.innerHTML = rows;
-
-  const countEl = document.querySelector('#s-users .ct');
-  if (countEl) countEl.textContent = `登録ユーザー（${data.users.length}名）`;
-}
-
 function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -558,20 +415,50 @@ function escHtml(str) {
 // ══════════════════════════════════════════════════════════
 //  画面遷移・モーダル
 // ══════════════════════════════════════════════════════════
+// GitHub Pages ベース URL（末尾スラッシュなし）
+const GITHUB_BASE = 'https://koheiumeda-arch.github.io/SS1on1';
+
 function nav(id, el) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const screen = document.getElementById('s-' + id);
   if (screen) screen.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  if (id === 'callReports') loadCallReports();
-  if (id === 'leaderAssignments') loadLeaderAssignments();
   if (el) el.classList.add('active');
-  // 画面別の初期化
-  if (id === 'survey') loadSurveys();
-  if (id === 'contents') loadContents();
-  if (id === 'links') loadLinks();
-  if (id === 'notices') loadNotices();
+
+  // ── ユーザー管理: iframeにuser-management.htmlをロード ──
+  if (id === 'userManagement') {
+    const frame = document.getElementById('userManagementFrame');
+    // 初回のみsrcをセット（再訪問時はリロードしない）
+    if (frame && !frame.src.includes('user-management.html')) {
+      frame.src = GITHUB_BASE + '/user-management.html';
+    }
+    // アクティブなサイドバー項目を強制設定
+    const navItem = document.getElementById('nav-userManagement');
+    if (navItem) navItem.classList.add('active');
+    return;
+  }
+
+  // ── 画面別の初期化 ──
+  if (id === 'callReports')       loadCallReports();
+  if (id === 'leaderAssignments') loadLeaderAssignments();
+  if (id === 'survey')    loadSurveys();
+  if (id === 'contents')  loadContents();
+  if (id === 'links')     loadLinks();
+  if (id === 'notices')   loadNotices();
 }
+
+// user-management.html から「← 管理画面」が押されたときのメッセージを受信
+window.addEventListener('message', (e) => {
+  // GitHub Pages の同一オリジンからのみ受け付ける
+  if (e.origin !== GITHUB_BASE && e.origin !== window.location.origin) return;
+  if (e.data === 'BACK_TO_ADMIN') {
+    nav('dashboard', document.querySelector('.nav-item'));
+    // ダッシュボードのナビ項目をアクティブに
+    const dashItem = document.querySelector('.nav-item[onclick*="dashboard"]');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (dashItem) dashItem.classList.add('active');
+  }
+});
 
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -709,37 +596,6 @@ async function sendNotice() {
     closeNoticeForm();
     await loadNotices();
     alert('お知らせを配信しました');
-  }
-}
-
-// ══════════════════════════════════════════════════════════
-//  ユーザー追加
-// ══════════════════════════════════════════════════════════
-async function addUser() {
-  const payload = {
-    name:        document.getElementById('add-name').value.trim(),
-    email:       document.getElementById('add-email').value.trim(),
-    password:    document.getElementById('add-password').value,
-    role:        document.getElementById('add-role').value,
-    mentor_id:   document.getElementById('add-mentor-id').value.trim(),
-    workplace:   document.getElementById('add-workplace').value.trim(),
-    work_status: document.getElementById('add-work-status').value,
-    phone_number: document.getElementById('add-phone').value.trim()
-  };
-  const msg = document.getElementById('addUserMsg');
-  if (!payload.name || !payload.email || !payload.password) {
-    msg.style.color = 'var(--rd)'; msg.textContent = '氏名・メール・パスワードは必須です'; return;
-  }
-  if (payload.password.length < 8) {
-    msg.style.color = 'var(--rd)'; msg.textContent = 'パスワードは8文字以上です'; return;
-  }
-  msg.style.color = 'var(--tx3)'; msg.textContent = '登録中...';
-  const result = await apiRequest('/api/admin/users/add', { method: 'POST', body: JSON.stringify(payload) });
-  if (result && result.user_id) {
-    msg.style.color = 'var(--gr)'; msg.textContent = `✅ ユーザーを追加しました（ID: ${result.user_id}）`;
-    await loadUsersTable();
-  } else {
-    msg.style.color = 'var(--rd)'; msg.textContent = '❌ 追加に失敗しました';
   }
 }
 
