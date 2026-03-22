@@ -851,10 +851,15 @@ async function loadCallReportsData() {
 }
 
 async function loadWeeklyTel() {
-  // Leader担当メンティーを取得
-  var data = await gasReq('api/admin/leader-assignments');
-  var assignments = (data && data.assignments) ? data.assignments : [];
-  var myAssigns = assignments.filter(function(a){ return a.leader_id === _me.user_id; });
+  // Leader担当メンティーを取得（ロール制限なしのAPIを使用）
+  var data = await gasReq('api/leader/my-assignments');
+  // このAPIは { mentees: [{assignment_id, user_id, name, ...}] } を返す
+  var mentees = (data && data.mentees) ? data.mentees : [];
+
+  // assignments形式に変換して後続処理と互換性を持たせる
+  var myAssigns = mentees.map(function(m) {
+    return { assignment_id: m.assignment_id, leader_id: _me.user_id, mentee_id: m.user_id, mentee_name: m.name, mentee: m };
+  });
 
   var kpiGrid = document.getElementById('telKpiGrid');
   var cardList = document.getElementById('telCardList');
