@@ -343,7 +343,7 @@
 <!-- HEADER -->
 <header>
   <div class="header-left">
-    <a href="admin.html" class="back-btn">
+    <a href="#" class="back-btn" onclick="goBackToAdmin(); return false;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
       管理画面
     </a>
@@ -553,14 +553,23 @@ const GAS_URL    = 'https://script.google.com/macros/s/AKfycbzFjIakpdDkPKlOXavtg
 const GAS_SECRET = '0991ef226f382e664962de29f69121e5';
 const PER_PAGE   = 15;
 
-function getToken() { return sessionStorage.getItem('token') || localStorage.getItem('token') || ''; }
+function getToken() {
+  // admin.html と同じキー名で取得（iframe内でも親のlocalStorageを参照）
+  return localStorage.getItem('1on1_token') || sessionStorage.getItem('1on1_token')
+      || localStorage.getItem('token')       || sessionStorage.getItem('token') || '';
+}
 
 async function api(action, extra = {}) {
+  const token = getToken();
+  const body  = { action, secret: GAS_SECRET, token, ...extra };
+  // デバッグ: tokenが取れているか確認（本番では削除可）
+  console.log('[API]', action, 'token:', token ? token.slice(0,20)+'...' : '(empty)');
   const r = await fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, secret: GAS_SECRET, token: getToken(), ...extra })
+    body: JSON.stringify(body),
   });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
   return r.json();
 }
 
@@ -580,9 +589,10 @@ async function loadUsers() {
     const d = await api('getUsers');
     allUsers = d.ok ? (d.users || []) : demoData();
     if (!d.ok) toast('wrn', 'APIエラー: デモデータを表示中');
-  } catch {
+  } catch(err) {
+    console.error('[loadUsers Error]', err);
     allUsers = demoData();
-    toast('wrn', 'オフライン: デモデータを表示中');
+    toast('wrn', 'ネットワークエラー: デモデータを表示中');
   }
   mentorList = allUsers.filter(u => u.role === 'mentor');
   updateStats(); render();
@@ -796,13 +806,15 @@ async function submitUser() {
       toast('ok',editId?'ユーザー情報を更新しました':'ユーザーを登録しました');
       closeModal('formModal'); await loadUsers();
     } else {
-      toast('err',d?.message||'処理に失敗しました');
+      // GASからのエラーレスポンス（認証エラー・バリデーションエラー等）
+      const msg = d?.message || d?.error || '処理に失敗しました';
+      console.error('[API Error]', d);
+      toast('err', msg);
     }
-  } catch {
-    if(!editId){allUsers.push({user_id:crypto.randomUUID().slice(0,8),...payload});}
-    else{const i=allUsers.findIndex(u=>u.user_id===editId);if(i>=0)allUsers[i]={...allUsers[i],...payload};}
-    mentorList=allUsers.filter(u=>u.role==='mentor');
-    updateStats();render();toast('wrn','オフライン: ローカルのみ反映');closeModal('formModal');
+  } catch(err) {
+    // fetch自体が失敗（ネットワーク障害）の場合のみオフライン扱い
+    console.error('[Network Error]', err);
+    toast('err', 'ネットワークエラー: ' + (err.message || '通信に失敗しました'));
   } finally {
     btn.disabled=false;
     btn.innerHTML=`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg><span id="submitLabel">${editId?'保存する':'登録する'}</span>`;
@@ -823,7 +835,13 @@ async function execDelete(){
     const d=await api('deleteUser',{user_id:delId});
     if(d&&d.ok)toast('ok','ユーザーを削除しました');
     else toast('err',d?.message||'削除に失敗しました');
-  }catch{toast('wrn','オフライン: ローカルのみ削除');}
+  }catch(err){
+    console.error('[Delete Error]', err);
+    toast('err','削除に失敗しました: '+(err.message||'通信エラー'));
+    // 削除失敗時はローカルも変更しない
+    btn.disabled=false;btn.textContent='削除する';delId=null;
+    closeModal('delModal');return;
+  }
   allUsers=allUsers.filter(u=>u.user_id!==delId);
   mentorList=allUsers.filter(u=>u.role==='mentor');
   updateStats();render();closeModal('delModal');
@@ -852,6 +870,16 @@ function toast(type,msg){
 async function sha256(str){
   const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── 「← 管理画面」ボタンの処理 ──
+// iframe内ならpostMessageで親に通知、直接アクセスならadmin.htmlへ遷移
+function goBackToAdmin() {
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage('BACK_TO_ADMIN', 'https://koheiumeda-arch.github.io');
+  } else {
+    window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/admin.html';
+  }
 }
 
 loadUsers();

@@ -106,6 +106,11 @@ textarea.inp{resize:vertical;min-height:90px}
 .ci-info{flex:1}.ci-title{font-size:14px;font-weight:600;margin-bottom:3px}.ci-meta{font-size:12px;color:var(--tx3)}
 .form-area{padding:18px 20px}
 .loading{padding:32px;text-align:center;color:var(--tx3);font-size:13px}
+/* ログインモード: サイドバーとmainを非表示 */
+body.login-mode .sidebar,
+body.login-mode .main { display:none !important; }
+/* iframe screen: mainのpaddingをリセット */
+#s-userManagement { position:relative; }
 </style>
 </head>
 <body>
@@ -160,7 +165,19 @@ textarea.inp{resize:vertical;min-height:90px}
     <div class="modal-title">🔗 リンク追加</div>
     <div class="form-group"><label class="form-label">タイトル*</label><input class="inp" id="lk-title" placeholder="社内Wiki"/></div>
     <div class="form-group"><label class="form-label">URL*</label><input class="inp" id="lk-url" placeholder="https://..."/></div>
-    <div class="form-group"><label class="form-label">アイコン（絵文字）</label><input class="inp" id="lk-icon" placeholder="🔗"/></div>
+    <div class="form-group">
+      <label class="form-label">アイコン（SVG使用・機種依存なし）</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="inp" id="lk-icon" placeholder="🔗" style="width:80px;text-align:center;font-size:20px" maxlength="4"/>
+        <button class="btn btn-g btn-sm" onclick="toggleIconPicker()" type="button">一覧</button>
+        <span style="font-size:12px;color:var(--tx3)">← 直接入力またはSVGアイコン選択</span>
+      </div>
+      <div id="iconPicker" style="display:none;margin-top:8px;padding:10px;background:var(--bg3);border-radius:8px;border:1px solid var(--bd)">
+        <div style="font-size:11px;color:var(--tx3);margin-bottom:8px">クリックして選択（SVGアイコン）</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px" id="iconPickerGrid"></div>
+        <div style="margin-top:8px;font-size:11px;color:var(--tx3)">※ SVGアイコンはテキストコードで保存し、表示時に画像として描画します</div>
+      </div>
+    </div>
     <div class="f-foot"><button class="btn btn-g" onclick="closeModal('linkModal')">キャンセル</button><button class="btn btn-p" onclick="addLink()">追加</button></div>
   </div>
 </div>
@@ -180,7 +197,7 @@ textarea.inp{resize:vertical;min-height:90px}
 
 <!-- ══ サイドバー ══ -->
 <div class="sidebar">
-  <div class="logo"><div class="logo-mark">ADMIN PANEL</div><div class="logo-name">1on1管理システム</div></div>
+  <div class="logo" onclick="nav('dashboard',document.querySelector('.nav-item[onclick*=\'dashboard\']'))" style="cursor:pointer" title="ダッシュボードへ戻る"><div class="logo-mark">ADMIN PANEL</div><div class="logo-name">1on1管理システム</div></div>
   <div class="nav">
     <div class="nav-sec">メイン</div>
     <div class="nav-item active" onclick="nav('dashboard',this)"><span class="ic">📊</span>ダッシュボード</div>
@@ -283,7 +300,33 @@ textarea.inp{resize:vertical;min-height:90px}
   <div class="card" id="noticeFormCard" style="display:none;margin-bottom:16px">
     <div class="ch"><div class="ct">📢 新しいお知らせを作成</div></div>
     <div class="form-area">
-      <div class="form-group"><label class="form-label">配信対象</label><select class="inp" id="notice-target"><option value="all">全員</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">絞り込み①</label>
+          <select class="inp" id="notice-scope" onchange="updateNoticeTargets()">
+            <option value="all">全員</option>
+            <option value="role">ロール別</option>
+            <option value="user">個人指定</option>
+          </select>
+        </div>
+        <div class="form-group" id="notice-role-group" style="display:none;margin-bottom:0">
+          <label class="form-label">ロール②</label>
+          <select class="inp" id="notice-role" onchange="updateNoticeTargets()">
+            <option value="mentor">メンター</option>
+            <option value="mentee">メンティー</option>
+            <option value="admin">管理者</option>
+          </select>
+        </div>
+        <div class="form-group" id="notice-user-group" style="display:none;margin-bottom:0">
+          <label class="form-label">個人③</label>
+          <select class="inp" id="notice-user"></select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">配信対象（確認）</label>
+          <div class="inp" id="notice-target-display" style="background:var(--bg4);color:var(--tx2);min-height:40px;display:flex;align-items:center;font-size:12px">全員</div>
+          <input type="hidden" id="notice-target" value="all">
+        </div>
+      </div>
       <div class="form-group"><label class="form-label">内容<span style="color:var(--rd)">*</span></label><textarea class="inp" id="notice-content" rows="4" placeholder="お知らせ内容を入力…"></textarea></div>
       <div id="noticeFormMsg" style="font-size:13px;margin-bottom:8px"></div>
       <div style="display:flex;justify-content:flex-end;gap:10px">
@@ -300,8 +343,9 @@ textarea.inp{resize:vertical;min-height:90px}
   <div class="topbar">
     <div><div class="page-title">📞 電話レポート</div><div class="page-sub">週次電話の録音・AI要約・フォローアクション</div></div>
     <div class="topbar-r">
-      <select class="inp" id="cr-filter-mentee" style="width:160px;font-size:13px" onchange="filterCallReports()"><option value="">全員</option></select>
-      <select class="inp" id="cr-filter-period" style="width:140px;font-size:13px" onchange="filterCallReports()"><option value="all">全期間</option><option value="thisweek">今週</option><option value="lastweek">先週</option><option value="thismonth">今月</option></select>
+      <select class="inp" id="cr-filter-mentor" style="width:130px;font-size:13px" onchange="onCrMentorChange()"><option value="">全メンター</option></select>
+      <select class="inp" id="cr-filter-mentee" style="width:130px;font-size:13px" onchange="filterCallReports()"><option value="">全員</option></select>
+      <select class="inp" id="cr-filter-period" style="width:120px;font-size:13px" onchange="filterCallReports()"><option value="all">全期間</option><option value="thisweek">今週</option><option value="lastweek">先週</option><option value="thismonth">今月</option></select>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">
@@ -369,7 +413,7 @@ textarea.inp{resize:vertical;min-height:90px}
 </div>
 
 <!-- ユーザー管理（iframe） -->
-<div class="screen" id="s-userManagement" style="padding:0;margin:-28px -32px;height:calc(100vh - 58px);overflow:hidden">
+<div class="screen" id="s-userManagement" style="padding:0;margin:-28px -32px;height:calc(100vh);overflow:hidden;position:fixed;top:0;left:240px;right:0;bottom:0;z-index:50;background:var(--bg)">
   <iframe id="userManagementFrame" src="" style="width:100%;height:100%;border:none;display:block" title="ユーザー管理"></iframe>
 </div>
 
@@ -404,16 +448,25 @@ const Auth = {
 // GAS POST 共通関数（path方式）
 async function gasReq(path, method='GET', body=null) {
   const token = Auth.getToken();
-  const payload = { path, _method: method, _auth: token ? `Bearer ${token}` : '' };
+  const payload = { path, _method: method, _auth: token ? 'Bearer ' + token : '' };
   if (body) Object.assign(payload, body);
+  console.log('[GAS]', method, path, token ? 'token:OK' : 'token:EMPTY');
   try {
-    const res  = await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-    const data = await res.json();
+    const res  = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch(pe) { console.error('[GAS] JSON parse error:', text.slice(0,200)); return null; }
+    console.log('[GAS] response:', path, data);
     if (data.error === 'TOKEN_MISSING' || data.error === 'INVALID_TOKEN') {
       Auth.clearAuth(); showLoginOverlay(); return null;
     }
     return data;
-  } catch(e) { console.error('GAS error:', e); return null; }
+  } catch(e) { console.error('[GAS] fetch error:', e); return null; }
 }
 
 // ユーティリティ
@@ -432,17 +485,12 @@ function toast(msg, type='ok') {
 // ══ ログインオーバーレイ制御 ══
 function showLoginOverlay() {
   document.getElementById('loginOverlay').style.display = 'flex';
-  // 全screenを非表示にして「>」などが見えないようにする
-  document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
-  document.querySelector('.sidebar').style.display = 'none';
-  document.querySelector('.main').style.display = 'none';
+  document.body.classList.add('login-mode');
 }
 
 function hideLoginOverlay() {
   document.getElementById('loginOverlay').style.display = 'none';
-  document.querySelector('.sidebar').style.display = '';
-  document.querySelector('.main').style.display = '';
-  document.querySelectorAll('.screen').forEach(s => s.style.display = '');
+  document.body.classList.remove('login-mode');
 }
 
 async function overlayLogin() {
@@ -487,7 +535,7 @@ function initAdmin(user) {
   const now = new Date();
   document.getElementById('dash-sub').textContent =
     now.getFullYear()+'年'+(now.getMonth()+1)+'月 — 組織全体の状況';
-  loadDashboard();
+  loadDashboard().then(() => refreshNoticeUserList());
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -712,8 +760,8 @@ async function addContent() {
   const payload={title:document.getElementById('ct-title').value.trim(),type:document.getElementById('ct-type').value,url:document.getElementById('ct-url').value.trim(),description:document.getElementById('ct-desc').value.trim(),duration:document.getElementById('ct-duration').value.trim(),level:document.getElementById('ct-level').value};
   if(!payload.title||!payload.url){toast('タイトルとURLは必須です','err');return;}
   const r=await gasReq('api/admin/contents','POST',payload);
-  if(r&&!r.error){closeModal('contentModal');await loadContents();toast('コンテンツを追加しました');}
-  else toast('追加に失敗しました','err');
+  if(r&&(r.ok||!r.error)){closeModal('contentModal');await loadContents();toast('コンテンツを追加しました');}
+  else toast('追加に失敗: '+(r&&r.error||r&&r.message||'GAS応答なし'),'err');
 }
 
 // ══════════════════════════════════════════════════════════
@@ -723,12 +771,16 @@ async function loadLinks() {
   const data=await gasReq('api/admin/links');
   const card=document.getElementById('linksCard');
   if(!data||!data.links){card.innerHTML='<div class="ch"><div class="ct">登録済みリンク</div></div><div class="loading">取得に失敗しました</div>';return;}
-  const items=data.links.map(l=>`
-    <div class="content-item">
-      <div class="ci-ic">${esc(l.icon||'🔗')}</div>
+  const items=data.links.map(l=>{
+    const icon = l.icon && ICON_LIST.find(i=>i.code===l.icon)
+      ? `<span style="display:inline-flex;width:24px;height:24px;color:var(--pr)">${ICON_LIST.find(i=>i.code===l.icon).svg}</span>`
+      : `<span style="font-size:20px">${esc(l.icon||'🔗')}</span>`;
+    return `<div class="content-item">
+      <div class="ci-ic" style="display:flex;align-items:center;justify-content:center">${icon}</div>
       <div class="ci-info"><div class="ci-title">${esc(l.title)}</div><div class="ci-meta">リンク — ${esc(l.url)}</div></div>
       <a href="${esc(l.url)}" target="_blank" class="btn btn-g btn-sm" style="flex-shrink:0;text-decoration:none">開く</a>
-    </div>`).join('')||'<div class="loading">リンクがありません</div>';
+    </div>`;
+  }).join('')||'<div class="loading">リンクがありません</div>';
   card.innerHTML=`<div class="ch"><div class="ct">登録済みリンク（${data.links.length}件）</div></div>`+items;
 }
 
@@ -736,8 +788,8 @@ async function addLink() {
   const payload={title:document.getElementById('lk-title').value.trim(),url:document.getElementById('lk-url').value.trim(),icon:document.getElementById('lk-icon').value.trim()||'🔗'};
   if(!payload.title||!payload.url){toast('タイトルとURLは必須です','err');return;}
   const r=await gasReq('api/admin/links','POST',payload);
-  if(r&&!r.error){closeModal('linkModal');await loadLinks();toast('リンクを追加しました');}
-  else toast('追加に失敗しました','err');
+  if(r&&(r.ok||!r.error)){closeModal('linkModal');await loadLinks();toast('リンクを追加しました');}
+  else toast('追加に失敗: '+(r&&r.error||r&&r.message||'GAS応答なし'),'err');
 }
 
 // ══════════════════════════════════════════════════════════
@@ -761,17 +813,63 @@ function closeNoticeForm(){
   document.getElementById('notice-content').value='';
   document.getElementById('noticeFormMsg').textContent='';
 }
+// お知らせ絞り込み更新
+function updateNoticeTargets() {
+  const scope = document.getElementById('notice-scope').value;
+  const roleGrp = document.getElementById('notice-role-group');
+  const userGrp = document.getElementById('notice-user-group');
+  const display = document.getElementById('notice-target-display');
+  const hidden  = document.getElementById('notice-target');
+
+  roleGrp.style.display = scope === 'role' ? '' : 'none';
+  userGrp.style.display = scope === 'user' ? '' : 'none';
+
+  if (scope === 'all') {
+    hidden.value = 'all';
+    display.textContent = '全員';
+  } else if (scope === 'role') {
+    const role = document.getElementById('notice-role').value;
+    const roleLabel = {mentor:'メンター',mentee:'メンティー',admin:'管理者'}[role]||role;
+    hidden.value = 'role:' + role;
+    display.textContent = roleLabel + '全員';
+    // ロール別ユーザーをuser selectにも反映
+    const usersOfRole = _allMembers.filter(m => m.role === role);
+    const userSel = document.getElementById('notice-user');
+    userSel.innerHTML = usersOfRole.map(u => '<option value="' + u.user_id + '">' + esc(u.name) + '</option>').join('');
+  } else if (scope === 'user') {
+    const userSel = document.getElementById('notice-user');
+    const uid = userSel.value;
+    const u = _allMembers.find(m => m.user_id === uid);
+    hidden.value = uid || 'all';
+    display.textContent = u ? u.name : '—';
+  }
+}
+
+// お知らせ用ユーザー一覧を更新（loadDashboard後に呼ぶ）
+function refreshNoticeUserList() {
+  const userSel = document.getElementById('notice-user');
+  if (!userSel) return;
+  userSel.innerHTML = _allMembers.map(u =>
+    '<option value="' + u.user_id + '">' + esc(u.name) + ' (' + (u.role||'') + ')</option>'
+  ).join('');
+  userSel.onchange = updateNoticeTargets;
+}
+
 async function sendNotice() {
-  const content=document.getElementById('notice-content').value.trim();
-  const target_id=document.getElementById('notice-target').value;
-  const msgEl=document.getElementById('noticeFormMsg');
-  const btn=document.getElementById('noticeSendBtn');
-  if(!content){msgEl.style.color='var(--rd)';msgEl.textContent='内容を入力してください';return;}
-  btn.textContent='配信中…';btn.disabled=true;
-  const r=await gasReq('api/admin/notices','POST',{content,target_id});
-  btn.textContent='📢 配信する';btn.disabled=false;
-  if(r&&!r.error){closeNoticeForm();await loadNotices();toast('お知らせを配信しました');}
-  else{msgEl.style.color='var(--rd)';msgEl.textContent='配信に失敗しました';}
+  const content   = document.getElementById('notice-content').value.trim();
+  const target_id = document.getElementById('notice-target').value;
+  const msgEl     = document.getElementById('noticeFormMsg');
+  const btn       = document.getElementById('noticeSendBtn');
+  if (!content) { msgEl.style.color='var(--rd)'; msgEl.textContent='内容を入力してください'; return; }
+  btn.textContent='配信中…'; btn.disabled=true;
+  const r = await gasReq('api/admin/notices','POST',{content,target_id});
+  btn.textContent='📢 配信する'; btn.disabled=false;
+  if (r && (r.ok || r.memo_id)) {
+    closeNoticeForm(); await loadNotices(); toast('お知らせを配信しました');
+  } else {
+    msgEl.style.color='var(--rd)';
+    msgEl.textContent = '配信に失敗: ' + (r && (r.error||r.message) || 'GAS応答なし');
+  }
 }
 
 // メッセージ送信（お知らせAPIで個別送信）
@@ -809,6 +907,12 @@ async function loadCallReports(){
   users.forEach(u=>{ _crUsers[u.user_id]=u; });
   _allCallReports=reports.sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
 
+  // メンターフィルター
+  const mentorFilterEl=document.getElementById('cr-filter-mentor');
+  const mentorIds=[...new Set(reports.map(r=>r.leader_id))].filter(Boolean);
+  mentorFilterEl.innerHTML='<option value="">全メンター</option>'+mentorIds.map(id=>{const u=_crUsers[id];return`<option value="${id}">${u?u.name:id}</option>`;}).join('');
+
+  // 個人フィルター
   const filterEl=document.getElementById('cr-filter-mentee');
   const ids=[...new Set(reports.map(r=>r.mentee_id))].filter(Boolean);
   filterEl.innerHTML='<option value="">全員</option>'+ids.map(id=>{const u=_crUsers[id];return`<option value="${id}">${u?u.name:id}</option>`;}).join('');
@@ -928,8 +1032,8 @@ async function submitAssignment(){
   btn.textContent='追加中…';btn.disabled=true;
   const r=await gasReq('api/admin/leader-assignments','POST',{leader_id:lId,mentee_id:mId});
   btn.textContent='割り当て追加';btn.disabled=false;
-  if(r&&!r.error){closeModal('assignModal');await loadLeaderAssignments();toast('割り当てを追加しました');}
-  else toast('追加に失敗しました','err');
+  if(r&&(r.ok||r.assignment_id)){closeModal('assignModal');await loadLeaderAssignments();toast('割り当てを追加しました');}
+  else toast('追加に失敗: '+(r&&(r.error||r.message)||'GAS応答なし'),'err');
 }
 
 async function deleteAssignment(id){
@@ -944,7 +1048,11 @@ async function deleteAssignment(id){
 //  画面遷移・モーダル
 // ══════════════════════════════════════════════════════════
 function nav(id, el) {
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  // inline styleをクリアしてからclass制御に委ねる
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = ''; // showLoginOverlay等で設定されたinlineスタイルをリセット
+  });
   const screen=document.getElementById('s-'+id);
   if(screen) screen.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -954,7 +1062,7 @@ function nav(id, el) {
     const frame=document.getElementById('userManagementFrame');
     if(frame&&!frame.src.includes('user-management.html')) frame.src=GITHUB_BASE+'/user-management.html';
     document.getElementById('nav-userManagement').classList.add('active');
-    return;
+    return; // ← iframeは screen の CSS管理外のため早期return
   }
   if(id==='survey')            loadSurveys();
   if(id==='members')           renderMembersTable();
@@ -967,8 +1075,12 @@ function nav(id, el) {
 
 // iframe から「← 管理画面」受信
 window.addEventListener('message', e=>{
-  if(e.origin!==GITHUB_BASE&&e.origin!==location.origin) return;
+  // GitHub Pages と localhost 両方を許可
+  const allowed = [GITHUB_BASE, location.origin, 'null'];
+  if(!allowed.includes(e.origin) && e.origin !== '') return;
   if(e.data==='BACK_TO_ADMIN'){
+    // 全screenのinlineスタイルをクリアしてから遷移
+    document.querySelectorAll('.screen').forEach(s => { s.style.display = ''; });
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
     const di=document.querySelector('.nav-item[onclick*="dashboard"]');
     if(di) di.classList.add('active');
@@ -977,7 +1089,59 @@ window.addEventListener('message', e=>{
 });
 
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  // アイコンピッカーも閉じる
+  const picker = document.getElementById('iconPicker');
+  if (picker) picker.style.display = 'none';
+}
+
+// ── SVGアイコン定義（機種依存なし） ──
+const ICON_LIST = [
+  { code:'link',      label:'リンク',     svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' },
+  { code:'doc',       label:'資料',       svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>' },
+  { code:'video',     label:'動画',       svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>' },
+  { code:'home',      label:'ホーム',     svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' },
+  { code:'calendar',  label:'カレンダー', svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
+  { code:'chat',      label:'チャット',   svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' },
+  { code:'mail',      label:'メール',     svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>' },
+  { code:'person',    label:'人物',       svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
+  { code:'gear',      label:'設定',       svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' },
+  { code:'book',      label:'書籍',       svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>' },
+  { code:'star',      label:'スター',     svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' },
+  { code:'clock',     label:'時計',       svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' },
+  { code:'chart',     label:'グラフ',     svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>' },
+  { code:'globe',     label:'Web',        svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' },
+  { code:'tool',      label:'ツール',     svg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>' },
+];
+
+function renderLinkIcon(code) {
+  const ic = ICON_LIST.find(i=>i.code===code);
+  if (!ic) return `<span style="font-size:18px">${code}</span>`;
+  return `<span style="display:inline-flex;width:20px;height:20px;color:currentColor">${ic.svg}</span>`;
+}
+
+function toggleIconPicker() {
+  const picker = document.getElementById('iconPicker');
+  if (picker.style.display === 'none') {
+    // グリッドを生成
+    const grid = document.getElementById('iconPickerGrid');
+    grid.innerHTML = ICON_LIST.map(ic =>
+      `<button type="button" onclick="selectIcon('${ic.code}')" title="${ic.label}"
+        style="width:40px;height:40px;border:1px solid var(--bd);border-radius:8px;background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--tx2)" onmouseover="this.style.background='var(--pr-light)'" onmouseout="this.style.background='var(--bg2)'">
+        <span style="display:inline-flex;width:20px;height:20px">${ic.svg}</span>
+      </button>`
+    ).join('');
+    picker.style.display = '';
+  } else {
+    picker.style.display = 'none';
+  }
+}
+
+function selectIcon(code) {
+  document.getElementById('lk-icon').value = code;
+  document.getElementById('iconPicker').style.display = 'none';
+}
 </script>
 </body>
 </html>
