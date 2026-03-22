@@ -564,9 +564,9 @@ async function api(action, extra = {}) {
   const body  = { action, secret: GAS_SECRET, token, ...extra };
   // デバッグ: tokenが取れているか確認（本番では削除可）
   console.log('[API]', action, 'token:', token ? token.slice(0,20)+'...' : '(empty)');
+  // Content-Type省略でCORSプリフライトを回避
   const r = await fetch(GAS_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error('HTTP ' + r.status);

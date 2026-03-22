@@ -452,9 +452,9 @@ async function gasReq(path, method='GET', body=null) {
   if (body) Object.assign(payload, body);
   console.log('[GAS]', method, path, token ? 'token:OK' : 'token:EMPTY');
   try {
+    // Content-Type省略でCORSプリフライトを回避
     const res  = await fetch(GAS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     const text = await res.text();
@@ -501,14 +501,15 @@ async function overlayLogin() {
   if (!email || !password) { msgEl.textContent = 'メールとパスワードを入力してください'; return; }
   btn.textContent = 'ログイン中…'; btn.disabled = true;
   try {
+    // Content-Type を省略することでCORSプリフライト（OPTIONS）を回避
+    // GASはtext/plain扱いでもe.postData.contentsからJSONを読める
     const res = await fetch(GAS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: 'auth/login', _method: 'POST', email: email, password: password })
     });
     const text = await res.text();
     var data;
-    try { data = JSON.parse(text); } catch(pe) { throw new Error('JSONパース失敗'); }
+    try { data = JSON.parse(text); } catch(pe) { throw new Error('JSONパース失敗: ' + text.slice(0,80)); }
     if (data && data.token && data.user) {
       if (data.user.role !== 'admin') {
         msgEl.textContent = '管理者権限がありません';
