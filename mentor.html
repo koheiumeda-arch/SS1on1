@@ -155,6 +155,10 @@ td{padding:10px 14px;font-size:13px}
 .pd-label{font-size:10px;font-weight:700;color:var(--tx3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
 .pd-text{font-size:13px;color:var(--tx);line-height:1.7}.pd-text.hours{font-size:18px;font-weight:700;color:var(--pr);font-family:'Space Mono',monospace}
 .loading{padding:24px;text-align:center;color:var(--tx3);font-size:13px}
+.btn-chat{background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff;box-shadow:0 3px 12px rgba(26,115,232,.3)}
+.btn-chat:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(26,115,232,.4)}
+.btn-huddle{background:linear-gradient(135deg,#34a853,#1e8e3e);color:#fff;box-shadow:0 3px 12px rgba(52,168,83,.3)}
+.btn-huddle:hover{transform:translateY(-1px)}
 /* トースト */
 #toastWrap{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px}
 .toast-item{background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--tx);box-shadow:var(--sh);animation:fi .25s ease;display:flex;align-items:center;gap:8px}
@@ -223,6 +227,66 @@ td{padding:10px 14px;font-size:13px}
   </div>
 </div>
 
+<!-- 予約作成モーダル（メンターから） -->
+<div class="modal" id="bookingCreateModal">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('bookingCreateModal')">✕</span>
+    <div class="modal-title">📅 1on1を予約する</div>
+    <div class="form-label" id="bookingCreateTarget" style="font-size:14px;margin-bottom:14px;color:var(--pr)"></div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">日時<span style="color:var(--rd)">*</span></label>
+      <input class="inp" type="datetime-local" id="bc-datetime"/>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">時間（分）</label>
+      <select class="inp" id="bc-duration">
+        <option value="30">30分</option>
+        <option value="45">45分</option>
+        <option value="60">60分</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">Google Meet URL（任意）</label>
+      <input class="inp" id="bc-meet" placeholder="https://meet.google.com/xxx-xxxx-xxx"/>
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label class="form-label">メモ（任意）</label>
+      <textarea class="inp" id="bc-note" rows="2" placeholder="伝えたいことがあれば…"></textarea>
+    </div>
+    <div id="bcMsg" style="font-size:12px;color:var(--rd);margin-bottom:8px"></div>
+    <div class="f-foot">
+      <button class="btn btn-g" onclick="closeModal('bookingCreateModal')">キャンセル</button>
+      <button class="btn btn-p" id="bcSubmitBtn" onclick="submitBookingCreate()">予約を登録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 予約変更モーダル -->
+<div class="modal" id="bookingUpdateModal">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('bookingUpdateModal')">✕</span>
+    <div class="modal-title">✏️ 1on1日程を変更する</div>
+    <div class="form-label" id="bookingUpdateMeta" style="font-size:13px;margin-bottom:14px;color:var(--tx2)"></div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">新しい日時<span style="color:var(--rd)">*</span></label>
+      <input class="inp" type="datetime-local" id="bu-datetime"/>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">Google Meet URL</label>
+      <input class="inp" id="bu-meet" placeholder="https://meet.google.com/xxx-xxxx-xxx"/>
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label class="form-label">変更メモ（メールに記載）</label>
+      <textarea class="inp" id="bu-note" rows="2" placeholder="変更理由など…"></textarea>
+    </div>
+    <div id="buMsg" style="font-size:12px;color:var(--rd);margin-bottom:8px"></div>
+    <div class="f-foot">
+      <button class="btn btn-g" onclick="closeModal('bookingUpdateModal')">キャンセル</button>
+      <button class="btn btn-p" id="buSubmitBtn" onclick="submitBookingUpdate()">変更を保存する</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ ヘッダー ══ -->
 <header class="header">
   <div style="display:flex;align-items:center;gap:20px">
@@ -267,7 +331,11 @@ td{padding:10px 14px;font-size:13px}
     <div class="card" id="memberPanel">
       <div class="ch">
         <div class="ct" id="panelName">メンバーを選択</div>
-        <button class="btn btn-g btn-sm" onclick="openTelHistModal()">📞 TEL履歴</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm" id="panelChatBtn" style="display:none;background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff" onclick="openMenteeChat()">💬 チャット</button>
+          <button class="btn btn-p btn-sm" onclick="openBookingCreate()">＋ 予約</button>
+          <button class="btn btn-g btn-sm" onclick="openTelHistModal()">📞 TEL履歴</button>
+        </div>
       </div>
       <div class="detail-wrap">
         <div class="detail-row">
@@ -452,8 +520,10 @@ var _myReports   = [];   // レポート一覧
 var _allCallReports = []; // TELレポート
 var _currentMentee  = null; // 選択中メンティー
 var _currentSig     = null;
-var _cancelBookingId = null;
-var _telMenteeId     = null;
+var _cancelBookingId    = null;
+var _telMenteeId        = null;
+var _bookingCreateId    = null; // 予約作成対象のmenteeId
+var _bookingUpdateId    = null; // 変更対象のbooking_id
 
 document.addEventListener('DOMContentLoaded', function() {
   if (!Auth.isLoggedIn()) { showOverlay(); return; }
@@ -543,6 +613,16 @@ function selectMentee(userId, el) {
   var m = _myMentees.find(function(x){ return x.user_id === userId; });
   if (!m) return;
   _currentMentee = m;
+
+  // チャットボタン表示制御
+  var chatBtn = document.getElementById('panelChatBtn');
+  if (chatBtn) {
+    if (m.chat_url) {
+      chatBtn.style.display = '';
+    } else {
+      chatBtn.style.display = 'none';
+    }
+  }
 
   // パネルタイトル
   var sig    = STATUS_MAP[m.status] || 'gr';
@@ -704,7 +784,7 @@ function buildScheduleCard(b, compact) {
     +'<div class="sc-acts">'
     +(meetLink ? '<button class="sc-btn sc-meet" onclick="window.open(\''+esc(meetLink)+'\',\'_blank\')">▶ Meet参加</button>' : '')
     +'<button class="sc-btn sc-doc" onclick="selectMentee(\''+b.mentee_id+'\',null);nav(\'dashboard\')">📄 パネルを確認</button>'
-    +'<button class="sc-btn sc-del" onclick="openCancelModal(\''+b.booking_id+'\')">変更・削除</button>'
+    +'<button class="sc-btn" style="background:var(--am-light);color:var(--am);border:none" onclick="openBookingUpdate(\''+b.booking_id+'\',\''+encodeURIComponent(b.scheduled_at||'')+'\',\''+encodeURIComponent(b.meet_link||'')+'\')">✏️ 変更</button>'+'<button class="sc-btn sc-del" onclick="openCancelModal(\''+b.booking_id+'\')">削除</button>'
     +'</div></div></div>';
 }
 
@@ -1006,6 +1086,112 @@ function nav(id, el) {
   if (id === 'reports')    { loadReports(); }
   if (id === 'weeklyTel')  { loadWeeklyTel(); }
   if (id === 'survey')     { loadSurveys(); }
+}
+
+// ══ チャットを開く ══
+function openMenteeChat() {
+  if (!_currentMentee || !_currentMentee.chat_url) {
+    toast('チャットURLが登録されていません','err'); return;
+  }
+  window.open(_currentMentee.chat_url, '_blank');
+}
+
+// ══ 予約作成モーダルを開く ══
+function openBookingCreate() {
+  if (!_currentMentee) { toast('メンティーを選択してください','err'); return; }
+  _bookingCreateId = _currentMentee.user_id;
+  document.getElementById('bookingCreateTarget').textContent = '対象: ' + _currentMentee.name;
+  // 日時のデフォルトを明日の10:00に
+  var d = new Date(); d.setDate(d.getDate()+1); d.setHours(10,0,0,0);
+  var pad = function(n){ return ('0'+n).slice(-2); };
+  document.getElementById('bc-datetime').value =
+    d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T10:00';
+  document.getElementById('bc-meet').value = '';
+  document.getElementById('bc-note').value = '';
+  document.getElementById('bcMsg').textContent = '';
+  document.getElementById('bookingCreateModal').classList.add('open');
+}
+
+async function submitBookingCreate() {
+  var dt   = document.getElementById('bc-datetime').value;
+  var dur  = document.getElementById('bc-duration').value;
+  var meet = document.getElementById('bc-meet').value.trim();
+  var note = document.getElementById('bc-note').value.trim();
+  var msgEl = document.getElementById('bcMsg');
+  var btn   = document.getElementById('bcSubmitBtn');
+  if (!dt) { msgEl.textContent='日時を入力してください'; return; }
+  if (!_bookingCreateId) { msgEl.textContent='送信先が不明です'; return; }
+  // datetime-localをISO形式に変換
+  var isoDate = new Date(dt).toISOString();
+  btn.textContent='登録中…'; btn.disabled=true;
+  var r = await gasReq('api/mentor/booking/create','POST',{
+    mentee_id:        _bookingCreateId,
+    scheduled_at:     isoDate,
+    duration_minutes: parseInt(dur),
+    meet_link:        meet,
+    note:             note,
+  });
+  btn.textContent='予約を登録する'; btn.disabled=false;
+  if (r && (r.ok||r.booking_id)) {
+    closeModal('bookingCreateModal');
+    await loadSchedules();
+    toast('1on1を予約しました（双方にメール送信済み）');
+  } else {
+    var e = r && (r.error||r.message);
+    msgEl.textContent = e === 'DUPLICATE_BOOKING' ? 'この日時は既に予約があります'
+      : '登録に失敗: '+(e||'GAS応答なし');
+  }
+}
+
+// ══ 予約変更モーダルを開く ══
+function openBookingUpdate(bookingId, scheduledAtEnc, meetLinkEnc) {
+  _bookingUpdateId = bookingId;
+  var scheduledAt = decodeURIComponent(scheduledAtEnc||'');
+  var meetLink    = decodeURIComponent(meetLinkEnc||'');
+
+  // 既存の予約情報をフォームにセット
+  var booking = _mySchedules.find(function(b){ return b.booking_id === bookingId; });
+  var mentee  = booking ? _myMentees.find(function(m){ return m.user_id === booking.mentee_id; }) : null;
+  document.getElementById('bookingUpdateMeta').textContent =
+    (mentee ? mentee.name : '—') + ' / 現在: ' + (scheduledAt ? new Date(scheduledAt).toLocaleString('ja-JP') : '—');
+
+  // datetime-localに変換
+  if (scheduledAt) {
+    var d = new Date(scheduledAt);
+    var pad = function(n){ return ('0'+n).slice(-2); };
+    document.getElementById('bu-datetime').value =
+      d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+  }
+  document.getElementById('bu-meet').value = meetLink || '';
+  document.getElementById('bu-note').value = '';
+  document.getElementById('buMsg').textContent = '';
+  document.getElementById('bookingUpdateModal').classList.add('open');
+}
+
+async function submitBookingUpdate() {
+  var dt   = document.getElementById('bu-datetime').value;
+  var meet = document.getElementById('bu-meet').value.trim();
+  var note = document.getElementById('bu-note').value.trim();
+  var msgEl = document.getElementById('buMsg');
+  var btn   = document.getElementById('buSubmitBtn');
+  if (!dt) { msgEl.textContent='新しい日時を入力してください'; return; }
+  if (!_bookingUpdateId) { msgEl.textContent='変更対象が不明です'; return; }
+  var isoDate = new Date(dt).toISOString();
+  btn.textContent='保存中…'; btn.disabled=true;
+  var r = await gasReq('api/mentor/booking/update','POST',{
+    booking_id:   _bookingUpdateId,
+    scheduled_at: isoDate,
+    meet_link:    meet,
+    note:         note,
+  });
+  btn.textContent='変更を保存する'; btn.disabled=false;
+  if (r && (r.ok||!r.error)) {
+    closeModal('bookingUpdateModal');
+    await loadSchedules();
+    toast('日程を変更しました（双方にメール送信済み）');
+  } else {
+    msgEl.textContent = '変更に失敗: '+((r&&(r.error||r.message))||'GAS応答なし');
+  }
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }

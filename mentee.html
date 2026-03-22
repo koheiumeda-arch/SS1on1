@@ -167,6 +167,12 @@ input[type="month"].inp{padding:11px 14px}
       <span class="logo-text">1on1</span>
     </div>
     <div class="topbar-upper-r">
+      <div class="tb-icon" id="chatBtn" style="display:none;background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff;border:none" onclick="openMyChat()" title="グループチャット（ハドル）">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      </div>
+      <div class="tb-icon" id="leaderChatBtn" style="display:none;background:linear-gradient(135deg,#34a853,#1e8e3e);color:#fff;border:none" onclick="openLeaderChat()" title="リーダーに連絡">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.1 19.79 19.79 0 0 1 1.62 4.43 2 2 0 0 1 3.77 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+      </div>
       <div class="tb-icon" id="noticeBtn" onclick="toggleNoticePanel()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg><span class="badge" id="notiBadge" style="display:none"></span>
       </div>
@@ -196,6 +202,11 @@ input[type="month"].inp{padding:11px 14px}
     <div class="greet-name" id="greetName">木村 さくら さん</div>
     <div class="mentor-chip"><span>👤</span><div>担当：<span class="mentor-name" id="mentorName">田中メンター</span></div></div>
     <div class="mentor-chip" id="leaderChip" style="display:none"><span>📞</span><div>リーダー：<span class="mentor-name" id="leaderName">—</span></div></div>
+    <div id="leaderPhoneChip" style="display:none;margin-top:6px">
+      <a id="leaderPhoneLink" href="tel:" style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.2);border-radius:10px;padding:7px 13px;font-size:13px;color:#fff;text-decoration:none;font-weight:600">
+        <span>☎️</span><span id="leaderPhoneText">電話する</span>
+      </a>
+    </div>
   </div>
   <div class="goal-card">
     <div class="card-label">🎯 今月の目標</div>
@@ -432,26 +443,7 @@ input[type="month"].inp{padding:11px 14px}
 <!-- ══════════════════════════════════════  TRAINING -->
 <div class="screen" id="s-training">
   <div style="margin-bottom:4px"><div style="font-size:19px;font-weight:700;margin-bottom:4px">研修コンテンツ</div><div style="font-size:13px;color:var(--tx2)">動画・資料で学ぶ</div></div>
-  <div class="content-card">
-    <div class="cc-tag">📹 動画</div>
-    <div class="cc-title">TypeScript基礎講座</div>
-    <div class="cc-meta">45分 — 初級レベル</div>
-  </div>
-  <div class="content-card">
-    <div class="cc-tag">📄 資料</div>
-    <div class="cc-title">React Hooks完全ガイド</div>
-    <div class="cc-meta">PDF 32ページ — 中級レベル</div>
-  </div>
-  <div class="content-card">
-    <div class="cc-tag">📹 動画</div>
-    <div class="cc-title">Git実践ワークフロー</div>
-    <div class="cc-meta">30分 — 初級レベル</div>
-  </div>
-  <div class="content-card">
-    <div class="cc-tag">🔗 リンク</div>
-    <div class="cc-title">公式ドキュメント集</div>
-    <div class="cc-meta">外部リンク集</div>
-  </div>
+  <div id="trainingList"><div class="loading"><div class="spinner"></div>読み込み中...</div></div>
 </div>
 
 <!-- ══════════════════════════════════════  SETTINGS -->
@@ -516,7 +508,7 @@ input[type="month"].inp{padding:11px 14px}
 <div class="toast" id="toast"></div>
 
 <script>
-const GAS_URL = 'https://script.google.com/a/macros/agent-network.com/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
 // ══════════════════════════════════════════════════════════
 //  設定値（本番時は環境変数 or ビルド時に埋め込む）
 // ══════════════════════════════════════════════════════════
@@ -530,35 +522,30 @@ const Auth = {
   clearAuth: () => { localStorage.removeItem('1on1_token'); localStorage.removeItem('1on1_user'); },
   isLoggedIn:() => !!localStorage.getItem('1on1_token'),
 };
-async function apiRequest(endpoint, options = {}) {
-  const method = (options.method || 'GET').toUpperCase();
-  const token = Auth.getToken();
-  const path = endpoint.replace(/^\//, '');
-
-  // GETもPOSTに統一（CORSプリフライト回避のためtext/plain使用）
-  const body = {};
+// GAS共通リクエスト（Content-Type省略でCORSプリフライト回避）
+async function apiRequest(endpoint, options) {
+  options = options || {};
+  var method = (options.method || 'GET').toUpperCase();
+  var token  = Auth.getToken();
+  var path   = endpoint.replace(/^\//, '');
+  var body   = {};
   try { Object.assign(body, JSON.parse(options.body || '{}')); } catch(e) {}
-  body._token = token || '';
-  body._method = method; // 元のメソッドを伝える
-
+  body._method = method;
+  body._auth   = token ? 'Bearer ' + token : '';
+  body.path    = path;
   try {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(Object.assign({ path }, body))
-    });
-    if (!res.ok) {
-      if (res.status === 401 || res.status === 403) {
-        Auth.clearAuth();
-        window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html';
-        return null;
-      }
-      throw new Error('HTTP ' + res.status);
+    var res  = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(body) });
+    var text = await res.text();
+    var data;
+    try { data = JSON.parse(text); } catch(pe) { console.error('[mentee] JSON parse error', text.slice(0,200)); return null; }
+    if (data && (data.error === 'TOKEN_MISSING' || data.error === 'INVALID_TOKEN')) {
+      Auth.clearAuth();
+      window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html';
+      return null;
     }
-    return await res.json();
+    return data;
   } catch(e) {
-    console.error('API Error [' + path + ']:', e);
+    console.error('[mentee] API Error [' + path + ']:', e);
     return null;
   }
 }
@@ -622,7 +609,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('set-name').value = user.name || '';
   document.getElementById('set-email').value = user.email || '';
   document.getElementById('set-tel').value = user.phone_number || '';
-  document.getElementById('set-mentor').textContent = home?.mentor?.name || '未設定';
+  if (document.getElementById('set-mentor')) document.getElementById('set-mentor').textContent = (home && home.mentor) ? home.mentor.name : '未設定';
+  // 担当リーダーを設定画面に表示
+  var setLeaderEl = document.querySelector('#s-settings .card:nth-child(2) div:nth-child(2) span:last-child');
+  if (setLeaderEl && home && home.leader) setLeaderEl.textContent = home.leader.name;
+  // 研修コンテンツ
+  loadTraining();
 
   // ⑤ 事前レポートフォーム初期値
   const today = new Date();
@@ -771,7 +763,8 @@ function goNav(id) {
   document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
   const ni = document.getElementById('ni-' + id);
   if (ni) ni.classList.add('active');
-  if (id === 'booking') loadAvailableSlots();
+  if (id === 'booking')  loadAvailableSlots();
+  if (id === 'training') loadTraining();
 }
 
 // ══ モーダル ══
@@ -796,13 +789,12 @@ function openMeet(link) {
 
 // ══ 星評価 ══
 var _ratings = { progress: 0, mental: 0 };
-function rateStar(type, val) {
+function rateStar(el, type) {
+  var container = el.parentElement;
+  var stars = Array.from(container.children);
+  var val = stars.indexOf(el) + 1;
   _ratings[type] = val;
-  const container = document.getElementById('stars-' + type);
-  if (!container) return;
-  Array.from(container.children).forEach((s, i) => {
-    s.className = i < val ? 'star-f' : 'star-e';
-  });
+  stars.forEach(function(s, i) { s.className = i < val ? 'star-f' : 'star-e'; });
 }
 
 // ══ アンケート送信 ══
@@ -849,38 +841,36 @@ async function loadSurveyData() {
 
 // ══ 事前レポート送信 ══
 async function submitPreReport() {
-  const fields = ['pr-project', 'pr-goal-work', 'pr-goal-skill', 'pr-result', 'pr-study-content', 'pr-good', 'pr-improve', 'pr-next-project', 'pr-next-study'];
-  const body = {
-    target_month: new Date().toISOString().slice(0, 7),
-    session_date: document.getElementById('pr-session-date')?.value || '',
-    current_project: document.getElementById('pr-project')?.value || '',
-    goal_work_6m: document.getElementById('pr-goal-work')?.value || '',
-    goal_skill_6m: document.getElementById('pr-goal-skill')?.value || '',
-    project_result: document.getElementById('pr-result')?.value || '',
-    study_hours: parseInt(document.getElementById('pr-study-hours')?.value) || 0,
-    study_content: document.getElementById('pr-study-content')?.value || '',
-    good_points: document.getElementById('pr-good')?.value || '',
-    improvement_points: document.getElementById('pr-improve')?.value || '',
-    next_month_project_goal: document.getElementById('pr-next-project')?.value || '',
-    next_month_study_goal: document.getElementById('pr-next-study')?.value || ''
-  };
-  const result = await apiRequest('/api/mentee/pre-report', {
-    method: 'POST', body: JSON.stringify(body)
-  });
-  if (result && result.ok) {
-    showToast('✅ 事前レポートを提出しました');
-    goNav('home');
-  } else {
-    showToast('❌ 提出に失敗しました');
+  var g = function(id){ var el=document.getElementById(id); return el ? el.value : ''; };
+  if (!g('pr-targetMonth') || !g('pr-projectResult') || !g('pr-goodPoints') || !g('pr-nextMonthProjectGoal')) {
+    showToast('❌ 必須項目を入力してください'); return;
   }
+  var body = {
+    target_month:            g('pr-targetMonth'),
+    session_date:            g('pr-sessionDate'),
+    current_project:         g('pr-currentProject'),
+    goal_work_6m:            g('pr-goalWork6m'),
+    goal_skill_6m:           g('pr-goalSkill6m'),
+    project_result:          g('pr-projectResult'),
+    study_hours:             parseInt(g('pr-studyHours')) || 0,
+    study_content:           g('pr-studyContent'),
+    good_points:             g('pr-goodPoints'),
+    improvement_points:      g('pr-improvementPoints'),
+    next_month_project_goal: g('pr-nextMonthProjectGoal'),
+    next_month_study_goal:   g('pr-nextMonthStudyGoal'),
+  };
+  var result = await apiRequest('/api/mentee/pre-report', { method: 'POST', body: JSON.stringify(body) });
+  if (result && result.ok) { showToast('✅ 事前レポートを提出しました'); goNav('home'); }
+  else showToast('❌ 提出に失敗しました');
 }
 
 // ══ プロフィール保存 ══
 async function saveProfile() {
-  const name = document.getElementById('profile-name')?.value || '';
-  const phone = document.getElementById('profile-phone')?.value || '';
-  const result = await apiRequest('/api/mentee/profile', {
-    method: 'PATCH', body: JSON.stringify({ name, phone_number: phone })
+  var name  = (document.getElementById('set-name')  || {value:''}).value;
+  var email = (document.getElementById('set-email') || {value:''}).value;
+  var phone = (document.getElementById('set-tel')   || {value:''}).value;
+  var result = await apiRequest('/api/mentee/profile', {
+    method: 'POST', body: JSON.stringify({ name: name, email: email, phone_number: phone })
   });
   if (result && result.ok) showToast('✅ プロフィールを保存しました');
   else showToast('❌ 保存に失敗しました');
@@ -935,33 +925,69 @@ async function loadHomeData() {
   loadLeaderInfo();
 }
 
+var _myChatUrl = '';
+var _leaderChatUrl = '';
+var _leaderPhone = '';
+
 function renderHome(data) {
   if (data.mentor) {
-    const el = document.getElementById('mentorName');
+    var el = document.getElementById('mentorName');
     if (el) el.textContent = data.mentor.name || '未設定';
   }
   if (data.leader) {
-    const nameEl = document.getElementById('leaderName');
-    const chipEl = document.getElementById('leaderChip');
+    var nameEl = document.getElementById('leaderName');
+    var chipEl = document.getElementById('leaderChip');
     if (nameEl) nameEl.textContent = data.leader.name || '未設定';
     if (chipEl) chipEl.style.display = 'inline-flex';
+    _leaderPhone   = data.leader.phone_number || '';
+    _leaderChatUrl = data.leader.chat_url || '';
+    if (_leaderPhone) {
+      var phoneChip = document.getElementById('leaderPhoneChip');
+      var phoneLink = document.getElementById('leaderPhoneLink');
+      var phoneTxt  = document.getElementById('leaderPhoneText');
+      if (phoneChip) phoneChip.style.display = '';
+      if (phoneLink) phoneLink.href = 'tel:' + _leaderPhone.replace(/[^+\d]/g,'');
+      if (phoneTxt)  phoneTxt.textContent = _leaderPhone;
+    }
+    if (_leaderChatUrl) {
+      var lcBtn = document.getElementById('leaderChatBtn');
+      if (lcBtn) lcBtn.style.display = '';
+    }
+  }
+  if (data.user && data.user.chat_url) {
+    _myChatUrl = data.user.chat_url;
+    var chatBtn = document.getElementById('chatBtn');
+    if (chatBtn) chatBtn.style.display = '';
   }
   if (data.next_booking) {
-    const b = data.next_booking;
-    const dt = new Date(b.scheduled_at);
-    const month = dt.getMonth() + 1;
-    const day = dt.getDate();
-    const weekdays = ['日','月','火','水','木','金','土'];
-    const wd = weekdays[dt.getDay()];
-    const hour = String(dt.getHours()).padStart(2,'0');
-    const min = String(dt.getMinutes()).padStart(2,'0');
-    const dateEl = document.getElementById('nextDate');
-    const timeEl = document.getElementById('nextTime');
-    const meetEl = document.getElementById('meetLink');
+    var b  = data.next_booking;
+    var dt = new Date(b.scheduled_at);
+    var month = dt.getMonth() + 1;
+    var day   = dt.getDate();
+    var weekdays = ['日','月','火','水','木','金','土'];
+    var wd   = weekdays[dt.getDay()];
+    var hour = String(dt.getHours()).padStart(2,'0');
+    var min  = String(dt.getMinutes()).padStart(2,'0');
+    var dateEl = document.getElementById('nextDate');
+    var timeEl = document.getElementById('nextTime');
+    var meetBtn = document.getElementById('meetBtn');
     if (dateEl) dateEl.textContent = month + '月' + day + '日（' + wd + '）';
-    if (timeEl) timeEl.textContent = hour + ':' + min + '〜';
-    if (meetEl) { meetEl.href = b.meet_link || '#'; meetEl.onclick = () => openMeet(b.meet_link); }
+    if (timeEl) timeEl.textContent = '🕐 ' + hour + ':' + min + '〜　' + (data.mentor ? data.mentor.name : '');
+    if (meetBtn) { meetBtn.onclick = function(){ openMeet(b.meet_link); }; }
+  } else {
+    var nc = document.querySelector('.next-card');
+    if (nc) nc.innerHTML = '<div class="next-hd"><div class="next-hd-t">📅 次回の1on1</div></div><div class="next-bd" style="padding:16px;color:var(--tx3);font-size:13px">予約がありません。<br><button class="sub-btn accent" style="margin-top:10px" onclick="goNav(&quot;booking&quot;)">📅 1on1を予約する</button></div>';
   }
+}
+
+function openMyChat() {
+  if (_myChatUrl) window.open(_myChatUrl, '_blank');
+  else showToast('⚠️ チャットURLが設定されていません');
+}
+function openLeaderChat() {
+  if (_leaderChatUrl) window.open(_leaderChatUrl, '_blank');
+  else if (_leaderPhone) window.location.href = 'tel:' + _leaderPhone.replace(/[^+\d]/g,'');
+  else showToast('⚠️ リーダーの連絡先が設定されていません');
 }
 
 // ══ クイックリンク ══
@@ -1005,6 +1031,28 @@ async function loadReports() {
 
 function showReport(reportId) {
   goScreen('reportDetail');
+}
+
+// 研修コンテンツ読み込み
+async function loadTraining() {
+  var container = document.getElementById('trainingList');
+  if (!container) return;
+  var data = await apiRequest('/api/admin/contents');
+  if (!data || !data.contents || data.contents.length === 0) {
+    container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">コンテンツがありません</div>';
+    return;
+  }
+  var iconMap = { video:'📹', document:'📄', link:'🔗' };
+  container.innerHTML = data.contents.map(function(c) {
+    var icon = iconMap[c.type] || '🔗';
+    var tagStyle = 'display:inline-block;background:var(--pr-light);color:var(--pr);font-size:10px;padding:3px 9px;border-radius:5px;font-weight:700;margin-bottom:9px';
+    var url = c.url ? ' onclick="window.open(\'' + c.url + '\',\'_blank\')"' : '';
+    return '<div class="content-card"' + url + '>'
+      + '<div style="' + tagStyle + '">' + icon + ' ' + (c.type||'') + '</div>'
+      + '<div class="cc-title">' + (c.title||'') + '</div>'
+      + '<div class="cc-meta">' + (c.duration ? c.duration+'分 — ' : '') + (c.level||'') + '</div>'
+      + '</div>';
+  }).join('');
 }
 
 

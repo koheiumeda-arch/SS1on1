@@ -272,7 +272,11 @@ body.login-mode .main { display:none !important; }
   <div class="bc"><span class="bc-link" onclick="nav('members')">メンバー管理</span><span style="margin:0 4px;color:var(--tx3)">&rsaquo;</span><span id="detail-breadcrumb">詳細</span></div>
   <div class="topbar">
     <div><div class="page-title" id="detail-name">—</div><div class="page-sub" id="detail-sub">—</div></div>
-    <div class="topbar-r"><button class="btn btn-p" id="detail-msg-btn">📨 メッセージ送信</button></div>
+    <div class="topbar-r">
+      <button class="btn btn-sm" id="detail-chat-btn" style="display:none;background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff;border:none" onclick="openDetailChat()">💬 チャットを開く</button>
+      <button class="btn btn-sm" id="detail-create-chat-btn" style="display:none;background:var(--bg3);color:var(--tx2);border:1px solid var(--bd)" onclick="createChatSpace()">🔗 URLを登録</button>
+      <button class="btn btn-p" id="detail-msg-btn">📨 メッセージ送信</button>
+    </div>
   </div>
   <div class="detail-grid">
     <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v" id="detail-workplace">—</div></div>
@@ -699,6 +703,18 @@ function showMemberDetail(m) {
   document.getElementById('detail-workstatus').textContent  = m.work_status || '—';
   document.getElementById('detail-wage').textContent        = m.hourly_wage ? '¥'+Number(m.hourly_wage).toLocaleString()+'/h' : '—';
   document.getElementById('detail-msg-btn').onclick = () => openMsg(m.name, m.user_id);
+  // チャットボタン
+  var chatBtn       = document.getElementById('detail-chat-btn');
+  var createChatBtn = document.getElementById('detail-create-chat-btn');
+  if (m.chat_url) {
+    chatBtn.style.display       = '';
+    chatBtn.dataset.url         = m.chat_url;
+    if (createChatBtn) createChatBtn.style.display = 'none';
+  } else {
+    chatBtn.style.display = 'none';
+    // menteeのみスペース作成ボタンを表示
+    if (createChatBtn) createChatBtn.style.display = (m.role === 'mentee') ? '' : 'none';
+  }
   document.getElementById('admin-memo-input').value = '';
   loadMemberSurveys(m.user_id);
   loadAdminMemos(m.user_id);
@@ -1142,6 +1158,44 @@ async function deleteAssignment(id){
 // ══════════════════════════════════════════════════════════
 //  画面遷移・モーダル
 // ══════════════════════════════════════════════════════════
+function openDetailChat() {
+  var btn = document.getElementById('detail-chat-btn');
+  var url = btn && btn.dataset.url;
+  if (url) window.open(url, '_blank');
+  else toast('チャットURLが登録されていません','err');
+}
+
+function createChatSpace() {
+  if (!_currentDetailUserId) return;
+  // Google Chat APIは自動作成非対応のため手動URL登録方式
+  // 1. Google Chatでスペースを手動作成
+  // 2. スペースURLをコピーしてここに入力
+  var url = prompt('チャットスペースのURLを入力してください。\n\n手順: Google Chatでスペースを作成 → URLをコピー\n\n例: https://chat.google.com/room/XXXXXXXXX');
+  if (!url || !url.trim()) return;
+  if (!url.includes('chat.google.com')) {
+    toast('Google ChatのURLを入力してください', 'err'); return;
+  }
+  saveChatUrl(url.trim());
+}
+
+async function saveChatUrl(chatUrl) {
+  var r = await gasReq('api/admin/create-chat-space','POST',{
+    user_id:  _currentDetailUserId,
+    chat_url: chatUrl,
+  });
+  if (r && r.ok) {
+    toast('チャットURLを登録しました');
+    var m = _allMembers.find(function(x){ return x.user_id === _currentDetailUserId; });
+    if (m) {
+      m.chat_url = chatUrl;
+      showMemberDetail(m);
+    }
+    window.open(chatUrl, '_blank');
+  } else {
+    toast('登録に失敗: ' + (r && (r.error||r.message) || 'GAS応答なし'), 'err');
+  }
+}
+
 function nav(id, el) {
   // inline styleをクリアしてからclass制御に委ねる
   document.querySelectorAll('.screen').forEach(s => {
