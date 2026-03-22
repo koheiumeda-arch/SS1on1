@@ -420,16 +420,6 @@ body.login-mode .main { display:none !important; }
 </main>
 
 <script>
-// ★ 最初に実行されるログ（JSが読み込まれたことを確認）
-console.log('[ADMIN] script start');
-window.onerror = function(msg, src, line, col, err) {
-  console.error('[ADMIN ONERROR]', msg, 'line:'+line, 'col:'+col, src);
-  // エラーをページ上にも表示
-  var d = document.createElement('div');
-  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#f00;color:#fff;padding:8px;font-size:12px;z-index:99999;white-space:pre-wrap';
-  d.textContent = 'JS ERROR: ' + msg + ' (line ' + line + ')';
-  document.body.appendChild(d);
-};
 // ══════════════════════════════════════════════════════════
 //  設定・定数
 // ══════════════════════════════════════════════════════════
@@ -511,20 +501,15 @@ async function overlayLogin() {
   if (!email || !password) { msgEl.textContent = 'メールとパスワードを入力してください'; return; }
   btn.textContent = 'ログイン中…'; btn.disabled = true;
   try {
-    console.log('[LOGIN] fetching GAS_URL:', GAS_URL);
     const res = await fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      redirect: 'follow',
-      body: JSON.stringify({ path: 'auth/login', _method: 'POST', email, password })
+      body: JSON.stringify({ path: 'auth/login', _method: 'POST', email: email, password: password })
     });
-    console.log('[LOGIN] response status:', res.status, res.type, res.url);
     const text = await res.text();
-    console.log('[LOGIN] response text:', text.slice(0, 200));
-    let data;
-    try { data = JSON.parse(text); }
-    catch(pe) { throw new Error('JSONパース失敗: ' + text.slice(0,100)); }
-    if (data.token && data.user) {
+    var data;
+    try { data = JSON.parse(text); } catch(pe) { throw new Error('JSONパース失敗'); }
+    if (data && data.token && data.user) {
       if (data.user.role !== 'admin') {
         msgEl.textContent = '管理者権限がありません';
         btn.textContent = 'ログイン'; btn.disabled = false;
@@ -534,13 +519,13 @@ async function overlayLogin() {
       hideLoginOverlay();
       initAdmin(data.user);
     } else {
-      msgEl.textContent = data.error === 'INVALID_PASSWORD' ? 'パスワードが違います' :
-                          data.error === 'USER_NOT_FOUND'  ? 'ユーザーが見つかりません' : 'ログインに失敗しました';
+      var errMsg = data && data.error;
+      msgEl.textContent = errMsg === 'INVALID_PASSWORD' ? 'パスワードが違います' :
+                          errMsg === 'USER_NOT_FOUND'   ? 'ユーザーが見つかりません' : 'ログインに失敗しました';
       btn.textContent = 'ログイン'; btn.disabled = false;
     }
   } catch(e) {
-    console.error('[LOGIN ERROR]', e, e.message, e.stack);
-    msgEl.textContent = 'エラー: ' + (e.message || String(e));
+    msgEl.textContent = 'ネットワークエラー: ' + (e.message || '通信に失敗しました');
     btn.textContent = 'ログイン'; btn.disabled = false;
   }
 }
