@@ -1124,14 +1124,20 @@ function renderLinkIcon(code) {
 function toggleIconPicker() {
   const picker = document.getElementById('iconPicker');
   if (picker.style.display === 'none') {
-    // グリッドを生成
     const grid = document.getElementById('iconPickerGrid');
-    grid.innerHTML = ICON_LIST.map(ic =>
-      `<button type="button" onclick="selectIcon('${ic.code}')" title="${ic.label}"
-        style="width:40px;height:40px;border:1px solid var(--bd);border-radius:8px;background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--tx2)" onmouseover="this.style.background='var(--pr-light)'" onmouseout="this.style.background='var(--bg2)'">
-        <span style="display:inline-flex;width:20px;height:20px">${ic.svg}</span>
-      </button>`
-    ).join('');
+    // innerHTML を使わず DOM 生成でSVG/クォート問題を回避
+    grid.innerHTML = '';
+    ICON_LIST.forEach(function(ic) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.title = ic.label;
+      btn.style.cssText = 'width:40px;height:40px;border:1px solid var(--bd);border-radius:8px;background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--tx2);flex-shrink:0';
+      btn.innerHTML = '<span style="display:inline-flex;width:20px;height:20px;pointer-events:none">' + ic.svg + '</span>';
+      btn.addEventListener('mouseover', function(){ this.style.background='var(--pr-light)'; });
+      btn.addEventListener('mouseout',  function(){ this.style.background='var(--bg2)'; });
+      btn.addEventListener('click', function(){ selectIcon(ic.code); });
+      grid.appendChild(btn);
+    });
     picker.style.display = '';
   } else {
     picker.style.display = 'none';
