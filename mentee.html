@@ -195,9 +195,9 @@ input[type="month"].inp{padding:11px 14px}
 <!-- ══════════════════════════════════════  HOME  -->
 <div class="screen active" id="s-home">
   <div class="greet">
-    <div class="greet-sub">おはようございます</div>
-    <div class="greet-name" id="greetName">木村 さくら さん</div>
-    <div class="mentor-chip"><span>👤</span><div>担当：<span class="mentor-name" id="mentorName">田中メンター</span></div></div>
+    <div class="greet-sub" id="greetSub">こんにちは</div>
+    <div class="greet-name" id="greetName">読み込み中…</div>
+    <div class="mentor-chip"><span>👤</span><div>担当：<span class="mentor-name" id="mentorName">—</span></div></div>
     <div class="mentor-chip" id="leaderChip" style="display:none"><span>📞</span><div>リーダー：<span class="mentor-name" id="leaderName">—</span></div></div>
     <div id="leaderPhoneChip" style="display:none;margin-top:6px">
       <a id="leaderPhoneLink" href="tel:" style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.2);border-radius:10px;padding:7px 13px;font-size:13px;color:#fff;text-decoration:none;font-weight:600">
@@ -214,7 +214,7 @@ input[type="month"].inp{padding:11px 14px}
     <div class="next-hd"><div class="next-hd-t">📅 次回の1on1</div><div class="countdown" id="countdown">明日まで</div></div>
     <div class="next-bd">
       <div class="next-date" id="nextDate">2月18日（火）</div>
-      <div class="next-time" id="nextTime">🕐 10:00〜10:30　田中メンター</div>
+      <div class="next-time" id="nextTime">—</div>
       <button class="meet-btn" id="meetBtn" onclick="openMeet()"><span>▶</span> Google Meetに参加する</button>
       <div class="sub-acts">
         <button class="sub-btn accent" onclick="goScreen('preReport')">📝 事前レポート提出</button>
@@ -224,18 +224,7 @@ input[type="month"].inp{padding:11px 14px}
   </div>
   <div class="card">
     <div class="ch"><div class="ct">📂 過去の1on1レポート</div><div class="ca" onclick="goNav('reports')">全て見る</div></div>
-    <div id="recentReports">
-      <div class="rep-item" onclick="goScreen('reportDetail')">
-        <div class="rep-date"><div class="rd">14</div><div class="rm">2月</div></div>
-        <div class="ri"><div class="ri-t">TypeScript型設計</div><div class="ri-s">田中メンター ／ 確定済み</div></div>
-        <div class="arr">›</div>
-      </div>
-      <div class="rep-item" onclick="goScreen('reportDetail')">
-        <div class="rep-date"><div class="rd">31</div><div class="rm">1月</div></div>
-        <div class="ri"><div class="ri-t">目標設定</div><div class="ri-s">田中メンター ／ 確定済み</div></div>
-        <div class="arr">›</div>
-      </div>
-    </div>
+    <div id="recentReports"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 </div>
 
@@ -273,7 +262,7 @@ input[type="month"].inp{padding:11px 14px}
   <div class="bc"><span class="bc-link" onclick="goScreen('home')">ホーム</span><span>›</span><span>事前レポート</span></div>
   <div style="margin-bottom:4px">
     <div style="font-size:19px;font-weight:700;margin-bottom:4px">事前レポート提出</div>
-    <div style="font-size:13px;color:var(--tx2)" id="preReportSubtitle">2/18（火）10:00 田中メンター</div>
+    <div style="font-size:13px;color:var(--tx2)" id="preReportSubtitle">—</div>
   </div>
 
   <!-- ① 基本情報 -->
@@ -373,7 +362,7 @@ input[type="month"].inp{padding:11px 14px}
 <!-- ══════════════════════════════════════  SURVEY（アンケート） -->
 <div class="screen" id="s-survey">
   <div class="bc"><span class="bc-link" onclick="goScreen('home')">ホーム</span><span>›</span><span>アンケート</span></div>
-  <div style="margin-bottom:4px"><div style="font-size:19px;font-weight:700;margin-bottom:4px">1on1アンケート</div><div style="font-size:13px;color:var(--tx2)">2/14実施分 — 田中メンター</div></div>
+  <div style="margin-bottom:4px"><div style="font-size:19px;font-weight:700;margin-bottom:4px">1on1アンケート</div><div style="font-size:13px;color:var(--tx2)" id="surveySubtitle">—</div></div>
   <div class="card">
     <div class="ch"><div class="ct">満足度評価</div></div>
     <div style="padding:18px">
@@ -592,7 +581,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   const firstName = (user.name || '').slice(0, 1);
   document.getElementById('userAva').textContent = firstName || '木';
-  document.getElementById('greetName').textContent = (user.name || '木村 さくら') + ' さん';
+  document.getElementById('greetName').textContent = (user.name || '') + ' さん';
+  // 時間帯別あいさつ
+  var h0=new Date().getHours();
+  var greetSub=document.getElementById('greetSub');
+  if(greetSub) greetSub.textContent = h0<11?'おはようございます':h0<18?'こんにちは':'こんばんは';
   const userAvaEl = document.getElementById('userAva');
   if (userAvaEl) userAvaEl.textContent = (user.name || '').slice(0, 1) || '木';
 
@@ -601,7 +594,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ④ ホーム画面データ読み込み（APIから）
   const home = await apiRequest('/api/mentee/home');
-  if (home) renderHome(home);
+  if (home) { renderHome(home); updatePreReportMentor(); }
 
   // ⑤ レポート一覧読み込み
   loadReports();
@@ -628,7 +621,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const ymd = today.toISOString().slice(0,10);
   document.getElementById('pr-targetMonth').value = ym;
   document.getElementById('pr-sessionDate').value = ymd;
-  document.getElementById('pr-mentor').value = user.mentor_name || '田中メンター';
+  // pr-mentorはrenderHome後にupdatePreReportMentor()で更新
 
   // ⑥ 星評価の初期表示
   ['progress','mental'].forEach(key => {
@@ -999,18 +992,26 @@ async function loadHomeData() {
   if (!data) return;
   renderHome(data);
   loadLeaderInfo();
+  updatePreReportMentor();
+}
+
+function updatePreReportMentor() {
+  var el = document.getElementById('pr-mentor').value = _myMentorName || '';
+  if (el && _myMentorName) el.value = _myMentorName;
 }
 
 var _myChatUrl    = '';
 var _leaderChatUrl = '';
 var _leaderPhone  = '';
 var _myMentorId   = '';  // bookSlot で使用
+var _myMentorName = '';  // 事前レポートで使用
 
 function renderHome(data) {
   if (data.mentor) {
     var el = document.getElementById('mentorName');
     if (el) el.textContent = data.mentor.name || '未設定';
-    _myMentorId = data.mentor.user_id || '';  // 予約時に使用
+    _myMentorId   = data.mentor.user_id || '';  // 予約時に使用
+    _myMentorName = data.mentor.name    || '';  // 事前レポートで使用
   }
   if (data.leader) {
     var nameEl = document.getElementById('leaderName');
@@ -1051,10 +1052,35 @@ function renderHome(data) {
     var meetBtn = document.getElementById('meetBtn');
     if (dateEl) dateEl.textContent = month + '月' + day + '日（' + wd + '）';
     if (timeEl) timeEl.textContent = '🕐 ' + hour + ':' + min + '〜　' + (data.mentor ? data.mentor.name : '');
-    if (meetBtn) { meetBtn.onclick = function(){ openMeet(b.meet_link); }; }
+    if (meetBtn) {
+      if (b.meet_link) {
+        meetBtn.style.display = '';
+        meetBtn.onclick = function(){ openMeet(b.meet_link); };
+        meetBtn.innerHTML = '<span>▶</span> Google Meetに参加する';
+      } else {
+        // meet_linkなし：Googleカレンダーの招待から参加を案内
+        meetBtn.style.display = '';
+        meetBtn.style.opacity = '0.6';
+        meetBtn.innerHTML = '<span>📅</span> カレンダー招待から参加';
+        meetBtn.onclick = function(){ showToast('Googleカレンダーの招待メールからMeetに参加してください'); };
+      }
+    }
+    // 事前レポートのサブタイトル更新
+    var prSub = document.getElementById('preReportSubtitle');
+    var svSub = document.getElementById('surveySubtitle');
+    if (prSub) {
+      var dtStr = month + '/' + day + '（' + wd + '）' + hour + ':' + min;
+      prSub.textContent = dtStr + ' ' + (_myMentorName||'メンター');
+    }
+    if (svSub) svSub.textContent = (month+'月'+day+'日'+'（'+wd+'）') + '実施分 — ' + (_myMentorName||'メンター');
   } else {
     var nc = document.querySelector('.next-card');
     if (nc) nc.innerHTML = '<div class="next-hd"><div class="next-hd-t">📅 次回の1on1</div></div><div class="next-bd" style="padding:16px;color:var(--tx3);font-size:13px">予約がありません。<br><button class="sub-btn accent" style="margin-top:10px" onclick="goNav(&quot;booking&quot;)">📅 1on1を予約する</button></div>';
+    // 事前レポート・アンケートのサブタイトルもクリア
+    var prs = document.getElementById('preReportSubtitle');
+    var svs = document.getElementById('surveySubtitle');
+    if (prs) prs.textContent = (_myMentorName||'メンター') + ' — 次回の予約なし';
+    if (svs) svs.textContent = '— 回答待ちのアンケートなし';
   }
 }
 
@@ -1090,21 +1116,55 @@ async function loadQuickLinks() {
 async function loadReports() {
   const data = await apiRequest('/api/mentee/reports');
   if (!data) return;
-  const container = document.getElementById('reportsList');
-  if (!container) return;
   const reports = data.reports || [];
-  if (reports.length === 0) {
-    container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">レポートがありません</div>';
-    return;
+
+  // レポート一覧画面
+  const container = document.getElementById('reportsList');
+  if (container) {
+    if (reports.length === 0) {
+      container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">レポートがありません</div>';
+    } else {
+      // DOM構築方式（クォートのネスト問題を回避）
+      container.innerHTML = '';
+      reports.forEach(function(r) {
+        var dt  = new Date(r.created_at);
+        var div = document.createElement('div');
+        div.className = 'rep-item';
+        div.setAttribute('data-rid', r.report_id || '');
+        div.onclick   = function(){ showReport(this.getAttribute('data-rid')); };
+        div.innerHTML = '<div class="rep-date"><div class="rep-d">' + dt.getDate() + '</div>' +
+          '<div class="rep-m">' + (dt.getMonth()+1) + '月</div></div>' +
+          '<div class="rep-info"><div class="rep-title">' + (r.ai_summary||'レポート').substring(0,40) + '</div>' +
+          '<div class="rep-sub">' + r.created_at.slice(0,10) + ' / ' + (_myMentorName||'メンター') + '</div></div>' +
+          '<div class="rep-arr">›</div>';
+        container.appendChild(div);
+      });
+    }
   }
-  container.innerHTML = reports.map(r => {
-    const dt = new Date(r.created_at);
-    return '<div class="rep-item" onclick="showReport(\'' + r.report_id + '\')">' +
-      '<div class="rep-date"><div class="rep-d">' + dt.getDate() + '</div><div class="rep-m">' + (dt.getMonth()+1) + '月</div></div>' +
-      '<div class="rep-info"><div class="rep-title">' + (r.ai_summary || 'レポート').substring(0,40) + '</div>' +
-      '<div class="rep-sub">' + r.created_at.slice(0,10) + '</div></div>' +
-      '<div class="rep-arr">›</div></div>';
-  }).join('');
+
+  // ホーム画面の直近レポート（最大2件）
+  const recentEl = document.getElementById('recentReports');
+  if (recentEl) {
+    if (reports.length === 0) {
+      recentEl.innerHTML = '<div style="padding:16px;text-align:center;color:var(--tx3);font-size:13px">レポートがありません</div>';
+    } else {
+      // DOM構築方式
+      recentEl.innerHTML = '';
+      reports.slice(0,2).forEach(function(r) {
+        var dt  = new Date(r.created_at);
+        var div = document.createElement('div');
+        div.className = 'rep-item';
+        div.setAttribute('data-rid', r.report_id || '');
+        div.onclick   = function(){ showReport(this.getAttribute('data-rid')); };
+        div.innerHTML = '<div class="rep-date"><div class="rd">' + dt.getDate() + '</div>' +
+          '<div class="rm">' + (dt.getMonth()+1) + '月</div></div>' +
+          '<div class="ri"><div class="ri-t">' + (r.ai_summary||'レポート').substring(0,20) + '</div>' +
+          '<div class="ri-s">' + (_myMentorName||'メンター') + ' ／ 確定済み</div></div>' +
+          '<div class="arr">›</div>';
+        recentEl.appendChild(div);
+      });
+    }
+  }
 }
 
 function showReport(reportId) {
