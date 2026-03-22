@@ -279,7 +279,19 @@ body.login-mode .main { display:none !important; }
     <div class="dc"><div class="dc-lb">雇用形態</div><div class="dc-v" id="detail-workstatus">—</div></div>
     <div class="dc"><div class="dc-lb">時給</div><div class="dc-v ac" id="detail-wage">—</div></div>
   </div>
-  <div class="card"><div class="ch"><div class="ct">📋 過去のアンケート回答</div></div><div id="detail-surveys"><div class="loading">読み込み中…</div></div></div>
+  <div class="card" style="margin-bottom:14px"><div class="ch"><div class="ct">📋 過去のアンケート回答</div></div><div id="detail-surveys"><div class="loading">読み込み中…</div></div></div>
+  <!-- 管理者メモ -->
+  <div class="card">
+    <div class="ch"><div class="ct">📝 管理者メモ</div></div>
+    <div style="padding:16px">
+      <textarea class="inp" id="admin-memo-input" rows="3" placeholder="このメンバーへのメモを入力…" style="margin-bottom:10px"></textarea>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn btn-p btn-sm" onclick="saveAdminMemo()">💾 メモを保存</button>
+      </div>
+    </div>
+    <div class="ch" style="border-top:1px solid var(--bd)"><div class="ct" style="font-size:13px">過去のメモ</div></div>
+    <div id="detail-memo-list"><div class="loading">読み込み中…</div></div>
+  </div>
 </div>
 
 <!-- 研修コンテンツ -->
@@ -676,7 +688,10 @@ function renderMembersTable() {
   }).join('');
 }
 
+var _currentDetailUserId = null;
+
 function showMemberDetail(m) {
+  _currentDetailUserId = m.user_id;
   document.getElementById('detail-breadcrumb').textContent  = m.name;
   document.getElementById('detail-name').textContent        = m.name;
   document.getElementById('detail-sub').textContent         = 'メンター: '+(m.mentor_name||'—')+(m.has_leader_role==='TRUE'?' ／ リーダーロールあり':'');
@@ -684,8 +699,40 @@ function showMemberDetail(m) {
   document.getElementById('detail-workstatus').textContent  = m.work_status || '—';
   document.getElementById('detail-wage').textContent        = m.hourly_wage ? '¥'+Number(m.hourly_wage).toLocaleString()+'/h' : '—';
   document.getElementById('detail-msg-btn').onclick = () => openMsg(m.name, m.user_id);
+  document.getElementById('admin-memo-input').value = '';
   loadMemberSurveys(m.user_id);
+  loadAdminMemos(m.user_id);
   nav('memberDetail');
+}
+
+async function loadAdminMemos(userId) {
+  const el = document.getElementById('detail-memo-list');
+  el.innerHTML = '<div class="loading">読み込み中…</div>';
+  const data = await gasReq('api/admin/memos?user_id='+encodeURIComponent(userId));
+  if (!data||!data.memos) { el.innerHTML='<div class="loading">取得できませんでした</div>'; return; }
+  if (data.memos.length===0) { el.innerHTML='<div class="loading">メモはありません</div>'; return; }
+  el.innerHTML = data.memos.map(m=>`
+    <div style="padding:12px 20px;border-bottom:1px solid var(--bd)">
+      <div style="font-size:11px;color:var(--tx3);margin-bottom:4px">${new Date(m.created_at).toLocaleString('ja-JP')}</div>
+      <div style="font-size:13px;color:var(--tx);line-height:1.6;white-space:pre-wrap">${esc(m.content)}</div>
+    </div>`).join('');
+}
+
+async function saveAdminMemo() {
+  const content = document.getElementById('admin-memo-input').value.trim();
+  if (!content) { toast('メモ内容を入力してください','err'); return; }
+  if (!_currentDetailUserId) return;
+  const r = await gasReq('api/admin/memos','POST',{
+    target_id: _currentDetailUserId,
+    content: content
+  });
+  if (r&&(r.ok||r.memo_id)) {
+    document.getElementById('admin-memo-input').value='';
+    await loadAdminMemos(_currentDetailUserId);
+    toast('メモを保存しました');
+  } else {
+    toast('保存に失敗: '+(r&&(r.error||r.message)||'GAS応答なし'),'err');
+  }
 }
 
 async function loadMemberSurveys(userId) {
@@ -756,7 +803,10 @@ async function loadContents() {
     <div class="content-item">
       <div class="ci-ic">${iconMap[c.type]||'🔗'}</div>
       <div class="ci-info"><div class="ci-title">${esc(c.title)}</div><div class="ci-meta">${esc(c.type)} ${c.duration?c.duration+'分':''} — ${fmtDate(c.created_at)}登録</div></div>
-      ${c.url?`<a href="${esc(c.url)}" target="_blank" class="btn btn-g btn-sm" style="flex-shrink:0;text-decoration:none">開く</a>`:''}
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        ${c.url?`<a href="${esc(c.url)}" target="_blank" class="btn btn-g btn-sm" style="text-decoration:none">開く</a>`:''}
+        <button class="btn btn-sm" style="background:var(--rd-light);color:var(--rd);border:none" onclick="deleteContent('${esc(c.content_id)}','${esc(c.title)}')">削除</button>
+      </div>
     </div>`).join('')||'<div class="loading">コンテンツがありません</div>';
   card.innerHTML=`<div class="ch"><div class="ct">登録済みコンテンツ（${data.contents.length}件）</div></div>`+items;
 }
@@ -767,6 +817,13 @@ async function addContent() {
   const r=await gasReq('api/admin/contents','POST',payload);
   if(r&&(r.ok||!r.error)){closeModal('contentModal');await loadContents();toast('コンテンツを追加しました');}
   else toast('追加に失敗: '+(r&&r.error||r&&r.message||'GAS応答なし'),'err');
+}
+
+async function deleteContent(contentId, title) {
+  if(!confirm('「'+title+'」を削除しますか？'))return;
+  const r=await gasReq('api/admin/contents/delete','POST',{content_id:contentId});
+  if(r&&(r.ok||!r.error)){await loadContents();toast('削除しました');}
+  else toast('削除に失敗: '+(r&&(r.error||r.message)||'GAS応答なし'),'err');
 }
 
 // ══════════════════════════════════════════════════════════
@@ -783,7 +840,10 @@ async function loadLinks() {
     return `<div class="content-item">
       <div class="ci-ic" style="display:flex;align-items:center;justify-content:center">${icon}</div>
       <div class="ci-info"><div class="ci-title">${esc(l.title)}</div><div class="ci-meta">リンク — ${esc(l.url)}</div></div>
-      <a href="${esc(l.url)}" target="_blank" class="btn btn-g btn-sm" style="flex-shrink:0;text-decoration:none">開く</a>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <a href="${esc(l.url)}" target="_blank" class="btn btn-g btn-sm" style="text-decoration:none">開く</a>
+        <button class="btn btn-sm" style="background:var(--rd-light);color:var(--rd);border:none" onclick="deleteLink('${esc(l.link_id)}','${esc(l.title)}')">削除</button>
+      </div>
     </div>`;
   }).join('')||'<div class="loading">リンクがありません</div>';
   card.innerHTML=`<div class="ch"><div class="ct">登録済みリンク（${data.links.length}件）</div></div>`+items;
@@ -797,19 +857,48 @@ async function addLink() {
   else toast('追加に失敗: '+(r&&r.error||r&&r.message||'GAS応答なし'),'err');
 }
 
+async function deleteLink(linkId, title) {
+  if(!confirm('「'+title+'」を削除しますか？'))return;
+  const r=await gasReq('api/admin/links/delete','POST',{link_id:linkId});
+  if(r&&(r.ok||!r.error)){await loadLinks();toast('削除しました');}
+  else toast('削除に失敗: '+(r&&(r.error||r.message)||'GAS応答なし'),'err');
+}
+
 // ══════════════════════════════════════════════════════════
 //  お知らせ配信
 // ══════════════════════════════════════════════════════════
 async function loadNotices() {
-  const data=await gasReq('api/mentee/notices');
+  // admin向けに全お知らせを取得（api/admin/surveys の admin_memos 全件）
+  const data=await gasReq('api/admin/notices/list');
   const list=document.getElementById('noticeList');
-  if(!data||!data.notices){list.innerHTML='<div class="loading">取得に失敗しました</div>';return;}
-  if(data.notices.length===0){list.innerHTML='<div class="loading">お知らせはありません</div>';return;}
-  list.innerHTML=data.notices.map(n=>`
-    <div style="padding:16px 20px;border-bottom:1px solid var(--bd)">
-      <div style="font-size:11px;color:var(--tx3);margin-bottom:6px">${new Date(n.created_at).toLocaleString('ja-JP')} / 対象: ${n.target_id==='all'?'全員':n.target_id}</div>
-      <div style="font-size:14px;color:var(--tx);line-height:1.6">${esc(n.content)}</div>
+  if(!data||!data.notices){
+    // フォールバック: mentee向けAPIで取得
+    const data2=await gasReq('api/mentee/notices');
+    if(!data2||!data2.notices){list.innerHTML='<div class="loading">取得に失敗しました</div>';return;}
+    renderNoticeList(data2.notices,list);
+    return;
+  }
+  renderNoticeList(data.notices,list);
+}
+
+function renderNoticeList(notices,list) {
+  if(notices.length===0){list.innerHTML='<div class="loading">お知らせはありません</div>';return;}
+  const targetLabel = t => t==='all'?'全員':t.startsWith('role:')?t.replace('role:','')+' 全員':t;
+  list.innerHTML=notices.map(n=>`
+    <div style="padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--tx3);margin-bottom:5px">${new Date(n.created_at).toLocaleString('ja-JP')} / 対象: ${esc(targetLabel(n.target_id||'all'))}</div>
+        <div style="font-size:14px;color:var(--tx);line-height:1.6">${esc(n.content)}</div>
+      </div>
+      <button class="btn btn-sm" style="background:var(--rd-light);color:var(--rd);border:none;flex-shrink:0" onclick="deleteNotice('${esc(n.memo_id)}')">削除</button>
     </div>`).join('');
+}
+
+async function deleteNotice(memoId) {
+  if(!confirm('このお知らせを削除しますか？'))return;
+  const r=await gasReq('api/admin/notices/delete','POST',{memo_id:memoId});
+  if(r&&(r.ok||!r.error)){await loadNotices();toast('削除しました');}
+  else toast('削除に失敗しました','err');
 }
 
 function openNoticeForm(){ document.getElementById('noticeFormCard').style.display='block'; }
