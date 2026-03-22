@@ -176,9 +176,6 @@ input[type="month"].inp{padding:11px 14px}
       <div class="tb-icon" id="noticeBtn" onclick="toggleNoticePanel()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg><span class="badge" id="notiBadge" style="display:none"></span>
       </div>
-      <div class="tb-icon" onclick="goNav('settings')" title="メッセージ">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-      </div>
       <div class="tb-icon" onclick="logout()" title="サインアウト">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
       </div>
@@ -448,24 +445,30 @@ input[type="month"].inp{padding:11px 14px}
 
 <!-- ══════════════════════════════════════  SETTINGS -->
 <div class="screen" id="s-settings">
-  <div style="margin-bottom:4px"><div style="font-size:19px;font-weight:700;margin-bottom:4px">設定</div><div style="font-size:13px;color:var(--tx2)">アカウント情報</div></div>
+  <div style="margin-bottom:4px"><div style="font-size:19px;font-weight:700;margin-bottom:4px">マイページ</div><div style="font-size:13px;color:var(--tx2)">アカウント情報（変更はAdminから行います）</div></div>
   <div class="card">
-    <div class="ch"><div class="ct">プロフィール</div></div>
-    <div style="padding:18px">
-      <div class="form-group"><label class="form-label">氏名</label><input class="inp" id="set-name" value="木村 さくら" /></div>
-      <div class="form-group"><label class="form-label">メールアドレス</label><input class="inp" id="set-email" value="kimura@company.com" /></div>
-      <div class="form-group" style="margin-bottom:0"><label class="form-label">電話番号</label><input class="inp" id="set-tel" value="090-1234-5678" /></div>
+    <div class="ch"><div class="ct">👤 プロフィール</div></div>
+    <div style="padding:16px 18px">
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">氏名</span><span style="font-size:14px;font-weight:600" id="set-name-disp">—</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">メールアドレス</span><span style="font-size:14px;font-weight:600" id="set-email-disp">—</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0"><span style="font-size:13px;color:var(--tx2)">電話番号</span><span style="font-size:14px;font-weight:600" id="set-tel-disp">—</span></div>
     </div>
   </div>
   <div class="card">
-    <div class="ch"><div class="ct">担当情報</div></div>
-    <div style="padding:18px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="font-size:13px;color:var(--tx2)">担当メンター</span><span style="font-size:14px;font-weight:600" id="set-mentor">田中メンター</span></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:12px"><span style="font-size:13px;color:var(--tx2)">担当リーダー</span><span style="font-size:14px;font-weight:600">伊藤リーダー</span></div>
-      <div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:var(--tx2)">稼働場所</span><span style="font-size:14px;font-weight:600">渋谷オフィス</span></div>
+    <div class="ch"><div class="ct">🏢 担当情報</div></div>
+    <div style="padding:16px 18px">
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">担当メンター</span><span style="font-size:14px;font-weight:600" id="set-mentor">—</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">担当リーダー</span><span style="font-size:14px;font-weight:600" id="set-leader">—</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">稼働場所</span><span style="font-size:14px;font-weight:600" id="set-workplace">—</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">雇用形態</span><span style="font-size:14px;font-weight:600" id="set-workstatus">—</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0"><span style="font-size:13px;color:var(--tx2)">時給</span><span style="font-size:14px;font-weight:600" id="set-wage">—</span></div>
     </div>
   </div>
-  <button class="btn btn-p" style="width:100%;margin-top:4px" onclick="saveProfile()">💾 変更を保存</button>
+  <div class="card" style="background:var(--am-light);border-color:var(--am)">
+    <div style="padding:14px 18px;font-size:12px;color:var(--am);line-height:1.7">
+      💡 プロフィールの変更は管理者にご依頼ください。<br>情報の更新はAdminパネルから行われます。
+    </div>
+  </div>
   <button class="btn btn-g" style="width:100%;margin-top:8px" onclick="logout()">🚪 ログアウト</button>
 </div>
 
@@ -581,8 +584,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const user = Auth.getUser() || { name: '木村 さくら', role: 'mentee' };
 
   // has_leader_role が TRUE なら週次TELタブを表示
-  if (user.has_leader_role === true || user.has_leader_role === 'true') {
-    const wtTab = document.getElementById('ni-weeklyTel');
+  var hasLeader = user.has_leader_role === true || user.has_leader_role === 'true' || user.has_leader_role === 'TRUE';
+  if (hasLeader) {
+    var wtTab = document.getElementById('ni-weeklyTel');
     if (wtTab) wtTab.style.display = '';
     loadWeeklyTelMentee();
   }
@@ -605,14 +609,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ⑥ 担当Leader情報読み込み
   loadLeaderInfo();
 
-  // ⑥ 設定画面にユーザー情報を反映
-  document.getElementById('set-name').value = user.name || '';
-  document.getElementById('set-email').value = user.email || '';
-  document.getElementById('set-tel').value = user.phone_number || '';
-  if (document.getElementById('set-mentor')) document.getElementById('set-mentor').textContent = (home && home.mentor) ? home.mentor.name : '未設定';
-  // 担当リーダーを設定画面に表示
-  var setLeaderEl = document.querySelector('#s-settings .card:nth-child(2) div:nth-child(2) span:last-child');
-  if (setLeaderEl && home && home.leader) setLeaderEl.textContent = home.leader.name;
+  // ⑥ 設定画面にユーザー情報を反映（表示専用）
+  var setDisp = function(id, val) { var el=document.getElementById(id); if(el) el.textContent = val||'—'; };
+  setDisp('set-name-disp',  user.name);
+  setDisp('set-email-disp', user.email);
+  setDisp('set-tel-disp',   user.phone_number);
+  setDisp('set-mentor',     (home && home.mentor) ? home.mentor.name : '未設定');
+  setDisp('set-leader',     (home && home.leader) ? home.leader.name : '—');
+  setDisp('set-workplace',  user.workplace || '—');
+  setDisp('set-workstatus', user.work_status || '—');
+  setDisp('set-wage',       user.hourly_wage ? '¥'+Number(user.hourly_wage).toLocaleString()+'/h' : '—');
   // 研修コンテンツ
   loadTraining();
 
@@ -877,45 +883,114 @@ async function saveProfile() {
 }
 
 // ══ 予約 ══
+// 予約関連変数
+var _availSlots   = {};
+var _selectedDate = '';
+var _selectedTime = '';
+
 async function loadAvailableSlots() {
-  const data = await apiRequest('/api/mentee/available-slots');
-  if (!data || !data.slots) return;
-  const container = document.getElementById('booking-slots');
-  if (!container) return;
-  const slots = data.slots;
-  const dates = Object.keys(slots).sort();
-  if (dates.length === 0) {
-    container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">空き時間がありません</div>';
+  var calEl = document.getElementById('bookCal');
+  if (calEl) calEl.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('timeCard').style.display = 'none';
+  document.getElementById('bookBtn').style.display  = 'none';
+  _selectedDate = ''; _selectedTime = '';
+
+  var data = await apiRequest('/api/mentee/available-slots');
+  if (!data) {
+    if (calEl) calEl.innerHTML = '<div style="text-align:center;color:var(--rd);padding:12px;font-size:12px">取得に失敗しました</div>';
     return;
   }
-  container.innerHTML = dates.map(date => {
-    const daySlots = slots[date].filter(s => s.available);
-    if (daySlots.length === 0) return '';
-    return '<div style="margin-bottom:16px">' +
-      '<div style="font-size:13px;font-weight:700;margin-bottom:8px">' + date + '</div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
-      daySlots.map(s => '<button class="btn btn-g btn-sm" onclick="bookSlot(\'' + date + 'T' + s.time + '\')">' + s.time + '</button>').join('') +
-      '</div></div>';
+  if (data.error === 'NO_MENTOR') {
+    if (calEl) calEl.innerHTML = '<div style="text-align:center;color:var(--tx3);padding:12px;font-size:12px">担当メンターが設定されていません</div>';
+    return;
+  }
+  _availSlots = data.slots || {};
+  renderBookingCalendar();
+}
+
+function renderBookingCalendar() {
+  var calEl   = document.getElementById('bookCal');
+  var labelEl = document.getElementById('calMonthLabel');
+  if (!calEl) return;
+  var now   = new Date();
+  var today = now.toISOString().slice(0,10);
+  if (labelEl) labelEl.textContent = now.getFullYear() + '年' + (now.getMonth()+1) + '月';
+
+  var days = [];
+  for (var i = 0; i < 14; i++) {
+    var d = new Date(now); d.setDate(now.getDate()+i); d.setHours(0,0,0,0);
+    days.push(d.toISOString().slice(0,10));
+  }
+  var firstDow = new Date(days[0]).getDay();
+  var cells = [];
+  for (var j = 0; j < firstDow; j++) cells.push('');
+  days.forEach(function(d){ cells.push(d); });
+  while (cells.length % 7 !== 0) cells.push('');
+
+  calEl.innerHTML = cells.map(function(d) {
+    if (!d) return '<div></div>';
+    var hasSlots = _availSlots[d] && _availSlots[d].some(function(s){ return s.available; });
+    var isSel    = (d === _selectedDate);
+    var isToday  = (d === today);
+    var dayNum   = parseInt(d.slice(8));
+    var dotHtml  = hasSlots ? '<div style="width:5px;height:5px;border-radius:50%;background:'+(isSel?'#fff':'var(--pr)')+';margin:1px auto 0"></div>' : '';
+    var st = isSel    ? 'background:var(--pr);color:#fff;border-color:var(--pr)' :
+             isToday  ? 'background:var(--pr-light);border-color:var(--pr)' :
+             !hasSlots? 'opacity:.3;pointer-events:none' : '';
+    return '<div class="cal-day" style="'+st+';flex-direction:column;gap:1px;font-size:13px"'
+      +(hasSlots?' data-date="'+d+'" onclick="selectDate(this.dataset.date)"':'')+'>'+dayNum+dotHtml+'</div>';
   }).join('');
 }
 
-async function bookSlot(datetime) {
-  const user = Auth.getUser();
-  if (!user) return;
-  const mentorId = user.mentor_id || '';
+function selectDate(date) {
+  _selectedDate = date; _selectedTime = '';
+  document.getElementById('bookBtn').style.display = 'none';
+  renderBookingCalendar();
+  var slots    = (_availSlots[date]||[]).filter(function(s){ return s.available; });
+  var timeCard = document.getElementById('timeCard');
+  var timeGrid = document.getElementById('timeGrid');
+  var label    = document.getElementById('selectedDateLabel');
+  var d  = new Date(date);
+  var wd = ['日','月','火','水','木','金','土'][d.getDay()];
+  if (label) label.textContent = (d.getMonth()+1)+'月'+d.getDate()+'日（'+wd+'）';
+  timeGrid.innerHTML = slots.length === 0
+    ? '<div style="text-align:center;color:var(--tx3);font-size:13px;padding:12px">この日は空きがありません</div>'
+    : slots.map(function(s){ return '<div class="time-slot" data-time="'+s.time+'" data-dt="'+s.datetime+'" onclick="selectTime(this.dataset.time,this.dataset.dt,this)">'+s.time+'</div>'; }).join('');
+  timeCard.style.display = '';
+  timeCard.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function selectTime(time, datetime, el) {
+  _selectedTime = datetime;
+  document.querySelectorAll('.time-slot').forEach(function(t){ t.classList.remove('sel'); });
+  el.classList.add('sel');
+  document.getElementById('bookBtn').style.display = '';
+}
+
+async function bookSlot() {
+  if (!_selectedTime) { showToast('❌ 時間を選択してください'); return; }
+  var user     = Auth.getUser();
+  var mentorId = (user && user.mentor_id) || '';
   if (!mentorId) { showToast('❌ 担当メンターが設定されていません'); return; }
-  const result = await apiRequest('/api/mentee/booking', {
+  var btn = document.getElementById('bookBtn');
+  btn.disabled = true; btn.textContent = '予約中…';
+  var result = await apiRequest('/api/mentee/booking', {
     method: 'POST',
-    body: JSON.stringify({ mentor_id: mentorId, scheduled_at: datetime, duration_minutes: 30 })
+    body: JSON.stringify({ mentor_id: mentorId, scheduled_at: _selectedTime, duration_minutes: 30 })
   });
+  btn.disabled = false; btn.textContent = '✅ この日時で予約する';
   if (result && result.ok) {
-    showToast('✅ 予約しました: ' + datetime);
-    loadAvailableSlots();
+    showToast('✅ 予約が完了しました！');
+    _selectedDate = ''; _selectedTime = '';
+    document.getElementById('timeCard').style.display = 'none';
+    document.getElementById('bookBtn').style.display  = 'none';
+    await loadAvailableSlots();
     loadHomeData();
   } else {
-    showToast('❌ 予約に失敗しました');
+    showToast('❌ ' + ((result && (result.error||result.message)) || '予約に失敗しました'));
   }
 }
+
 
 // ══ ホームデータ読み込み ══
 async function loadHomeData() {
@@ -1037,7 +1112,12 @@ function showReport(reportId) {
 async function loadTraining() {
   var container = document.getElementById('trainingList');
   if (!container) return;
-  var data = await apiRequest('/api/admin/contents');
+  // mentee向けコンテンツ取得（admin/contentsと同じシートを参照）
+  var data = await apiRequest('/api/mentee/contents');
+  if (!data || !data.contents) {
+    // フォールバック: admin/contentsを試す
+    data = await apiRequest('/api/admin/contents');
+  }
   if (!data || !data.contents || data.contents.length === 0) {
     container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">コンテンツがありません</div>';
     return;
