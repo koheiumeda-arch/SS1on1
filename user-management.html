@@ -476,6 +476,13 @@
           </select>
           <span class="form-hint" id="mentorHint">「mentee」選択時に有効になります</span>
         </div>
+        <div class="form-group">
+          <label class="form-label">担当リーダー</label>
+          <select class="form-select" id="f_leader_user" disabled>
+            <option value="">なし</option>
+          </select>
+          <span class="form-hint" id="leaderHint">「mentee」選択時に有効になります</span>
+        </div>
         <div class="form-group full">
           <label class="checkbox-wrap">
             <input type="checkbox" id="f_leader">
@@ -735,7 +742,13 @@ function editUser(u) {
   document.getElementById('f_wage').value=u.hourly_wage||'';
   document.getElementById('f_chat').value=u.chat_url||'';
   document.getElementById('pwRow').style.display='none';
-  populateMentors(u.mentor_id); onRoleChange(); openModal('formModal');
+  populateMentors(u.mentor_id);
+  onRoleChange();
+  // リーダー選択を復元（onRoleChange後に呼ぶ）
+  if(u.role==='mentee'){
+    populateLeaders(u.leader_id||'');
+  }
+  openModal('formModal');
 }
 
 function resetForm() {
@@ -750,13 +763,28 @@ function onRoleChange() {
   const role=document.getElementById('f_role').value;
   const sel=document.getElementById('f_mentor');
   const hint=document.getElementById('mentorHint');
-  if(role==='mentee'){sel.disabled=false;hint.textContent='担当メンターを選択してください';}
-  else{sel.disabled=true;sel.value='';hint.textContent='「mentee」選択時に有効になります';}
+  const lsel=document.getElementById('f_leader_user');
+  const lhint=document.getElementById('leaderHint');
+  if(role==='mentee'){
+    sel.disabled=false;  hint.textContent='担当メンターを選択してください';
+    lsel.disabled=false; lhint.textContent='担当リーダーを選択してください';
+    populateLeaders(lsel.value);
+  } else {
+    sel.disabled=true;  sel.value='';  hint.textContent='「mentee」選択時に有効になります';
+    lsel.disabled=true; lsel.value=''; lhint.textContent='「mentee」選択時に有効になります';
+  }
 }
 
 function populateMentors(sel='') {
   document.getElementById('f_mentor').innerHTML='<option value="">なし</option>'+
     mentorList.map(m=>`<option value="${m.user_id}" ${m.user_id===sel?'selected':''}>${esc(m.name)}</option>`).join('');
+}
+
+function populateLeaders(sel='') {
+  // has_leader_role=TRUE のユーザーをリーダー候補として表示
+  const leaders = allUsers.filter(u => u.has_leader_role === true || u.has_leader_role === 'TRUE' || u.has_leader_role === 'true');
+  document.getElementById('f_leader_user').innerHTML='<option value="">なし</option>'+
+    leaders.map(u=>`<option value="${u.user_id}" ${u.user_id===sel?'selected':''}>${esc(u.name)}</option>`).join('');
 }
 
 async function refreshPw() {
@@ -788,6 +816,7 @@ async function submitUser() {
     phone:document.getElementById('f_phone').value.trim(),
     has_leader_role:document.getElementById('f_leader').checked,
     mentor_id:document.getElementById('f_mentor').value,
+    leader_id:document.getElementById('f_leader_user').value,
     workplace:document.getElementById('f_workplace').value.trim(),
     employment_type:document.getElementById('f_emp').value,
     hourly_wage:document.getElementById('f_wage').value,
