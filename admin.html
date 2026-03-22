@@ -441,6 +441,7 @@ function statusOf(s) { return STATUS_MAP[s] || STATUS_MAP.green; }
 const Auth = {
   getToken:   () => localStorage.getItem('1on1_token'),
   getUser:    () => { try { return JSON.parse(localStorage.getItem('1on1_user')||'null'); } catch{ return null; } },
+  setAuth:    (token, user) => { localStorage.setItem('1on1_token', token); localStorage.setItem('1on1_user', JSON.stringify(user)); },
   clearAuth:  () => { localStorage.removeItem('1on1_token'); localStorage.removeItem('1on1_user'); },
   isLoggedIn: () => !!localStorage.getItem('1on1_token'),
 };
