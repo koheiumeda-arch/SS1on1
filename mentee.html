@@ -969,8 +969,9 @@ function selectTime(time, datetime, el) {
 
 async function bookSlot() {
   if (!_selectedTime) { showToast('❌ 時間を選択してください'); return; }
+  // _myMentorId（homeAPIから取得）を優先、なければlocalStorageのuser.mentor_idを使用
   var user     = Auth.getUser();
-  var mentorId = (user && user.mentor_id) || '';
+  var mentorId = _myMentorId || (user && user.mentor_id) || '';
   if (!mentorId) { showToast('❌ 担当メンターが設定されていません'); return; }
   var btn = document.getElementById('bookBtn');
   btn.disabled = true; btn.textContent = '予約中…';
@@ -1000,14 +1001,16 @@ async function loadHomeData() {
   loadLeaderInfo();
 }
 
-var _myChatUrl = '';
+var _myChatUrl    = '';
 var _leaderChatUrl = '';
-var _leaderPhone = '';
+var _leaderPhone  = '';
+var _myMentorId   = '';  // bookSlot で使用
 
 function renderHome(data) {
   if (data.mentor) {
     var el = document.getElementById('mentorName');
     if (el) el.textContent = data.mentor.name || '未設定';
+    _myMentorId = data.mentor.user_id || '';  // 予約時に使用
   }
   if (data.leader) {
     var nameEl = document.getElementById('leaderName');
