@@ -708,7 +708,8 @@ function showMemberDetail(m) {
 async function loadAdminMemos(userId) {
   const el = document.getElementById('detail-memo-list');
   el.innerHTML = '<div class="loading">読み込み中…</div>';
-  const data = await gasReq('api/admin/memos?user_id='+encodeURIComponent(userId));
+  // user_id はbodyに入れてPOST（gasReqはPOSTのみのため）
+  const data = await gasReq('api/admin/memos','GET',{user_id: userId});
   if (!data||!data.memos) { el.innerHTML='<div class="loading">取得できませんでした</div>'; return; }
   if (data.memos.length===0) { el.innerHTML='<div class="loading">メモはありません</div>'; return; }
   el.innerHTML = data.memos.map(m=>`
