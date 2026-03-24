@@ -166,6 +166,23 @@ td{padding:10px 14px;font-size:13px}
 /* ログインオーバーレイ */
 #loginOverlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center}
 #loginOverlay.show{display:flex}
+
+/* ─── スケジュール設定 ─── */
+.schedule-row{display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg3);border-radius:10px;border:1px solid var(--bd);margin-bottom:6px}
+.schedule-row.inactive{opacity:.4}
+
+/* ─── メンバー管理 ─── */
+#md-memo-list .loading{padding:14px 16px}
+.sig-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.sig-btn{padding:7px 14px;border-radius:10px;border:1.5px solid var(--bd);background:var(--bg3);font-size:12px;font-weight:600;cursor:pointer;color:var(--tx2)}
+.sig-btn.sel-rd{background:var(--rd-light);border-color:var(--rd);color:var(--rd)}
+.sig-btn.sel-am{background:var(--am-light);border-color:var(--am);color:var(--am)}
+.sig-btn.sel-gr{background:var(--gr-light);border-color:var(--gr);color:var(--gr)}
+.sig-btn.sel-cy{background:#e8f4ff;border-color:#4285f4;color:#4285f4}
+#memberDetailPanel .dc{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;flex:1;min-width:80px;text-align:center}
+#memberDetailPanel .dc-lb{font-size:11px;color:var(--tx3);margin-bottom:3px;font-weight:600}
+#memberDetailPanel .dc-v{font-size:14px;font-weight:700;color:var(--tx)}
+#memberDetailPanel .ac{color:var(--pr)}
 </style>
 </head>
 <body>
@@ -308,6 +325,7 @@ td{padding:10px 14px;font-size:13px}
     <div class="nav-tabs">
       <div class="nav-tab active" onclick="nav('dashboard',this)">ダッシュボード</div>
       <div class="nav-tab" onclick="nav('schedule',this)">スケジュール</div>
+      <div class="nav-tab" onclick="nav('members',this)">メンバー管理</div>
       <div class="nav-tab" onclick="nav('reports',this)">レポート</div>
       <div class="nav-tab" id="nav-weeklyTel" style="display:none" onclick="nav('weeklyTel',this)">週次TEL</div>
       <div class="nav-tab" onclick="nav('survey',this)">アンケート</div>
@@ -383,9 +401,83 @@ td{padding:10px 14px;font-size:13px}
 <!-- ════ SCHEDULE ════ -->
 <div class="screen" id="s-schedule">
   <div class="topbar"><div><div class="page-title">スケジュール管理</div><div class="page-sub">担当メンティーとの予約一覧</div></div></div>
+
+  <!-- 予約可能時間設定 -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="ch">
+      <div class="ct">⏰ 予約可能時間の設定</div>
+      <button class="btn btn-p btn-sm" onclick="saveScheduleSettings()">💾 保存</button>
+    </div>
+    <div style="padding:16px">
+      <div style="font-size:12px;color:var(--tx3);margin-bottom:12px">メンティーが1on1を予約できる時間帯を曜日ごとに設定します（30分単位）</div>
+      <div id="scheduleSettingsGrid" style="display:flex;flex-direction:column;gap:10px">
+        <div class="loading">読み込み中…</div>
+      </div>
+      <div id="scheduleSettingsMsg" style="font-size:12px;margin-top:8px"></div>
+    </div>
+  </div>
+
+  <!-- 予約一覧 -->
   <div class="card">
     <div class="ch"><div class="ct" id="scheduleCount">予約一覧</div></div>
     <div class="sched-list" id="scheduleList"><div class="loading">読み込み中…</div></div>
+  </div>
+</div>
+
+<!-- ════ MEMBERS ════ -->
+<div class="screen" id="s-members">
+  <div class="topbar"><div><div class="page-title">メンバー管理</div><div class="page-sub">担当メンティーの情報・レポート・メモ</div></div></div>
+  <!-- メンティー選択タブ -->
+  <div class="card" style="margin-bottom:14px">
+    <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap" id="memberTabList">
+      <div class="loading">読み込み中…</div>
+    </div>
+  </div>
+  <!-- 詳細パネル -->
+  <div id="memberDetailPanel" style="display:none">
+    <!-- 基本情報 -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="ch">
+        <div class="ct" id="md-name">—</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" id="md-chat-btn" style="display:none;background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff;border:none" onclick="openMemberDetailChat()">💬</button>
+          <button class="btn btn-p btn-sm" onclick="openBookingFromMember()">＋ 予約</button>
+        </div>
+      </div>
+      <div style="padding:14px 16px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v" id="md-workplace">—</div></div>
+          <div class="dc"><div class="dc-lb">雇用形態</div><div class="dc-v" id="md-workstatus">—</div></div>
+          <div class="dc"><div class="dc-lb">時給</div><div class="dc-v ac" id="md-wage">—</div></div>
+        </div>
+        <!-- ステータス更新 -->
+        <div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:6px">ステータス</div>
+        <div class="sig-btns">
+          <button class="sig-btn" id="md-sig-rd" onclick="selectMdSig('red')">🔴 要注意</button>
+          <button class="sig-btn" id="md-sig-am" onclick="selectMdSig('yellow')">🟡 注意</button>
+          <button class="sig-btn" id="md-sig-gr" onclick="selectMdSig('green')">🟢 順調</button>
+          <button class="sig-btn" id="md-sig-cy" onclick="selectMdSig('blue')">🔵 快調</button>
+        </div>
+        <button class="btn btn-p btn-sm" style="margin-top:8px" onclick="saveMdStatus()">保存</button>
+      </div>
+    </div>
+    <!-- メモ -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="ch"><div class="ct">📝 メモ</div></div>
+      <div style="padding:14px 16px">
+        <textarea class="inp" id="md-memo-input" rows="3" placeholder="このメンバーへのメモ…" style="margin-bottom:8px"></textarea>
+        <div style="display:flex;justify-content:flex-end">
+          <button class="btn btn-p btn-sm" onclick="saveMdMemo()">💾 メモを保存</button>
+        </div>
+      </div>
+      <div class="ch" style="border-top:1px solid var(--bd)"><div class="ct" style="font-size:13px">過去のメモ</div></div>
+      <div id="md-memo-list"><div class="loading">読み込み中…</div></div>
+    </div>
+    <!-- 過去のレポート -->
+    <div class="card">
+      <div class="ch"><div class="ct">📋 過去のレポート・録画</div></div>
+      <div id="md-reports-list"><div class="loading">読み込み中…</div></div>
+    </div>
   </div>
 </div>
 
@@ -788,24 +880,72 @@ function renderDashSchedule() {
 }
 
 function buildScheduleCard(b, compact) {
-  var dt     = new Date(b.scheduled_at || '');
-  var day    = isNaN(dt) ? '?' : dt.getDate();
-  var month  = isNaN(dt) ? '' : (dt.getMonth()+1)+'月/'+'日月火水木金土'[dt.getDay()];
+  var dt      = new Date(b.scheduled_at || '');
+  var day     = isNaN(dt) ? '?' : dt.getDate();
+  var month   = isNaN(dt) ? '' : (dt.getMonth()+1)+'月/'+'日月火水木金土'[dt.getDay()];
   var timeStr = isNaN(dt) ? '—' : '🕐 '+(dt.getHours()+':'+('0'+dt.getMinutes()).slice(-2));
-  var today  = isToday(b.scheduled_at);
-  var mentee = _myMentees.find(function(m){ return m.user_id === b.mentee_id; });
-  var name   = mentee ? mentee.name : (b.mentee_name || b.mentee_id || '—');
+  var today   = isToday(b.scheduled_at);
+  var mentee  = _myMentees.find(function(m){ return m.user_id === b.mentee_id; });
+  var name    = mentee ? mentee.name : (b.mentee_name || b.mentee_id || '—');
   var meetLink = b.meet_link || '';
-  return '<div class="sc'+(today?' today':'') +'">'
-    +'<div class="sd"><div class="sd-d">'+day+'</div><div class="sd-m">'+esc(month)+'</div></div>'
-    +'<div class="si">'
-    +'<div style="display:flex;align-items:center;gap:7px"><div class="si-name">'+esc(name)+'</div>'+(today?'<span class="sched-badge">TODAY</span>':'')+'</div>'
-    +'<div class="si-time">'+timeStr+'</div>'
-    +'<div class="sc-acts">'
-    +(meetLink ? '<button class="sc-btn sc-meet" onclick="window.open(\''+esc(meetLink)+'\',\'_blank\')">▶ Meet参加</button>' : '')
-    +'<button class="sc-btn sc-doc" onclick="selectMentee(\''+b.mentee_id+'\',null);nav(\'dashboard\')">📄 パネルを確認</button>'
-    +'<button class="sc-btn" style="background:var(--am-light);color:var(--am);border:none" onclick="openBookingUpdate(\''+b.booking_id+'\',\''+encodeURIComponent(b.scheduled_at||'')+'\',\''+encodeURIComponent(b.meet_link||'')+'\')">✏️ 変更</button>'+'<button class="sc-btn sc-del" onclick="openCancelModal(\''+b.booking_id+'\')">削除</button>'
-    +'</div></div></div>';
+
+  var wrap = document.createElement('div');
+  wrap.className = 'sc' + (today ? ' today' : '');
+
+  // 日付部分
+  var sd = document.createElement('div'); sd.className = 'sd';
+  sd.innerHTML = '<div class="sd-d">'+day+'</div><div class="sd-m">'+esc(month)+'</div>';
+  wrap.appendChild(sd);
+
+  // 情報部分
+  var si = document.createElement('div'); si.className = 'si';
+  var nameRow = document.createElement('div');
+  nameRow.style.cssText = 'display:flex;align-items:center;gap:7px';
+  nameRow.innerHTML = '<div class="si-name">'+esc(name)+'</div>'+(today?'<span class="sched-badge">TODAY</span>':'');
+  var timeRow = document.createElement('div'); timeRow.className = 'si-time'; timeRow.textContent = timeStr;
+  var acts = document.createElement('div'); acts.className = 'sc-acts';
+
+  if (meetLink) {
+    var meetBtn = document.createElement('button');
+    meetBtn.className = 'sc-btn sc-meet';
+    meetBtn.textContent = '▶ Meet参加';
+    meetBtn.onclick = function(){ window.open(meetLink, '_blank'); };
+    acts.appendChild(meetBtn);
+  }
+
+  // パネルを確認ボタン（DOM構築でクォート問題を回避）
+  var panelBtn = document.createElement('button');
+  panelBtn.className = 'sc-btn sc-doc';
+  panelBtn.textContent = '👤 メンバー詳細';
+  var _menteeId = b.mentee_id;
+  panelBtn.onclick = function(){
+    openMemberDetail(_menteeId);
+  };
+  acts.appendChild(panelBtn);
+
+  // 変更ボタン
+  var editBtn = document.createElement('button');
+  editBtn.className = 'sc-btn';
+  editBtn.style.cssText = 'background:var(--am-light);color:var(--am);border:none';
+  editBtn.textContent = '✏️ 変更';
+  var _bid = b.booking_id;
+  var _sat = b.scheduled_at || '';
+  var _ml  = b.meet_link    || '';
+  editBtn.onclick = function(){ openBookingUpdate(_bid, encodeURIComponent(_sat), encodeURIComponent(_ml)); };
+  acts.appendChild(editBtn);
+
+  // 削除ボタン
+  var delBtn = document.createElement('button');
+  delBtn.className = 'sc-btn sc-del';
+  delBtn.textContent = '削除';
+  delBtn.onclick = function(){ openCancelModal(_bid); };
+  acts.appendChild(delBtn);
+
+  si.appendChild(nameRow);
+  si.appendChild(timeRow);
+  si.appendChild(acts);
+  wrap.appendChild(si);
+  return wrap.outerHTML;
 }
 
 function openCancelModal(bookingId) {
@@ -1107,10 +1247,263 @@ function nav(id, el) {
   if (s) s.classList.add('active');
   if (el) el.classList.add('active');
   window.scrollTo(0,0);
-  if (id === 'schedule')   { if (_mySchedules.length===0) loadSchedules(); else renderSchedule(); }
+  if (id === 'schedule')   { loadScheduleSettings(); if (_mySchedules.length===0) loadSchedules(); else renderSchedule(); }
+  if (id === 'members')    { loadMembersTab(); }
   if (id === 'reports')    { loadReports(); }
   if (id === 'weeklyTel')  { loadWeeklyTel(); }
   if (id === 'survey')     { loadSurveys(); }
+}
+
+// ══════════════════════════════════════════════════════════
+//  スケジュール設定（予約可能時間）
+// ══════════════════════════════════════════════════════════
+var _scheduleSettings = {}; // { '1': {start:'10:00',end:'19:00',active:true}, ... }
+var DOW_LABELS = ['日','月','火','水','木','金','土'];
+var TIME_OPTIONS = (function(){
+  var opts = [];
+  for (var h=0; h<24; h++) {
+    opts.push(('0'+h).slice(-2)+':00');
+    opts.push(('0'+h).slice(-2)+':30');
+  }
+  return opts;
+})();
+
+async function loadScheduleSettings() {
+  var data = await gasReq('api/mentor/schedule');
+  _scheduleSettings = {};
+  if (data && data.schedules) {
+    data.schedules.forEach(function(s) {
+      _scheduleSettings[s.day_of_week] = {
+        start:  s.start_time || '10:00',
+        end:    s.end_time   || '19:00',
+        active: s.is_active  === 'TRUE' || s.is_active === true
+      };
+    });
+  }
+  // デフォルト（月〜金）
+  ['1','2','3','4','5'].forEach(function(d) {
+    if (!_scheduleSettings[d]) _scheduleSettings[d] = { start:'10:00', end:'19:00', active: true };
+  });
+  renderScheduleSettings();
+}
+
+function renderScheduleSettings() {
+  var grid = document.getElementById('scheduleSettingsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  ['1','2','3','4','5','6','0'].forEach(function(dow) {
+    var s = _scheduleSettings[dow] || { start:'10:00', end:'19:00', active: false };
+    var row = document.createElement('div');
+    row.className = 'schedule-row' + (s.active ? '' : ' inactive');
+
+    // チェックボックス
+    var chk = document.createElement('input');
+    chk.type = 'checkbox'; chk.checked = !!s.active;
+    chk.style.cssText = 'width:18px;height:18px;cursor:pointer;accent-color:var(--pr)';
+    (function(d){ chk.onchange = function(){ _scheduleSettings[d].active = this.checked; renderScheduleSettings(); }; })(dow);
+
+    // 曜日ラベル
+    var label = document.createElement('div');
+    label.style.cssText = 'width:24px;font-weight:700;font-size:14px;color:'+(dow==='0'?'var(--rd)':dow==='6'?'#4285f4':'var(--tx)');
+    label.textContent = DOW_LABELS[parseInt(dow)];
+
+    // start/end セレクト
+    function makeSelect(val, onChange) {
+      var sel = document.createElement('select');
+      sel.className = 'inp'; sel.style.cssText = 'flex:1;padding:6px 10px;font-size:13px';
+      sel.disabled = !s.active;
+      TIME_OPTIONS.forEach(function(t) {
+        var opt = document.createElement('option');
+        opt.value = t; opt.textContent = t;
+        if (t === val) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.onchange = function(){ onChange(this.value); };
+      return sel;
+    }
+    var sep = document.createElement('span');
+    sep.textContent = '〜'; sep.style.color = 'var(--tx3)';
+
+    var startSel = makeSelect(s.start, (function(d){ return function(v){ _scheduleSettings[d].start=v; }; })(dow));
+    var endSel   = makeSelect(s.end,   (function(d){ return function(v){ _scheduleSettings[d].end=v; }; })(dow));
+
+    row.appendChild(chk); row.appendChild(label);
+    row.appendChild(startSel); row.appendChild(sep); row.appendChild(endSel);
+    grid.appendChild(row);
+  });
+}
+
+async function saveScheduleSettings() {
+  var schedules = Object.keys(_scheduleSettings).map(function(dow) {
+    var s = _scheduleSettings[dow];
+    return { day_of_week: dow, start_time: s.start, end_time: s.end, is_active: s.active };
+  });
+  var msgEl = document.getElementById('scheduleSettingsMsg');
+  msgEl.style.color = 'var(--tx3)'; msgEl.textContent = '保存中…';
+  var r = await gasReq('api/mentor/schedule','POST',{ schedules: schedules });
+  if (r && r.ok) {
+    msgEl.style.color = 'var(--gr)'; msgEl.textContent = '✅ 保存しました';
+    toast('スケジュール設定を保存しました');
+    setTimeout(function(){ msgEl.textContent=''; }, 3000);
+  } else {
+    msgEl.style.color = 'var(--rd)'; msgEl.textContent = '❌ 保存に失敗しました';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  メンバー管理
+// ══════════════════════════════════════════════════════════
+var _mdCurrentMentee = null;
+var _mdCurrentSig    = null;
+var SIG_MAP_MD  = { red:'rd', yellow:'am', green:'gr', blue:'cy' };
+
+function loadMembersTab() {
+  var listEl = document.getElementById('memberTabList');
+  if (!listEl) return;
+  if (_myMentees.length === 0) {
+    listEl.innerHTML = '<div class="loading">担当メンティーがいません</div>';
+    return;
+  }
+  listEl.innerHTML = '';
+  _myMentees.forEach(function(m, i) {
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-sm' + (i===0?' btn-p':' btn-g');
+    btn.textContent = m.name;
+    btn.onclick = function() {
+      listEl.querySelectorAll('button').forEach(function(b){ b.className='btn btn-sm btn-g'; });
+      btn.className = 'btn btn-sm btn-p';
+      openMemberDetail(m.user_id);
+    };
+    listEl.appendChild(btn);
+  });
+  if (_myMentees.length > 0) openMemberDetail(_myMentees[0].user_id);
+}
+
+function openMemberDetail(userId) {
+  var m = _myMentees.find(function(x){ return x.user_id === userId; });
+  if (!m) return;
+  _mdCurrentMentee = m;
+  _mdCurrentSig    = m.status || 'green';
+  var panel = document.getElementById('memberDetailPanel');
+  if (panel) panel.style.display = '';
+
+  document.getElementById('md-name').textContent      = m.name;
+  document.getElementById('md-workplace').textContent  = m.workplace   || '—';
+  document.getElementById('md-workstatus').textContent = m.work_status || '—';
+  document.getElementById('md-wage').textContent       = m.hourly_wage ? '¥'+Number(m.hourly_wage).toLocaleString()+'/h' : '—';
+
+  // チャットボタン
+  var chatBtn = document.getElementById('md-chat-btn');
+  if (chatBtn) { chatBtn.style.display = m.chat_url ? '' : 'none'; }
+
+  // ステータスボタン
+  var sig = SIG_MAP_MD[m.status] || 'gr';
+  ['rd','am','gr','cy'].forEach(function(s){ document.getElementById('md-sig-'+s).className='sig-btn'; });
+  document.getElementById('md-sig-'+sig).className = 'sig-btn sel-'+sig;
+
+  // メモ・レポート読み込み
+  document.getElementById('md-memo-input').value = '';
+  loadMdMemos(userId);
+  loadMdReports(userId);
+
+  // メンバー管理画面に遷移（スケジュール等から呼ばれた場合）
+  var sEl = document.getElementById('s-members');
+  if (sEl && !sEl.classList.contains('active')) {
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    document.querySelectorAll('.nav-tab').forEach(function(n){ n.classList.remove('active'); });
+    sEl.classList.add('active');
+    var tab = document.querySelector('.nav-tab[onclick*="members"]');
+    if (tab) tab.classList.add('active');
+  }
+}
+
+function openMemberDetailChat() {
+  if (_mdCurrentMentee && _mdCurrentMentee.chat_url) window.open(_mdCurrentMentee.chat_url,'_blank');
+  else toast('チャットURLが登録されていません','err');
+}
+
+function openBookingFromMember() {
+  if (!_mdCurrentMentee) return;
+  _currentMentee = _mdCurrentMentee;
+  openBookingCreate();
+}
+
+function selectMdSig(status) {
+  _mdCurrentSig = status;
+  var sig = SIG_MAP_MD[status] || 'gr';
+  ['rd','am','gr','cy'].forEach(function(s){ document.getElementById('md-sig-'+s).className='sig-btn'; });
+  document.getElementById('md-sig-'+sig).className = 'sig-btn sel-'+sig;
+}
+
+async function saveMdStatus() {
+  if (!_mdCurrentMentee) return;
+  var r = await gasReq('api/mentor/update-status','POST',{ target_id:_mdCurrentMentee.user_id, status:_mdCurrentSig });
+  if (r && (r.ok||!r.error)) {
+    _mdCurrentMentee.status = _mdCurrentSig;
+    var idx = _myMentees.findIndex(function(m){ return m.user_id===_mdCurrentMentee.user_id; });
+    if (idx>=0) _myMentees[idx].status = _mdCurrentSig;
+    renderSidebar();
+    toast('ステータスを保存しました');
+  } else {
+    toast('保存に失敗しました','err');
+  }
+}
+
+async function loadMdMemos(userId) {
+  var el = document.getElementById('md-memo-list');
+  el.innerHTML = '<div class="loading">読み込み中…</div>';
+  var data = await gasReq('api/mentor/memos','GET',{ user_id: userId });
+  if (!data || !data.memos) { el.innerHTML='<div class="loading">取得できませんでした</div>'; return; }
+  if (data.memos.length===0) { el.innerHTML='<div class="loading">メモはありません</div>'; return; }
+  el.innerHTML = data.memos.map(function(m){
+    return '<div style="padding:10px 16px;border-bottom:1px solid var(--bd)">'
+      +'<div style="font-size:11px;color:var(--tx3);margin-bottom:3px">'+new Date(m.created_at).toLocaleString('ja-JP')+'</div>'
+      +'<div style="font-size:13px;white-space:pre-wrap">'+esc(m.content)+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+async function saveMdMemo() {
+  if (!_mdCurrentMentee) return;
+  var content = document.getElementById('md-memo-input').value.trim();
+  if (!content) { toast('メモ内容を入力してください','err'); return; }
+  var r = await gasReq('api/mentor/memos','POST',{ target_id:_mdCurrentMentee.user_id, content: content });
+  if (r && (r.ok||r.memo_id)) {
+    document.getElementById('md-memo-input').value = '';
+    await loadMdMemos(_mdCurrentMentee.user_id);
+    toast('メモを保存しました');
+  } else {
+    toast('保存に失敗: '+(r&&(r.error||r.message)||'GAS応答なし'),'err');
+  }
+}
+
+async function loadMdReports(userId) {
+  var el = document.getElementById('md-reports-list');
+  el.innerHTML = '<div class="loading">読み込み中…</div>';
+  var data = await gasReq('api/mentor/mentee-reports','GET',{ mentee_id: userId });
+  if (!data) { el.innerHTML='<div class="loading">取得できませんでした</div>'; return; }
+
+  var bookings = data.bookings || [];
+  var reports  = data.call_reports || [];
+
+  if (bookings.length===0 && reports.length===0) {
+    el.innerHTML='<div class="loading">記録がありません</div>'; return;
+  }
+
+  var html = '';
+  bookings.forEach(function(b) {
+    html += '<div style="padding:12px 16px;border-bottom:1px solid var(--bd)">'
+      +'<div style="font-size:11px;color:var(--tx3);margin-bottom:3px">1on1実施 '+fmtDateFull(b.scheduled_at)+'</div>'
+      +(b.recording_url?'<a href="'+esc(b.recording_url)+'" target="_blank" class="btn btn-g btn-sm" style="text-decoration:none;margin-top:4px">🎥 録画を見る</a>':'')
+      +'</div>';
+  });
+  reports.forEach(function(r) {
+    html += '<div style="padding:12px 16px;border-bottom:1px solid var(--bd)">'
+      +'<div style="font-size:11px;color:var(--tx3);margin-bottom:3px">TELレポート '+fmtDateFull(r.created_at)+'</div>'
+      +'<div style="font-size:13px;color:var(--tx2)">'+esc((r.ai_summary||r.talk_content||'—').slice(0,80))+'</div>'
+      +'</div>';
+  });
+  el.innerHTML = html;
 }
 
 // ══ チャットを開く ══
@@ -1342,10 +1735,10 @@ async function submitBookingUpdate() {
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.getElementById('delModal').addEventListener('click', function(e){ if(e.target===this) closeModal('delModal'); });
-document.getElementById('telModal').addEventListener('click', function(e){ if(e.target===this) closeModal('telModal'); });
-document.getElementById('preDetailModal').addEventListener('click', function(e){ if(e.target===this) closeModal('preDetailModal'); });
-document.getElementById('telHistModal').addEventListener('click', function(e){ if(e.target===this) closeModal('telHistModal'); });
+['delModal','telModal','preDetailModal','telHistModal','bookingCreateModal','bookingUpdateModal'].forEach(function(id){
+  var el = document.getElementById(id);
+  if (el) el.addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
+});
 </script>
 </body>
 </html>
