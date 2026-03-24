@@ -946,9 +946,22 @@ function selectDate(date) {
   var d  = new Date(date);
   var wd = ['日','月','火','水','木','金','土'][d.getDay()];
   if (label) label.textContent = (d.getMonth()+1)+'月'+d.getDate()+'日（'+wd+'）';
-  timeGrid.innerHTML = slots.length === 0
-    ? '<div style="text-align:center;color:var(--tx3);font-size:13px;padding:12px">この日は空きがありません</div>'
-    : slots.map(function(s){ return '<div class="time-slot" data-time="'+s.time+'" data-dt="'+s.datetime+'" onclick="selectTime(this.dataset.time,this.dataset.dt,this)">'+s.time+'</div>'; }).join('');
+  // available:true のスロットと false のスロット両方を表示（falseはグレーアウト）
+  var allSlots = _availSlots[date] || [];
+  if (allSlots.length === 0) {
+    timeGrid.innerHTML = '<div style="text-align:center;color:var(--tx3);font-size:13px;padding:12px">この日は空きがありません</div>';
+  } else {
+    timeGrid.innerHTML = allSlots.map(function(s) {
+      if (s.available) {
+        return '<div class="time-slot" data-time="'+s.time+'" data-dt="'+s.datetime+'" onclick="selectTime(this.dataset.time,this.dataset.dt,this)">'+s.time+'</div>';
+      } else {
+        // 予約済み・カレンダー埋まり → グレーアウト表示
+        return '<div class="time-slot full" title="この時間は予約済みです" style="cursor:not-allowed;position:relative">'+
+          '<span style="text-decoration:line-through;opacity:.5">'+s.time+'</span>'+
+          '<span style="position:absolute;top:2px;right:4px;font-size:9px;color:var(--rd)">✕</span></div>';
+      }
+    }).join('');
+  }
   timeCard.style.display = '';
   timeCard.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }

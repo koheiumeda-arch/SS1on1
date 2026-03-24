@@ -233,17 +233,20 @@ td{padding:10px 14px;font-size:13px}
     <span class="modal-close" onclick="closeModal('bookingCreateModal')">✕</span>
     <div class="modal-title">📅 1on1を予約する</div>
     <div class="form-label" id="bookingCreateTarget" style="font-size:14px;margin-bottom:14px;color:var(--pr)"></div>
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">日時<span style="color:var(--rd)">*</span></label>
-      <input class="inp" type="datetime-local" id="bc-datetime"/>
+    <div style="font-size:12px;color:var(--tx3);margin-bottom:10px" id="bcLoading">カレンダーを読み込み中…</div>
+    <!-- カレンダーグリッド -->
+    <div class="form-group" style="margin-bottom:8px">
+      <label class="form-label">日付を選択</label>
+      <div id="bcCalHeader" style="font-size:12px;color:var(--tx3);margin-bottom:6px"></div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;text-align:center;font-size:10px;color:var(--tx3)">
+        <div style="color:var(--rd)">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div style="color:#4285f4">土</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px" id="bcCal"></div>
     </div>
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">時間（分）</label>
-      <select class="inp" id="bc-duration">
-        <option value="30">30分</option>
-        <option value="45">45分</option>
-        <option value="60">60分</option>
-      </select>
+    <!-- 時間グリッド -->
+    <div class="form-group" style="margin-bottom:12px;display:none" id="bcTimeCard">
+      <label class="form-label">時間を選択 <span id="bcDateLabel" style="font-weight:400;color:var(--tx3)"></span></label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:160px;overflow-y:auto" id="bcTimeGrid"></div>
     </div>
     <div class="form-group" style="margin-bottom:12px">
       <label class="form-label">Google Meet URL（任意）</label>
@@ -267,9 +270,20 @@ td{padding:10px 14px;font-size:13px}
     <span class="modal-close" onclick="closeModal('bookingUpdateModal')">✕</span>
     <div class="modal-title">✏️ 1on1日程を変更する</div>
     <div class="form-label" id="bookingUpdateMeta" style="font-size:13px;margin-bottom:14px;color:var(--tx2)"></div>
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">新しい日時<span style="color:var(--rd)">*</span></label>
-      <input class="inp" type="datetime-local" id="bu-datetime"/>
+    <div style="font-size:12px;color:var(--tx3);margin-bottom:10px" id="buLoading">カレンダーを読み込み中…</div>
+    <!-- カレンダーグリッド -->
+    <div class="form-group" style="margin-bottom:8px">
+      <label class="form-label">新しい日付を選択</label>
+      <div id="buCalHeader" style="font-size:12px;color:var(--tx3);margin-bottom:6px"></div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;text-align:center;font-size:10px;color:var(--tx3)">
+        <div style="color:var(--rd)">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div style="color:#4285f4">土</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px" id="buCal"></div>
+    </div>
+    <!-- 時間グリッド -->
+    <div class="form-group" style="margin-bottom:12px;display:none" id="buTimeCard">
+      <label class="form-label">時間を選択 <span id="buDateLabel" style="font-weight:400;color:var(--tx3)"></span></label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:160px;overflow-y:auto" id="buTimeGrid"></div>
     </div>
     <div class="form-group" style="margin-bottom:12px">
       <label class="form-label">Google Meet URL</label>
@@ -524,6 +538,12 @@ var _cancelBookingId    = null;
 var _telMenteeId        = null;
 var _bookingCreateId    = null; // 予約作成対象のmenteeId
 var _bookingUpdateId    = null; // 変更対象のbooking_id
+var _createSlots        = {};   // 予約作成用スロット
+var _createSelectedDate = '';
+var _createSelectedTime = '';
+var _updateSlots        = {};   // 予約変更用スロット
+var _updateSelectedDate = '';
+var _updateSelectedTime = '';
 
 document.addEventListener('DOMContentLoaded', function() {
   if (!Auth.isLoggedIn()) { showOverlay(); return; }
@@ -1102,32 +1122,152 @@ function openMenteeChat() {
 }
 
 // ══ 予約作成モーダルを開く ══
-function openBookingCreate() {
+// ── カレンダーUI共通関数 ──
+function buildCalendarGrid(slots, calId, headerId, prefix) {
+  var calEl  = document.getElementById(calId);
+  var headEl = document.getElementById(headerId);
+  if (!calEl) return;
+  var now   = new Date();
+  var today = now.toISOString().slice(0,10);
+  if (headEl) headEl.textContent = now.getFullYear()+'年'+(now.getMonth()+1)+'月〜2週間';
+
+  var days = [];
+  for (var i=0; i<14; i++) {
+    var d = new Date(now); d.setDate(now.getDate()+i); d.setHours(0,0,0,0);
+    days.push(d.toISOString().slice(0,10));
+  }
+  var firstDow = new Date(days[0]).getDay();
+  var cells = [];
+  for (var j=0; j<firstDow; j++) cells.push('');
+  days.forEach(function(d){ cells.push(d); });
+  while (cells.length%7!==0) cells.push('');
+
+  var selDate = prefix==='bc' ? _createSelectedDate : _updateSelectedDate;
+  calEl.innerHTML = '';
+
+  cells.forEach(function(d) {
+    var cell = document.createElement('div');
+    cell.style.cssText = 'aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;background:var(--bg3);border:1px solid var(--bd);font-size:11px;';
+
+    if (!d) { calEl.appendChild(cell); return; }
+
+    var hasAv = slots[d] && slots[d].some(function(s){ return s.available; });
+    var isSel = (d===selDate);
+    var isT   = (d===today);
+    var dn    = parseInt(d.slice(8));
+
+    if (isSel)       { cell.style.background='var(--pr)'; cell.style.color='#fff'; cell.style.borderColor='var(--pr)'; }
+    else if (isT)    { cell.style.background='var(--pr-light)'; cell.style.borderColor='var(--pr)'; }
+    else if (!hasAv) { cell.style.opacity='0.3'; }
+
+    if (hasAv) { cell.style.cursor='pointer'; }
+
+    var dot = hasAv ? '<div style="width:4px;height:4px;border-radius:50%;background:'+(isSel?'#fff':'var(--pr)')+';margin:1px auto 0"></div>' : '';
+    cell.innerHTML = dn + dot;
+
+    if (hasAv) {
+      (function(date, pref) {
+        cell.onclick = function(){ selectDateMentor(date, pref); };
+      })(d, prefix);
+    }
+    calEl.appendChild(cell);
+  });
+}
+
+
+function selectDateMentor(date, prefix) {
+  if (prefix==='bc') {
+    _createSelectedDate = date; _createSelectedTime = '';
+    var btn = document.getElementById('bcSubmitBtn');
+    if (btn) btn.disabled = true;
+  } else {
+    _updateSelectedDate = date; _updateSelectedTime = '';
+    var btn2 = document.getElementById('buSubmitBtn');
+    if (btn2) btn2.disabled = true;
+  }
+  var slots   = prefix==='bc' ? _createSlots : _updateSlots;
+  buildCalendarGrid(slots, prefix==='bc'?'bcCal':'buCal', prefix==='bc'?'bcCalHeader':'buCalHeader', prefix);
+
+  var allSlots = slots[date] || [];
+  var timeGrid = document.getElementById(prefix==='bc' ? 'bcTimeGrid' : 'buTimeGrid');
+  var timeCard = document.getElementById(prefix==='bc' ? 'bcTimeCard' : 'buTimeCard');
+  var labelEl  = document.getElementById(prefix==='bc' ? 'bcDateLabel': 'buDateLabel');
+  var d  = new Date(date);
+  var wd = ['日','月','火','水','木','金','土'][d.getDay()];
+  if (labelEl) labelEl.textContent = (d.getMonth()+1)+'月'+d.getDate()+'日（'+wd+'）';
+
+  timeGrid.innerHTML = '';
+  allSlots.forEach(function(s) {
+    var el = document.createElement('div');
+    el.style.cssText = 'padding:8px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;text-align:center;font-size:13px;font-weight:600;position:relative;';
+    if (s.available) {
+      el.style.cursor = 'pointer';
+      el.textContent  = s.time;
+      (function(time, dt, elem, pref) {
+        elem.onclick = function(){ selectTimeMentor(time, dt, elem, pref); };
+      })(s.time, s.datetime, el, prefix);
+    } else {
+      el.style.opacity   = '0.35';
+      el.style.cursor    = 'not-allowed';
+      el.innerHTML = '<span style="text-decoration:line-through">'+s.time+'</span>'
+        + '<span style="position:absolute;top:1px;right:3px;font-size:9px;color:var(--rd)">✕</span>';
+    }
+    timeGrid.appendChild(el);
+  });
+
+  if (allSlots.length === 0) {
+    timeGrid.innerHTML = '<div style="text-align:center;color:var(--tx3);font-size:12px;padding:8px;grid-column:1/-1">この日は空きがありません</div>';
+  }
+  if (timeCard) timeCard.style.display = '';
+}
+
+
+function selectTimeMentor(time, datetime, el, prefix) {
+  var gridId = prefix==='bc' ? 'bcTimeGrid' : 'buTimeGrid';
+  document.querySelectorAll('#'+gridId+' div').forEach(function(d){
+    d.style.background = 'var(--bg3)'; d.style.color = 'var(--tx)'; d.style.borderColor = 'var(--bd)';
+  });
+  el.style.background = 'var(--pr)'; el.style.color = '#fff'; el.style.borderColor = 'var(--pr)';
+  if (prefix==='bc') {
+    _createSelectedTime = datetime;
+    document.getElementById('bcSubmitBtn').disabled = false;
+  } else {
+    _updateSelectedTime = datetime;
+    document.getElementById('buSubmitBtn').disabled = false;
+  }
+}
+
+async function openBookingCreate() {
   if (!_currentMentee) { toast('メンティーを選択してください','err'); return; }
   _bookingCreateId = _currentMentee.user_id;
+  _createSelectedDate = ''; _createSelectedTime = '';
   document.getElementById('bookingCreateTarget').textContent = '対象: ' + _currentMentee.name;
-  // 日時のデフォルトを明日の10:00に
-  var d = new Date(); d.setDate(d.getDate()+1); d.setHours(10,0,0,0);
-  var pad = function(n){ return ('0'+n).slice(-2); };
-  document.getElementById('bc-datetime').value =
-    d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T10:00';
   document.getElementById('bc-meet').value = '';
   document.getElementById('bc-note').value = '';
   document.getElementById('bcMsg').textContent = '';
+  document.getElementById('bcTimeCard').style.display = 'none';
+  document.getElementById('bcSubmitBtn').disabled = true;
+  document.getElementById('bcLoading').textContent = 'カレンダーを読み込み中…';
   document.getElementById('bookingCreateModal').classList.add('open');
+
+  // スロット取得
+  var data = await gasReq('api/mentor/available-slots');
+  _createSlots = (data && data.slots) ? data.slots : {};
+  document.getElementById('bcLoading').textContent = '日付を選択してください';
+  buildCalendarGrid(_createSlots, 'bcCal', 'bcCalHeader', 'bc');
 }
 
 async function submitBookingCreate() {
-  var dt   = document.getElementById('bc-datetime').value;
-  var dur  = document.getElementById('bc-duration').value;
+  var dt   = _createSelectedTime;
+  var dur  = document.getElementById('bc-duration') ? document.getElementById('bc-duration').value : '30';
   var meet = document.getElementById('bc-meet').value.trim();
   var note = document.getElementById('bc-note').value.trim();
   var msgEl = document.getElementById('bcMsg');
   var btn   = document.getElementById('bcSubmitBtn');
-  if (!dt) { msgEl.textContent='日時を入力してください'; return; }
+  if (!dt) { msgEl.textContent='日時を選択してください'; return; }
   if (!_bookingCreateId) { msgEl.textContent='送信先が不明です'; return; }
   // datetime-localをISO形式に変換
-  var isoDate = new Date(dt).toISOString();
+  var isoDate = dt; // gasReqから返されたISO文字列をそのまま使用
   btn.textContent='登録中…'; btn.disabled=true;
   var r = await gasReq('api/mentor/booking/create','POST',{
     mentee_id:        _bookingCreateId,
@@ -1149,39 +1289,41 @@ async function submitBookingCreate() {
 }
 
 // ══ 予約変更モーダルを開く ══
-function openBookingUpdate(bookingId, scheduledAtEnc, meetLinkEnc) {
+async function openBookingUpdate(bookingId, scheduledAtEnc, meetLinkEnc) {
   _bookingUpdateId = bookingId;
+  _updateSelectedDate = ''; _updateSelectedTime = '';
   var scheduledAt = decodeURIComponent(scheduledAtEnc||'');
   var meetLink    = decodeURIComponent(meetLinkEnc||'');
 
-  // 既存の予約情報をフォームにセット
   var booking = _mySchedules.find(function(b){ return b.booking_id === bookingId; });
   var mentee  = booking ? _myMentees.find(function(m){ return m.user_id === booking.mentee_id; }) : null;
   document.getElementById('bookingUpdateMeta').textContent =
     (mentee ? mentee.name : '—') + ' / 現在: ' + (scheduledAt ? new Date(scheduledAt).toLocaleString('ja-JP') : '—');
 
-  // datetime-localに変換
-  if (scheduledAt) {
-    var d = new Date(scheduledAt);
-    var pad = function(n){ return ('0'+n).slice(-2); };
-    document.getElementById('bu-datetime').value =
-      d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
-  }
   document.getElementById('bu-meet').value = meetLink || '';
   document.getElementById('bu-note').value = '';
   document.getElementById('buMsg').textContent = '';
+  document.getElementById('buTimeCard').style.display = 'none';
+  document.getElementById('buSubmitBtn').disabled = true;
+  document.getElementById('buLoading').textContent = 'カレンダーを読み込み中…';
   document.getElementById('bookingUpdateModal').classList.add('open');
+
+  // スロット取得（変更前の予約をブロックから外すためbooking_idを渡す）
+  var data = await gasReq('api/mentor/available-slots');
+  _updateSlots = (data && data.slots) ? data.slots : {};
+  document.getElementById('buLoading').textContent = '新しい日付を選択してください';
+  buildCalendarGrid(_updateSlots, 'buCal', 'buCalHeader', 'bu');
 }
 
 async function submitBookingUpdate() {
-  var dt   = document.getElementById('bu-datetime').value;
+  var dt   = _updateSelectedTime;
   var meet = document.getElementById('bu-meet').value.trim();
   var note = document.getElementById('bu-note').value.trim();
   var msgEl = document.getElementById('buMsg');
   var btn   = document.getElementById('buSubmitBtn');
-  if (!dt) { msgEl.textContent='新しい日時を入力してください'; return; }
+  if (!dt) { msgEl.textContent='新しい日時を選択してください'; return; }
   if (!_bookingUpdateId) { msgEl.textContent='変更対象が不明です'; return; }
-  var isoDate = new Date(dt).toISOString();
+  var isoDate = dt;
   btn.textContent='保存中…'; btn.disabled=true;
   var r = await gasReq('api/mentor/booking/update','POST',{
     booking_id:   _bookingUpdateId,
