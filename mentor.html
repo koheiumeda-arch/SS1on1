@@ -293,21 +293,13 @@ td{padding:10px 14px;font-size:13px}
   <div class="modal-content">
     <span class="modal-close" onclick="closeModal('telModal')">✕</span>
     <div class="modal-title">📝 週次TELレポート</div>
-    <div class="form-label" id="telTarget" style="font-size:14px;margin-bottom:14px;color:var(--pr)"></div>
+    <div class="form-label" id="telTarget" style="font-size:14px;margin-bottom:6px;color:var(--pr)"></div>
+    <div style="font-size:11px;color:var(--tx3);margin-bottom:14px;padding:6px 10px;background:var(--bg3);border-radius:8px">📝 ハドル後に内容を入力して保存してください。録音をDriveにアップロードすると次回から自動処理されます。</div>
 
-    <!-- Google Meet URL入力 -->
-    <div class="form-group" style="margin-bottom:12px">
-      <label class="form-label">Google Meet URL（ハドル録音がある場合）</label>
-      <div style="display:flex;gap:8px">
-        <input class="inp" id="tel-meet-url" placeholder="https://meet.google.com/..." style="flex:1;font-size:13px" />
-        <button class="btn btn-g" style="flex-shrink:0;font-size:12px;padding:10px 14px" onclick="runTelAI()">🤖 AI要約</button>
-      </div>
-    </div>
-
-    <!-- AI要約エリア（AI実行後に表示） -->
-    <div id="telAiArea" style="display:none;background:var(--pr-light);border:1px solid rgba(93,175,167,.3);border-radius:11px;padding:13px;margin-bottom:14px">
-      <div style="font-size:12px;font-weight:700;color:var(--pr);margin-bottom:8px">🤖 AI自動要約（編集可能）</div>
-      <div style="font-size:11px;color:var(--tx3);margin-bottom:6px">内容を確認・編集してから提出してください</div>
+    <!-- Google Meet URL入力・AI要約（将来実装予定・現在非表示） -->
+    <div style="display:none">
+      <input id="tel-meet-url" />
+      <div id="telAiArea"></div>
     </div>
 
     <!-- レポートフォーム -->
@@ -443,6 +435,11 @@ td{padding:10px 14px;font-size:13px}
       <label class="form-label">時間を選択 <span id="bcDateLabel" style="font-weight:400;color:var(--tx3)"></span></label>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:160px;overflow-y:auto" id="bcTimeGrid"></div>
     </div>
+    <!-- フォールバック -->
+    <div class="form-group" style="margin-bottom:12px;display:none" id="bcDatetimeFallback">
+      <label class="form-label">日時<span style="color:var(--rd)">*</span></label>
+      <input class="inp" type="datetime-local" id="bcDatetimeInput" onchange="onBcDatetimeChange(this.value)"/>
+    </div>
     <div class="form-group" style="margin-bottom:12px">
       <label class="form-label">Google Meet URL（任意）</label>
       <input class="inp" id="bc-meet" placeholder="https://meet.google.com/xxx-xxxx-xxx"/>
@@ -479,6 +476,11 @@ td{padding:10px 14px;font-size:13px}
     <div class="form-group" style="margin-bottom:12px;display:none" id="buTimeCard">
       <label class="form-label">時間を選択 <span id="buDateLabel" style="font-weight:400;color:var(--tx3)"></span></label>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:160px;overflow-y:auto" id="buTimeGrid"></div>
+    </div>
+    <!-- フォールバック: datetime-local 直接入力 -->
+    <div class="form-group" style="margin-bottom:12px;display:none" id="buDatetimeFallback">
+      <label class="form-label">新しい日時<span style="color:var(--rd)">*</span></label>
+      <input class="inp" type="datetime-local" id="buDatetimeInput" onchange="onBuDatetimeChange(this.value)"/>
     </div>
     <div class="form-group" style="margin-bottom:12px">
       <label class="form-label">Google Meet URL</label>
@@ -673,10 +675,24 @@ td{padding:10px 14px;font-size:13px}
 
 <!-- ════ REPORTS ════ -->
 <div class="screen" id="s-reports">
-  <div class="topbar"><div><div class="page-title">過去レポート</div><div class="page-sub">担当メンティーの過去記録</div></div></div>
+  <div class="topbar"><div><div class="page-title">過去レポート</div><div class="page-sub">担当メンティーの過去TEL記録</div></div></div>
   <div class="card">
-    <div class="ch"><div class="ct" id="reportsCount">レポート一覧</div></div>
+    <!-- 絞り込み・件数 -->
+    <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--bd)">
+      <select class="inp" id="reportsFilterMentee" style="flex:1;min-width:120px;max-width:200px;font-size:13px;padding:7px 10px" onchange="filterReports()">
+        <option value="">全メンティー</option>
+      </select>
+      <select class="inp" id="reportsFilterStatus" style="width:110px;font-size:13px;padding:7px 10px" onchange="filterReports()">
+        <option value="">すべて</option>
+        <option value="confirmed">✅ 確定済み</option>
+        <option value="draft">📝 下書き</option>
+      </select>
+      <div class="ct" id="reportsCount" style="font-size:12px;color:var(--tx3);white-space:nowrap;margin-left:auto">—</div>
+    </div>
+    <!-- レポート一覧 -->
     <div id="reportsList"><div class="loading">読み込み中…</div></div>
+    <!-- ページネーション -->
+    <div id="reportsPager" style="display:none;padding:12px 16px;align-items:center;justify-content:center;gap:8px;border-top:1px solid var(--bd)"></div>
   </div>
 </div>
 
@@ -1097,9 +1113,10 @@ function renderSchedule() {
     return;
   }
   countEl.textContent = '予約一覧（'+_mySchedules.length+'件）';
-  listEl.innerHTML = _mySchedules.map(function(b){
-    return buildScheduleCard(b, false);
-  }).join('');
+  listEl.innerHTML = '';
+  _mySchedules.forEach(function(b){
+    listEl.appendChild(buildScheduleCard(b, false));
+  });
 }
 
 function renderDashSchedule() {
@@ -1109,7 +1126,8 @@ function renderDashSchedule() {
     dashEl.innerHTML = '<div class="loading">直近の予約はありません</div>';
     return;
   }
-  dashEl.innerHTML = upcoming.map(function(b){ return buildScheduleCard(b, true); }).join('');
+  dashEl.innerHTML = '';
+  upcoming.forEach(function(b){ dashEl.appendChild(buildScheduleCard(b, true)); });
 }
 
 function buildScheduleCard(b, compact) {
@@ -1189,7 +1207,7 @@ function buildScheduleCard(b, compact) {
   si.appendChild(timeRow);
   si.appendChild(acts);
   wrap.appendChild(si);
-  return wrap.outerHTML;
+  return wrap; // outerHTMLではなくDOM要素を返す
 }
 
 function openCancelModal(bookingId) {
@@ -1240,31 +1258,149 @@ async function loadReports() {
   _myReports = (data && data.reports) ? data.reports
     .sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); })
     : [];
+  _reportsFiltered = _myReports.slice(); // 初期は全件
+  loadReportsScreen(); // 絞り込みセレクト初期化 + 描画
+}
+
+// ── レポート画面の状態管理 ──
+var _reportsFiltered = []; // フィルタ後のリスト
+var _reportsPage     = 1;
+var REPORTS_PER_PAGE = 10;
+
+function loadReportsScreen() {
+  // メンティー絞り込みセレクト初期化
+  var sel = document.getElementById('reportsFilterMentee');
+  if (sel && sel.options.length <= 1) {
+    _myMentees.forEach(function(m) {
+      var opt = document.createElement('option');
+      opt.value = m.user_id; opt.textContent = m.name;
+      sel.appendChild(opt);
+    });
+  }
+  filterReports();
+}
+
+function filterReports() {
+  var menteeId = document.getElementById('reportsFilterMentee').value;
+  var status   = document.getElementById('reportsFilterStatus').value;
+
+  _reportsFiltered = _myReports.filter(function(r) {
+    if (menteeId && r.mentee_id !== menteeId) return false;
+    if (status === 'confirmed' && r.is_confirmed !== 'TRUE' && r.is_confirmed !== true) return false;
+    if (status === 'draft'     && (r.is_confirmed === 'TRUE' || r.is_confirmed === true)) return false;
+    return true;
+  });
+
+  _reportsPage = 1;
   renderReports();
 }
 
 function renderReports() {
   var listEl  = document.getElementById('reportsList');
   var countEl = document.getElementById('reportsCount');
-  if (_myReports.length === 0) {
-    listEl.innerHTML = '<div class="loading">レポートがありません</div>';
-    countEl.textContent = 'レポート一覧（0件）';
+  var pagerEl = document.getElementById('reportsPager');
+
+  if (_reportsFiltered.length === 0) {
+    listEl.innerHTML = '<div class="loading" style="padding:24px">レポートがありません</div>';
+    countEl.textContent = '0件';
+    if (pagerEl) pagerEl.style.display = 'none';
     return;
   }
-  countEl.textContent = 'レポート一覧（'+_myReports.length+'件）';
-  listEl.innerHTML = _myReports.map(function(r){
-    var dt     = new Date(r.created_at||'');
-    var day    = isNaN(dt)?'?':dt.getDate();
-    var month  = isNaN(dt)?'':((dt.getMonth()+1)+'月');
-    var mentee = _myMentees.find(function(m){ return m.user_id === r.mentee_id; });
-    var name   = mentee ? mentee.name : (r.mentee_id||'—');
-    var summary = (r.ai_summary||r.talk_content||'—').slice(0,40);
-    return '<div class="rep-item">'
-      +'<div class="rep-date"><div class="rep-d">'+day+'</div><div class="rep-m">'+esc(month)+'</div></div>'
-      +'<div class="rep-info"><div class="rep-title">'+esc(name)+' — '+esc(summary)+'</div>'
-      +'<div class="rep-sub">'+fmtDateFull(r.created_at)+' 実施</div></div>'
-      +'<div class="rep-arr">›</div></div>';
-  }).join('');
+
+  var total    = _reportsFiltered.length;
+  var totalPage= Math.ceil(total / REPORTS_PER_PAGE);
+  var start    = (_reportsPage - 1) * REPORTS_PER_PAGE;
+  var pageItems= _reportsFiltered.slice(start, start + REPORTS_PER_PAGE);
+
+  countEl.textContent = total + '件中 ' + (start+1) + '〜' + Math.min(start+REPORTS_PER_PAGE, total) + '件表示';
+
+  // ── カードをDOM構築（クリックで詳細モーダル） ──
+  listEl.innerHTML = '';
+  pageItems.forEach(function(r) {
+    var dt        = new Date(r.created_at||'');
+    var day       = isNaN(dt) ? '?' : dt.getDate();
+    var month     = isNaN(dt) ? '' : (dt.getMonth()+1)+'月';
+    var mentee    = _myMentees.find(function(m){ return m.user_id === r.mentee_id; });
+    var name      = mentee ? mentee.name : (r.mentee_id||'—');
+    var summary   = (r.talk_content || r.ai_summary || '—').slice(0, 50);
+    var confirmed = r.is_confirmed === 'TRUE' || r.is_confirmed === true;
+    var hasMeet   = !!(r.recording_url || r.meet_url);
+
+    var item = document.createElement('div');
+    item.className = 'rep-item';
+    item.style.cursor = 'pointer';
+
+    // 日付部分
+    var dateEl = document.createElement('div');
+    dateEl.className = 'rep-date';
+    dateEl.innerHTML = '<div class="rep-d">'+day+'</div><div class="rep-m">'+esc(month)+'</div>';
+
+    // 情報部分
+    var infoEl = document.createElement('div');
+    infoEl.className = 'rep-info';
+    infoEl.innerHTML =
+      '<div class="rep-title" style="display:flex;align-items:center;gap:6px">'
+      + '<span>'+esc(name)+'</span>'
+      + (confirmed
+          ? '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--pr-light);color:var(--pr);font-weight:600">✅ 確定</span>'
+          : '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--am-light);color:var(--am);font-weight:600">📝 下書き</span>')
+      + (hasMeet ? '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:#e8f4ff;color:#1a73e8">🎙 録音あり</span>' : '')
+      + '</div>'
+      + '<div class="rep-sub">'+esc(summary)+'</div>'
+      + '<div class="rep-sub">'+fmtDateFull(r.created_at)+'</div>';
+
+    var arrEl = document.createElement('div');
+    arrEl.className = 'rep-arr';
+    arrEl.textContent = '›';
+
+    item.appendChild(dateEl);
+    item.appendChild(infoEl);
+    item.appendChild(arrEl);
+
+    // クリックで詳細モーダル
+    (function(rep){ item.onclick = function(){ openTelReportDetail(rep); }; })(r);
+
+    listEl.appendChild(item);
+  });
+
+  // ── ページネーション ──
+  if (!pagerEl) return;
+  if (totalPage <= 1) { pagerEl.style.display = 'none'; return; }
+
+  pagerEl.style.display = 'flex';
+  pagerEl.innerHTML = '';
+
+  // 前へ
+  var prevBtn = document.createElement('button');
+  prevBtn.className = 'btn btn-g btn-sm';
+  prevBtn.textContent = '← 前へ';
+  prevBtn.disabled = (_reportsPage === 1);
+  prevBtn.onclick = function(){ _reportsPage--; renderReports(); };
+  pagerEl.appendChild(prevBtn);
+
+  // ページ番号（最大5ページ分表示）
+  var startPage = Math.max(1, _reportsPage - 2);
+  var endPage   = Math.min(totalPage, startPage + 4);
+  for (var p = startPage; p <= endPage; p++) {
+    (function(pg) {
+      var pgBtn = document.createElement('button');
+      pgBtn.className = 'btn btn-sm' + (pg === _reportsPage ? ' btn-p' : ' btn-g');
+      pgBtn.textContent = pg;
+      pgBtn.onclick = function(){ _reportsPage = pg; renderReports(); };
+      pagerEl.appendChild(pgBtn);
+    })(p);
+  }
+
+  // 次へ
+  var nextBtn = document.createElement('button');
+  nextBtn.className = 'btn btn-g btn-sm';
+  nextBtn.textContent = '次へ →';
+  nextBtn.disabled = (_reportsPage === totalPage);
+  nextBtn.onclick = function(){ _reportsPage++; renderReports(); };
+  pagerEl.appendChild(nextBtn);
+
+  // ページスクロール
+  listEl.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1654,7 +1790,7 @@ function nav(id, el) {
   window.scrollTo(0,0);
   if (id === 'schedule')   { loadScheduleSettings(); if (_mySchedules.length===0) loadSchedules(); else renderSchedule(); }
   if (id === 'members')    { loadMembersTab(); }
-  if (id === 'reports')    { loadReports(); }
+  if (id === 'reports')    { if (_myReports.length > 0) { loadReportsScreen(); } else { loadReports(); } }
   if (id === 'weeklyTel')  { loadWeeklyTel(); }
   if (id === 'survey')     { loadSurveys(); }
 }
@@ -2194,11 +2330,24 @@ async function openBookingCreate() {
   document.getElementById('bcLoading').textContent = 'カレンダーを読み込み中…';
   document.getElementById('bookingCreateModal').classList.add('open');
 
-  // スロット取得
-  var data = await gasReq('api/mentor/available-slots');
-  _createSlots = (data && data.slots) ? data.slots : {};
-  document.getElementById('bcLoading').textContent = '日付を選択してください';
-  buildCalendarGrid(_createSlots, 'bcCal', 'bcCalHeader', 'bc');
+  // スロット取得（失敗時はdatetime-localフォールバック）
+  try {
+    var data = await gasReq('api/mentor/available-slots');
+    _createSlots = (data && data.slots && Object.keys(data.slots).length > 0) ? data.slots : null;
+  } catch(e) { _createSlots = null; }
+
+  if (_createSlots) {
+    document.getElementById('bcLoading').textContent = '日付を選択してください';
+    var bcFb = document.getElementById('bcDatetimeFallback');
+    if (bcFb) bcFb.style.display = 'none';
+    buildCalendarGrid(_createSlots, 'bcCal', 'bcCalHeader', 'bc');
+  } else {
+    document.getElementById('bcLoading').textContent = '日時を直接入力してください';
+    document.getElementById('bcCal').innerHTML = '';
+    var bcFb2 = document.getElementById('bcDatetimeFallback');
+    if (bcFb2) bcFb2.style.display = '';
+    document.getElementById('bcSubmitBtn').disabled = false;
+  }
 }
 
 async function submitBookingCreate() {
@@ -2252,14 +2401,52 @@ async function openBookingUpdate(bookingId, scheduledAtEnc, meetLinkEnc) {
   document.getElementById('buLoading').textContent = 'カレンダーを読み込み中…';
   document.getElementById('bookingUpdateModal').classList.add('open');
 
-  // スロット取得（変更前の予約をブロックから外すためbooking_idを渡す）
-  var data = await gasReq('api/mentor/available-slots');
-  _updateSlots = (data && data.slots) ? data.slots : {};
-  document.getElementById('buLoading').textContent = '新しい日付を選択してください';
-  buildCalendarGrid(_updateSlots, 'buCal', 'buCalHeader', 'bu');
+  // スロット取得（失敗時はdatetime-localフォールバックに切り替え）
+  try {
+    var data = await gasReq('api/mentor/available-slots');
+    _updateSlots = (data && data.slots && Object.keys(data.slots).length > 0) ? data.slots : null;
+  } catch(e) { _updateSlots = null; }
+
+  if (_updateSlots) {
+    // カレンダーUIモード
+    document.getElementById('buLoading').textContent = '新しい日付を選択してください';
+    document.getElementById('buDatetimeFallback').style.display = 'none';
+    buildCalendarGrid(_updateSlots, 'buCal', 'buCalHeader', 'bu');
+  } else {
+    // フォールバック: datetime-local 直接入力モード
+    document.getElementById('buLoading').textContent = '日時を直接入力してください';
+    document.getElementById('buCal').innerHTML = '';
+    document.getElementById('buDatetimeFallback').style.display = '';
+    // 現在の予約日時をデフォルト値として設定
+    if (scheduledAt) {
+      var d = new Date(scheduledAt);
+      var pad = function(n){ return ('0'+n).slice(-2); };
+      document.getElementById('buDatetimeInput').value =
+        d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())
+        +'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+    }
+    document.getElementById('buSubmitBtn').disabled = false; // 直接入力なら即有効化
+  }
+}
+
+// datetime-local フォールバック用（予約作成）
+function onBcDatetimeChange(val) {
+  if (val) {
+    _createSelectedTime = new Date(val).toISOString();
+    document.getElementById('bcSubmitBtn').disabled = false;
+  }
+}
+
+// datetime-local フォールバック用（予約変更）
+function onBuDatetimeChange(val) {
+  if (val) {
+    _updateSelectedTime = new Date(val).toISOString();
+    document.getElementById('buSubmitBtn').disabled = false;
+  }
 }
 
 async function submitBookingUpdate() {
+  // フォールバックモードの場合も _updateSelectedTime にセット済み
   var dt   = _updateSelectedTime;
   var meet = document.getElementById('bu-meet').value.trim();
   var note = document.getElementById('bu-note').value.trim();
