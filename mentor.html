@@ -167,6 +167,12 @@ td{padding:10px 14px;font-size:13px}
 #loginOverlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center}
 #loginOverlay.show{display:flex}
 
+/* ─── 録画アップロードリマインドアニメーション ─── */
+@keyframes pulse-am {
+  0%,100%{ opacity:1; }
+  50%{ opacity:.6; }
+}
+
 /* ─── スケジュール設定 ─── */
 .schedule-row{display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg3);border-radius:10px;border:1px solid var(--bd);margin-bottom:6px}
 .schedule-row.inactive{opacity:.4}
@@ -202,6 +208,36 @@ td{padding:10px 14px;font-size:13px}
 </div>
 
 <!-- ══ モーダル群 ══ -->
+<!-- 録画アップロードガイドモーダル -->
+<div class="modal" id="uploadGuideModal">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('uploadGuideModal')">✕</span>
+    <div class="modal-title">📹 1on1録画のアップロード</div>
+    <div style="font-size:13px;color:var(--tx2);margin-bottom:16px">
+      Google Meetの録画をこのフォルダにアップロードすると、<br>
+      自動でリネーム・整理・文字起こし・AI要約が行われます。
+    </div>
+    <div style="background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--tx3);margin-bottom:10px">📋 アップロード手順</div>
+      <ol style="font-size:13px;color:var(--tx2);padding-left:18px;margin:0;line-height:2">
+        <li>Google Meetの録画ファイルをダウンロード<br>
+          <span style="font-size:11px;color:var(--tx3)">（マイドライブ → Meet Recordings フォルダ）</span></li>
+        <li>下のボタンから録画フォルダを開く</li>
+        <li>ファイルをフォルダにドラッグ＆ドロップ</li>
+        <li>10分以内に自動処理が始まります ✅</li>
+      </ol>
+    </div>
+    <a href="https://drive.google.com/drive/folders/1JcnHWPQq1mV6NZeDWNZ4s7fLfS9vOBQE" target="_blank"
+       style="display:block;background:var(--pr);color:#fff;text-align:center;padding:14px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;margin-bottom:12px">
+      📁 録画フォルダを開く →
+    </a>
+    <div style="font-size:11px;color:var(--tx3);text-align:center">
+      ※ メンティー名のフォルダは自動生成されます<br>
+      ※ ファイル名は自動でリネームされます（yymm_メンティー名_1on1.mp4）
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="delModal">
   <div class="modal-content">
     <span class="modal-close" onclick="closeModal('delModal')">✕</span>
@@ -217,12 +253,34 @@ td{padding:10px 14px;font-size:13px}
     <span class="modal-close" onclick="closeModal('telModal')">✕</span>
     <div class="modal-title">📝 週次TELレポート</div>
     <div class="form-label" id="telTarget" style="font-size:14px;margin-bottom:14px;color:var(--pr)"></div>
-    <div class="form-group" style="margin-bottom:12px"><label class="form-label">話した内容</label><textarea class="inp" id="tel-talk" rows="3" placeholder="今回話した内容を記入…"></textarea></div>
-    <div class="form-group" style="margin-bottom:12px"><label class="form-label">悩み・課題</label><textarea class="inp" id="tel-concerns" rows="3" placeholder="悩みや気になる点…"></textarea></div>
+
+    <!-- Google Meet URL入力 -->
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">Google Meet URL（ハドル録音がある場合）</label>
+      <div style="display:flex;gap:8px">
+        <input class="inp" id="tel-meet-url" placeholder="https://meet.google.com/..." style="flex:1;font-size:13px" />
+        <button class="btn btn-g" style="flex-shrink:0;font-size:12px;padding:10px 14px" onclick="runTelAI()">🤖 AI要約</button>
+      </div>
+    </div>
+
+    <!-- AI要約エリア（AI実行後に表示） -->
+    <div id="telAiArea" style="display:none;background:var(--pr-light);border:1px solid rgba(93,175,167,.3);border-radius:11px;padding:13px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--pr);margin-bottom:8px">🤖 AI自動要約（編集可能）</div>
+      <div style="font-size:11px;color:var(--tx3);margin-bottom:6px">内容を確認・編集してから提出してください</div>
+    </div>
+
+    <!-- レポートフォーム -->
+    <div class="form-group" style="margin-bottom:12px"><label class="form-label">話した内容<span style="color:var(--rd)">*</span></label><textarea class="inp" id="tel-talk" rows="3" placeholder="今回話した内容…"></textarea></div>
+    <div class="form-group" style="margin-bottom:12px"><label class="form-label">悩み・課題</label><textarea class="inp" id="tel-concerns" rows="2" placeholder="悩みや気になる点…"></textarea></div>
     <div class="form-group" style="margin-bottom:12px"><label class="form-label">良かった点・成長</label><textarea class="inp" id="tel-good" rows="2" placeholder="良かったこと…"></textarea></div>
-    <div class="form-group" style="margin-bottom:16px"><label class="form-label">メモ</label><textarea class="inp" id="tel-memo" rows="2" placeholder="その他メモ…"></textarea></div>
+    <div class="form-group" style="margin-bottom:14px"><label class="form-label">メモ</label><textarea class="inp" id="tel-memo" rows="2" placeholder="その他メモ…"></textarea></div>
+
     <div id="telMsg" style="font-size:12px;color:var(--rd);margin-bottom:8px"></div>
-    <div class="f-foot"><button class="btn btn-g" onclick="closeModal('telModal')">キャンセル</button><button class="btn btn-p" id="telSubmitBtn" onclick="submitTelReport()">レポート提出</button></div>
+    <div class="f-foot">
+      <button class="btn btn-g" onclick="closeModal('telModal')">キャンセル</button>
+      <button class="btn" style="background:var(--am);color:#fff" id="telDraftBtn" onclick="submitTelReport(false)">下書き保存</button>
+      <button class="btn btn-p" id="telSubmitBtn" onclick="submitTelReport(true)">✅ 確定</button>
+    </div>
   </div>
 </div>
 
@@ -235,6 +293,39 @@ td{padding:10px 14px;font-size:13px}
   </div>
 </div>
 
+
+<!-- TEL録音アップロードガイドモーダル -->
+<div class="modal" id="telUploadGuideModal">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('telUploadGuideModal')">✕</span>
+    <div class="modal-title">🎙 ハドル録音のアップロード</div>
+    <div style="font-size:13px;color:var(--tx2);margin-bottom:16px">
+      ハドルの録音をフォルダにアップロードすると、<br>
+      <strong>文字起こし → AI要約（4項目）→ レポート自動生成</strong>が行われます。
+    </div>
+    <div style="background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--tx3);margin-bottom:10px">📋 手順</div>
+      <ol style="font-size:13px;color:var(--tx2);padding-left:18px;margin:0;line-height:2.2">
+        <li>ハドル終了後、録音ファイルをダウンロード<br>
+          <span style="font-size:11px;color:var(--tx3)">（マイドライブ → Meet Recordings）</span></li>
+        <li>下のボタンから録音フォルダを開く</li>
+        <li>ファイルをドラッグ＆ドロップ</li>
+        <li>10分以内に自動処理開始 ✅</li>
+      </ol>
+    </div>
+    <div style="background:var(--pr-light);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:var(--tx2);line-height:1.9">
+      <div style="font-weight:700;color:var(--pr);margin-bottom:4px">🤖 自動処理内容</div>
+      ① ファイル名リネーム（yymm_名前_TEL.m4a）<br>
+      ② メンティー名フォルダに格納（ない場合は自動作成）<br>
+      ③ 文字起こしを保存<br>
+      ④ AI4項目レポート自動生成 → 週次TELに下書き表示
+    </div>
+    <a href="https://drive.google.com/drive/folders/1JcnHWPQq1mV6NZeDWNZ4s7fLfS9vOBQE" target="_blank"
+       style="display:block;background:var(--pr);color:#fff;text-align:center;padding:14px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px">
+      📁 録音フォルダを開く →
+    </a>
+  </div>
+</div>
 <div class="modal" id="telHistModal">
   <div class="modal-content">
     <span class="modal-close" onclick="closeModal('telHistModal')">✕</span>
@@ -426,56 +517,66 @@ td{padding:10px 14px;font-size:13px}
 
 <!-- ════ MEMBERS ════ -->
 <div class="screen" id="s-members">
-  <div class="topbar"><div><div class="page-title">メンバー管理</div><div class="page-sub">担当メンティーの情報・レポート・メモ</div></div></div>
-  <!-- メンティー選択タブ -->
-  <div class="card" style="margin-bottom:14px">
-    <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap" id="memberTabList">
-      <div class="loading">読み込み中…</div>
-    </div>
+  <div class="topbar"><div><div class="page-title">メンバー管理</div><div class="page-sub">担当メンティーの詳細・メモ・レポート</div></div></div>
+
+  <!-- メンバーカード一覧（複数対応） -->
+  <div id="memberCardList" style="display:flex;flex-direction:column;gap:12px">
+    <div class="loading">読み込み中…</div>
   </div>
-  <!-- 詳細パネル -->
-  <div id="memberDetailPanel" style="display:none">
-    <!-- 基本情報 -->
-    <div class="card" style="margin-bottom:14px">
-      <div class="ch">
-        <div class="ct" id="md-name">—</div>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-sm" id="md-chat-btn" style="display:none;background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff;border:none" onclick="openMemberDetailChat()">💬</button>
+
+  <!-- メンバー詳細ドロワー（タップで展開） -->
+  <div id="memberDetailDrawer" style="display:none;margin-top:4px">
+    <!-- ヘッダー -->
+    <div class="card" style="border:2px solid var(--pr)">
+      <div class="ch" style="background:var(--pr-light)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div id="md-ava" style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--pr2));display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;font-weight:700;flex-shrink:0">木</div>
+          <div>
+            <div class="ct" id="md-name" style="font-size:16px">—</div>
+            <div style="font-size:12px;color:var(--tx3)" id="md-sub">—</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-sm" id="md-chat-btn" style="display:none;background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff;border:none;padding:7px 12px" onclick="openMemberDetailChat()">💬 チャット</button>
           <button class="btn btn-p btn-sm" onclick="openBookingFromMember()">＋ 予約</button>
+          <button class="btn btn-g btn-sm" onclick="closeMemberDetail()">✕</button>
         </div>
       </div>
-      <div style="padding:14px 16px">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-          <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v" id="md-workplace">—</div></div>
-          <div class="dc"><div class="dc-lb">雇用形態</div><div class="dc-v" id="md-workstatus">—</div></div>
-          <div class="dc"><div class="dc-lb">時給</div><div class="dc-v ac" id="md-wage">—</div></div>
-        </div>
-        <!-- ステータス更新 -->
-        <div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:6px">ステータス</div>
-        <div class="sig-btns">
+      <!-- 基本情報 -->
+      <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--bd)">
+        <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v" id="md-workplace">—</div></div>
+        <div class="dc"><div class="dc-lb">雇用形態</div><div class="dc-v" id="md-workstatus">—</div></div>
+        <div class="dc"><div class="dc-lb">時給</div><div class="dc-v ac" id="md-wage">—</div></div>
+      </div>
+      <!-- ステータス -->
+      <div style="padding:12px 16px">
+        <div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:7px">ステータス変更</div>
+        <div class="sig-btns" style="margin-bottom:8px">
           <button class="sig-btn" id="md-sig-rd" onclick="selectMdSig('red')">🔴 要注意</button>
           <button class="sig-btn" id="md-sig-am" onclick="selectMdSig('yellow')">🟡 注意</button>
           <button class="sig-btn" id="md-sig-gr" onclick="selectMdSig('green')">🟢 順調</button>
           <button class="sig-btn" id="md-sig-cy" onclick="selectMdSig('blue')">🔵 快調</button>
         </div>
-        <button class="btn btn-p btn-sm" style="margin-top:8px" onclick="saveMdStatus()">保存</button>
+        <button class="btn btn-p btn-sm" onclick="saveMdStatus()">💾 ステータス保存</button>
       </div>
     </div>
+
     <!-- メモ -->
-    <div class="card" style="margin-bottom:14px">
+    <div class="card" style="margin-top:10px">
       <div class="ch"><div class="ct">📝 メモ</div></div>
-      <div style="padding:14px 16px">
+      <div style="padding:12px 16px 8px">
         <textarea class="inp" id="md-memo-input" rows="3" placeholder="このメンバーへのメモ…" style="margin-bottom:8px"></textarea>
         <div style="display:flex;justify-content:flex-end">
           <button class="btn btn-p btn-sm" onclick="saveMdMemo()">💾 メモを保存</button>
         </div>
       </div>
-      <div class="ch" style="border-top:1px solid var(--bd)"><div class="ct" style="font-size:13px">過去のメモ</div></div>
-      <div id="md-memo-list"><div class="loading">読み込み中…</div></div>
+      <div style="border-top:1px solid var(--bd);padding:10px 16px 4px;font-size:12px;font-weight:700;color:var(--tx3)">過去のメモ</div>
+      <div id="md-memo-list"></div>
     </div>
-    <!-- 過去のレポート -->
-    <div class="card">
-      <div class="ch"><div class="ct">📋 過去のレポート・録画</div></div>
+
+    <!-- レポート・録画 -->
+    <div class="card" style="margin-top:10px">
+      <div class="ch"><div class="ct">📋 レポート・録画</div></div>
       <div id="md-reports-list"><div class="loading">読み込み中…</div></div>
     </div>
   </div>
@@ -493,6 +594,8 @@ td{padding:10px 14px;font-size:13px}
 <!-- ════ WEEKLY TEL ════ -->
 <div class="screen" id="s-weeklyTel">
   <div class="topbar"><div><div class="page-title">週次TEL</div><div class="page-sub">担当メンティーへの週次電話レポート</div></div></div>
+  <!-- 録音未アップロードバナー -->
+  <div id="telRecordingBanner" style="display:none;background:var(--am-light);border:1px solid var(--am);border-radius:12px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:var(--am)"></div>
   <div class="grid3" id="telKpiGrid" style="display:none">
     <div class="kpi-card"><div class="kpi-lb">今週の実施数</div><div class="kpi-v" id="tel-kpi-week">—</div></div>
     <div class="kpi-card"><div class="kpi-lb">今月の実施数</div><div class="kpi-v" id="tel-kpi-month">—</div></div>
@@ -855,6 +958,25 @@ async function loadSchedules() {
   updateRate();
 }
 
+// 録画未アップロードバナー（ダッシュボード上部）
+function renderRecordingBanner() {
+  var banner = document.getElementById('recordingBanner');
+  if (!banner) return;
+  var missing = _mySchedules.filter(function(b){
+    return b.status === 'completed' && !b.recording_url;
+  });
+  if (missing.length === 0) {
+    banner.style.display = 'none';
+    return;
+  }
+  banner.style.display = '';
+  banner.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'
+    + '<div>📹 <strong>' + missing.length + '件</strong>の1on1の録画がアップロードされていません</div>'
+    + '<button class="btn btn-sm" style="background:var(--am);color:#fff;border:none;flex-shrink:0" onclick="openRecordingUploadGuide()">アップロードする →</button>'
+    + '</div>';
+}
+
 function renderSchedule() {
   var listEl   = document.getElementById('scheduleList');
   var countEl  = document.getElementById('scheduleCount');
@@ -923,6 +1045,17 @@ function buildScheduleCard(b, compact) {
   };
   acts.appendChild(panelBtn);
 
+  // 録画アップロードボタン（完了済み & 録画URLなし の場合のみ表示）
+  if (b.status === 'completed' && !b.recording_url) {
+    var uploadBtn = document.createElement('button');
+    uploadBtn.className = 'sc-btn';
+    uploadBtn.style.cssText = 'background:var(--am-light);color:var(--am);border:1px solid var(--am);font-size:11px;animation:pulse-am 2s infinite';
+    uploadBtn.title = '録画をアップロードしてください';
+    uploadBtn.textContent = '📹 録画UP';
+    uploadBtn.onclick = function(){ openRecordingUploadGuide(); };
+    acts.appendChild(uploadBtn);
+  }
+
   // 変更ボタン
   var editBtn = document.createElement('button');
   editBtn.className = 'sc-btn';
@@ -970,6 +1103,27 @@ async function execCancel() {
 // ══════════════════════════════════════════════════════════
 //  レポート
 // ══════════════════════════════════════════════════════════
+// 週次TEL録音未アップロードバナー更新
+function renderTelRecordingBanner() {
+  var banner = document.getElementById('telRecordingBanner');
+  if (!banner) return;
+  var missingRec = _allCallReports.filter(function(r){ return !r.recording_url; });
+  if (missingRec.length === 0) { banner.style.display='none'; return; }
+  banner.style.display = '';
+  var btn = document.createElement('button');
+  btn.className = 'btn btn-sm';
+  btn.style.cssText = 'background:var(--am);color:#fff;border:none;flex-shrink:0;font-size:12px';
+  btn.textContent = '録音をアップロード →';
+  btn.onclick = openTelRecordingUploadGuide;
+  banner.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><div>🎙 <strong>' + missingRec.length + '件</strong>のハドル録音がアップロードされていません</div></div>';
+  banner.querySelector('div > div').after(btn);
+}
+
+// TEL録音アップロードガイドを開く
+function openTelRecordingUploadGuide() {
+  document.getElementById('telUploadGuideModal').classList.add('open');
+}
+
 async function loadReports() {
   var data = await gasReq('api/mentor/call-reports');
   _myReports = (data && data.reports) ? data.reports
@@ -1040,63 +1194,168 @@ async function loadWeeklyTel() {
   document.getElementById('tel-kpi-month').textContent   = monthCount + '件';
   document.getElementById('tel-kpi-mentees').textContent = myAssigns.length + '名';
 
-  // TELカード描画
-  cardList.innerHTML = myAssigns.map(function(a){
-    var uid     = a.mentee_id;
-    var mName   = a.mentee_name || uid;
+  // TELカード描画（DOM構築方式）
+  cardList.innerHTML = '';
+  myAssigns.forEach(function(a) {
+    var uid    = a.mentee_id;
+    var mName  = a.mentee_name || uid;
+    var mentee = a.mentee || {};
+    var chatUrl = mentee.chat_url || '';
     var myReps  = _allCallReports
       .filter(function(r){ return r.mentee_id===uid && r.leader_id===_me.user_id; })
-      .sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); });
-    var lastTel = myReps[0] ? fmtDateFull(myReps[0].created_at) : '記録なし';
-    var histHtml = myReps.slice(0,3).map(function(r){
-      var summary = (r.ai_summary||r.talk_content||'—').slice(0,60);
-      return '<div class="tel-hist-item">'
-        +'<div class="tel-hist-date">'+fmtDate(r.created_at)+'</div>'
-        +'<div class="tel-hist-body">'
-        +'<span class="tel-hist-tag" style="background:var(--gr-light);color:var(--gr)">完了</span>'
-        +'<div class="tel-hist-text">'+esc(summary)+'</div>'
-        +'</div></div>';
-    }).join('') || '<div style="font-size:12px;color:var(--tx3);padding:8px 0">記録なし</div>';
+      .sort(function(x,y){ return (y.created_at||'').localeCompare(x.created_at||''); });
+    var lastTel    = myReps[0] ? fmtDateFull(myReps[0].created_at) : '記録なし';
+    var monthCount = myReps.filter(function(r){ return new Date(r.created_at)>=ms; }).length;
+    // Meetからの実施回数（meet_url が入っているもの）
+    var meetCount  = myReps.filter(function(r){ return r.meet_url || r.recording_url; }).length;
 
-    return '<div class="tel-card">'
-      +'<div class="tel-ava">'+esc((mName).slice(0,1))+'</div>'
-      +'<div class="tel-name">'+esc(mName)+'</div>'
-      +'<div class="tel-meta">'
-      +'<div class="tel-meta-row"><span>📅</span><span>最終TEL: '+esc(lastTel)+'</span></div>'
-      +'<div class="tel-meta-row"><span>📊</span><span>今月: '+myReps.filter(function(r){return new Date(r.created_at)>=ms;}).length+'回実施</span></div>'
-      +'</div>'
-      +'<div class="tel-acts">'
-      +'<button class="btn btn-p" style="flex:1;font-size:12px" onclick="openTelModal(\''+esc(mName)+'\',\''+uid+'\')">📝 レポート</button>'
-      +'<button class="btn btn-g" style="flex:1;font-size:12px" onclick="openTelHistFull(\''+esc(mName)+'\',\''+uid+'\')">📋 履歴</button>'
-      +'</div>'
-      +'<div class="tel-hist-panel">'
-      +'<div class="tel-hist-panel-title">📋 過去のTEL記録</div>'
-      +histHtml
-      +'</div></div>';
-  }).join('');
+    var card = document.createElement('div');
+    card.className = 'tel-card';
+
+    // ヘッダー行（アバター・名前・アクションボタン）
+    var hdr = document.createElement('div');
+    hdr.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:10px';
+
+    var ava = document.createElement('div');
+    ava.className = 'tel-ava'; ava.textContent = mName.slice(0,1);
+
+    var info = document.createElement('div');
+    info.style.cssText = 'flex:1;min-width:0';
+    info.innerHTML = '<div class="tel-name" style="margin-bottom:2px">'+esc(mName)+'</div>'
+      + '<div class="tel-meta">'
+      + '<div class="tel-meta-row"><span>📅</span><span>最終TEL: '+esc(lastTel)+'</span></div>'
+      + '<div class="tel-meta-row"><span>📊</span><span>今月: '+monthCount+'回 / Meet: '+meetCount+'回</span></div>'
+      + '</div>';
+
+    var acts = document.createElement('div');
+    acts.style.cssText = 'display:flex;flex-direction:column;gap:5px;flex-shrink:0';
+
+    // チャットアイコンボタン
+    if (chatUrl) {
+      var chatBtn = document.createElement('button');
+      chatBtn.className = 'btn btn-sm';
+      chatBtn.style.cssText = 'background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff;border:none;font-size:11px;padding:5px 10px';
+      chatBtn.title = 'チャットを開く';
+      chatBtn.innerHTML = '💬';
+      (function(url){ chatBtn.onclick = function(){ window.open(url,'_blank'); }; })(chatUrl);
+      acts.appendChild(chatBtn);
+    }
+
+    // レポートボタン
+    var repBtn = document.createElement('button');
+    repBtn.className = 'btn btn-p'; repBtn.style.cssText = 'font-size:12px;padding:7px 12px';
+    repBtn.textContent = '📝 レポート';
+    (function(n,u){ repBtn.onclick = function(){ openTelModal(n,u); }; })(mName, uid);
+    acts.appendChild(repBtn);
+
+    // 履歴ボタン
+    var histBtn = document.createElement('button');
+    histBtn.className = 'btn btn-g'; histBtn.style.cssText = 'font-size:12px;padding:7px 12px';
+    histBtn.textContent = '📋 履歴';
+    (function(n,u){ histBtn.onclick = function(){ openTelHistFull(n,u); }; })(mName, uid);
+    acts.appendChild(histBtn);
+
+    // 録音UPボタン（最新レポートが未録音の場合）
+    var latestRep = myReps[0];
+    if (!latestRep || !latestRep.recording_url) {
+      var upBtn = document.createElement('button');
+      upBtn.className = 'btn btn-sm';
+      upBtn.style.cssText = 'background:var(--am-light);color:var(--am);border:1px solid var(--am);font-size:11px;padding:5px 10px;animation:pulse-am 2s infinite';
+      upBtn.title = 'ハドル録音をアップロードしてください';
+      upBtn.textContent = '🎙 録音UP';
+      upBtn.onclick = function(){ openTelRecordingUploadGuide(); };
+      acts.appendChild(upBtn);
+    }
+
+    hdr.appendChild(ava);
+    hdr.appendChild(info);
+    hdr.appendChild(acts);
+    card.appendChild(hdr);
+
+    // 過去3件の記録
+    var histPanel = document.createElement('div');
+    histPanel.className = 'tel-hist-panel';
+    histPanel.innerHTML = '<div class="tel-hist-panel-title">📋 過去のTEL記録</div>';
+    if (myReps.length === 0) {
+      histPanel.innerHTML += '<div style="font-size:12px;color:var(--tx3);padding:8px 0">記録なし</div>';
+    } else {
+      myReps.slice(0,3).forEach(function(r) {
+        var summary  = (r.ai_summary||r.talk_content||'—').slice(0,60);
+        var hasMeet  = !!(r.meet_url || r.recording_url);
+        var confirmed = r.is_confirmed === 'TRUE' || r.is_confirmed === true;
+        var tag = confirmed
+          ? '<span class="tel-hist-tag" style="background:var(--pr-light);color:var(--pr)">✅ 確定</span>'
+          : '<span class="tel-hist-tag" style="background:var(--gr-light);color:var(--gr)">完了</span>';
+        var meetBadge = hasMeet ? '<span style="font-size:10px;background:#e8f4ff;color:#1a73e8;padding:2px 6px;border-radius:5px;margin-left:4px">🎙 Meet</span>' : '';
+        var item = document.createElement('div');
+        item.className = 'tel-hist-item';
+        item.innerHTML = '<div class="tel-hist-date">'+fmtDate(r.created_at)+meetBadge+'</div>'
+          + '<div class="tel-hist-body">'+tag+'<div class="tel-hist-text">'+esc(summary)+'</div></div>';
+        histPanel.appendChild(item);
+      });
+    }
+    card.appendChild(histPanel);
+    cardList.appendChild(card);
+  });
 }
 
 function openTelModal(name, menteeId) {
   _telMenteeId = menteeId || (_currentMentee && _currentMentee.user_id) || '';
   document.getElementById('telTarget').textContent = '対象：' + name + ' さん';
-  document.getElementById('tel-talk').value = '';
-  document.getElementById('tel-concerns').value = '';
-  document.getElementById('tel-good').value = '';
-  document.getElementById('tel-memo').value = '';
+  ['tel-talk','tel-concerns','tel-good','tel-memo'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('tel-meet-url').value = '';
+  document.getElementById('telAiArea').style.display = 'none';
   document.getElementById('telMsg').textContent = '';
   document.getElementById('telModal').classList.add('open');
 }
 
-async function submitTelReport() {
+// AI要約実行
+async function runTelAI() {
+  var meetUrl = document.getElementById('tel-meet-url').value.trim();
+  var btn = document.querySelector('[onclick="runTelAI()"]');
+  if (!meetUrl) { document.getElementById('telMsg').textContent = 'Meet URLを入力してください'; return; }
+  btn.textContent = '解析中…'; btn.disabled = true;
+  document.getElementById('telMsg').textContent = '';
+
+  // GAS経由でAI要約リクエスト
+  var r = await gasReq('api/mentor/tel-ai-summary','POST',{
+    meet_url:  meetUrl,
+    mentee_id: _telMenteeId,
+  });
+
+  btn.textContent = '🤖 AI要約'; btn.disabled = false;
+
+  if (r && r.ok && r.summary) {
+    var s = r.summary;
+    // フォームに自動入力
+    document.getElementById('tel-talk').value     = s.talk_content     || '';
+    document.getElementById('tel-concerns').value = s.concerns         || '';
+    document.getElementById('tel-good').value     = s.good_points      || '';
+    document.getElementById('tel-memo').value     = s.memo             || '';
+    document.getElementById('telAiArea').style.display = '';
+    document.getElementById('telAiArea').innerHTML =
+      '<div style="font-size:12px;font-weight:700;color:var(--pr);margin-bottom:6px">🤖 AI自動要約（編集可能）</div>'
+      + '<div style="font-size:11px;color:var(--tx3)">内容を確認・編集してから確定してください</div>';
+    toast('AI要約が完了しました。内容を確認してください');
+  } else {
+    document.getElementById('telMsg').textContent = 'AI要約に失敗しました: ' + ((r&&(r.error||r.message))||'GAS応答なし');
+  }
+}
+
+async function submitTelReport(isConfirmed) {
+  isConfirmed = isConfirmed !== false; // デフォルトtrue（確定）
   var talk     = document.getElementById('tel-talk').value.trim();
   var concerns = document.getElementById('tel-concerns').value.trim();
   var good     = document.getElementById('tel-good').value.trim();
   var memo     = document.getElementById('tel-memo').value.trim();
+  var meetUrl  = document.getElementById('tel-meet-url').value.trim();
   var msgEl    = document.getElementById('telMsg');
-  var btn      = document.getElementById('telSubmitBtn');
+  var btn      = isConfirmed ? document.getElementById('telSubmitBtn') : document.getElementById('telDraftBtn');
   if (!talk) { msgEl.textContent='「話した内容」は必須です'; return; }
   if (!_telMenteeId) { msgEl.textContent='送信先が不明です'; return; }
-  btn.textContent='提出中…'; btn.disabled=true;
+  btn.textContent='保存中…'; btn.disabled=true;
   var r = await gasReq('api/mentor/call-reports','POST',{
     mentee_id:    _telMenteeId,
     leader_id:    _me.user_id,
@@ -1104,14 +1363,18 @@ async function submitTelReport() {
     concerns:     concerns,
     good_points:  good,
     memo:         memo,
+    meet_url:     meetUrl,
+    is_confirmed: isConfirmed,
   });
-  btn.textContent='レポート提出'; btn.disabled=false;
+  btn.textContent = isConfirmed ? '✅ 確定' : '下書き保存';
+  btn.disabled = false;
   if (r && (r.ok||r.report_id)) {
     closeModal('telModal');
     await loadCallReportsData();
-    toast('TELレポートを提出しました');
+    await loadWeeklyTel();
+    toast(isConfirmed ? 'TELレポートを確定しました' : '下書きを保存しました');
   } else {
-    msgEl.textContent = '提出に失敗: '+(r&&(r.error||r.message)||'GAS応答なし');
+    msgEl.textContent = '保存に失敗: '+(r&&(r.error||r.message)||'GAS応答なし');
   }
 }
 
@@ -1125,17 +1388,36 @@ function openTelHistFull(name, menteeId) {
   var reps = _allCallReports
     .filter(function(r){ return r.mentee_id===uid; })
     .sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); });
-  document.getElementById('telHistTarget').textContent = name + ' さんのTEL履歴';
-  document.getElementById('telHistList').innerHTML = reps.length===0
-    ? '<div style="text-align:center;color:var(--tx3);padding:24px">記録がありません</div>'
-    : reps.map(function(r){
-        return '<div class="tel-hist-item">'
-          +'<div class="tel-hist-date">'+fmtDate(r.created_at)+'</div>'
-          +'<div class="tel-hist-body">'
-          +'<span class="tel-hist-tag" style="background:var(--gr-light);color:var(--gr)">完了</span>'
-          +'<div class="tel-hist-text">'+esc((r.ai_summary||r.talk_content||'—').slice(0,100))+'</div>'
-          +'</div></div>';
-      }).join('');
+  document.getElementById('telHistTarget').textContent = name + ' さんのTEL履歴（' + reps.length + '件）';
+  var listEl = document.getElementById('telHistList');
+  if (reps.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;color:var(--tx3);padding:24px">記録がありません</div>';
+  } else {
+    listEl.innerHTML = '';
+    reps.forEach(function(r) {
+      var confirmed = r.is_confirmed === 'TRUE' || r.is_confirmed === true;
+      var hasMeet   = !!(r.meet_url || r.recording_url);
+      var tagHtml   = confirmed
+        ? '<span class="tel-hist-tag" style="background:var(--pr-light);color:var(--pr)">✅ 確定</span>'
+        : '<span class="tel-hist-tag" style="background:var(--am-light);color:var(--am)">📝 下書き</span>';
+      var meetHtml  = hasMeet
+        ? '<div style="margin-top:4px"><a href="'+(r.meet_url||r.recording_url)+'" target="_blank" style="font-size:11px;color:#1a73e8">🎙 Meet記録を開く →</a></div>'
+        : '';
+      var item = document.createElement('div');
+      item.className = 'tel-hist-item';
+      item.style.cssText = 'padding:12px 0;border-bottom:1px solid var(--bd)';
+      item.innerHTML =
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+        + '<div class="tel-hist-date">'+fmtDateFull(r.created_at)+'</div>'
+        + tagHtml
+        + (hasMeet ? '<span style="font-size:10px;background:#e8f4ff;color:#1a73e8;padding:2px 6px;border-radius:5px">🎙 Meet</span>' : '')
+        + '</div>'
+        + '<div style="font-size:13px;color:var(--tx2);margin-bottom:3px">'+esc((r.talk_content||'—').slice(0,80))+'</div>'
+        + (r.concerns ? '<div style="font-size:12px;color:var(--rd)">⚠️ '+esc(r.concerns.slice(0,60))+'</div>' : '')
+        + meetHtml;
+      listEl.appendChild(item);
+    });
+  }
   document.getElementById('telHistModal').classList.add('open');
 }
 
@@ -1357,56 +1639,122 @@ var _mdCurrentMentee = null;
 var _mdCurrentSig    = null;
 var SIG_MAP_MD  = { red:'rd', yellow:'am', green:'gr', blue:'cy' };
 
+// ── ステータス表示設定 ──
+var SIG_CONFIG = {
+  red:    { label:'🔴 要注意', cls:'sel-rd', color:'var(--rd)' },
+  yellow: { label:'🟡 注意',   cls:'sel-am', color:'var(--am)' },
+  green:  { label:'🟢 順調',   cls:'sel-gr', color:'var(--gr)' },
+  blue:   { label:'🔵 快調',   cls:'sel-cy', color:'#4285f4'   },
+};
+
 function loadMembersTab() {
-  var listEl = document.getElementById('memberTabList');
+  var listEl = document.getElementById('memberCardList');
   if (!listEl) return;
   if (_myMentees.length === 0) {
-    listEl.innerHTML = '<div class="loading">担当メンティーがいません</div>';
+    listEl.innerHTML = '<div class="card" style="padding:24px;text-align:center;color:var(--tx3)">担当メンティーがいません</div>';
     return;
   }
   listEl.innerHTML = '';
-  _myMentees.forEach(function(m, i) {
-    var btn = document.createElement('button');
-    btn.className = 'btn btn-sm' + (i===0?' btn-p':' btn-g');
-    btn.textContent = m.name;
-    btn.onclick = function() {
-      listEl.querySelectorAll('button').forEach(function(b){ b.className='btn btn-sm btn-g'; });
-      btn.className = 'btn btn-sm btn-p';
-      openMemberDetail(m.user_id);
-    };
-    listEl.appendChild(btn);
+  _myMentees.forEach(function(m) {
+    var sig    = SIG_CONFIG[m.status] || SIG_CONFIG.green;
+    var card   = document.createElement('div');
+    card.className = 'card';
+    card.style.cssText = 'overflow:hidden;cursor:pointer;transition:box-shadow .2s';
+    card.setAttribute('data-uid', m.user_id);
+
+    // クリックで詳細表示
+    (function(mentee){ card.onclick = function(e){
+      if (e.target.tagName === 'BUTTON') return;
+      openMemberDetail(mentee.user_id, card);
+    }; })(m);
+
+    // カード本体をDOM構築
+    var mainRow = document.createElement('div');
+    mainRow.style.cssText = 'padding:14px 16px;display:flex;align-items:center;gap:12px';
+
+    var avaEl = document.createElement('div');
+    avaEl.style.cssText = 'width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--pr2));display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;font-weight:700;flex-shrink:0';
+    avaEl.textContent = m.name.slice(0,1);
+
+    var infoEl = document.createElement('div');
+    infoEl.style.cssText = 'flex:1;min-width:0';
+    var nameRow = document.createElement('div');
+    nameRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:2px';
+    var nameDiv = document.createElement('div');
+    nameDiv.style.cssText = 'font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    nameDiv.textContent = m.name;
+    var sigSpan = document.createElement('span');
+    sigSpan.style.cssText = 'font-size:11px;padding:2px 8px;border-radius:10px;background:'+sig.color+'20;color:'+sig.color+';font-weight:600;flex-shrink:0';
+    sigSpan.textContent = sig.label;
+    nameRow.appendChild(nameDiv);
+    nameRow.appendChild(sigSpan);
+    var subDiv = document.createElement('div');
+    subDiv.style.cssText = 'font-size:12px;color:var(--tx3)';
+    subDiv.textContent = (m.workplace||'—') + ' · ' + (m.work_status||'—');
+    infoEl.appendChild(nameRow);
+    infoEl.appendChild(subDiv);
+
+    var actEl = document.createElement('div');
+    actEl.style.cssText = 'display:flex;flex-direction:column;gap:5px;flex-shrink:0';
+    if (m.chat_url) {
+      var cb = document.createElement('button');
+      cb.className = 'btn btn-sm'; cb.textContent = '💬';
+      cb.style.cssText = 'background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff;border:none;font-size:11px;padding:5px 10px';
+      (function(u){ cb.onclick = function(e){ e.stopPropagation(); openChatFor(u); }; })(m.user_id);
+      actEl.appendChild(cb);
+    }
+    var bb = document.createElement('button');
+    bb.className = 'btn btn-p btn-sm'; bb.textContent = '＋予約';
+    bb.style.cssText = 'font-size:11px;padding:5px 10px';
+    (function(u){ bb.onclick = function(e){ e.stopPropagation(); openBookingFor(u); }; })(m.user_id);
+    actEl.appendChild(bb);
+
+    mainRow.appendChild(avaEl);
+    mainRow.appendChild(infoEl);
+    mainRow.appendChild(actEl);
+    card.appendChild(mainRow);
+
+    var expandEl = document.createElement('div');
+    expandEl.className = 'md-expand';
+    expandEl.id = 'md-expand-' + m.user_id;
+    expandEl.style.display = 'none';
+    card.appendChild(expandEl);
+
+
+    listEl.appendChild(card);
   });
-  if (_myMentees.length > 0) openMemberDetail(_myMentees[0].user_id);
+
+  // イベントデリゲーション（クォート問題を回避）
+  listEl.addEventListener('click', function(e) {
+    var chatBtn = e.target.closest('.md-chat-card');
+    var bookBtn = e.target.closest('.md-book-card');
+    if (chatBtn) { e.stopPropagation(); openChatFor(chatBtn.getAttribute('data-uid')); }
+    if (bookBtn) { e.stopPropagation(); openBookingFor(bookBtn.getAttribute('data-uid')); }
+  });
 }
 
-function openMemberDetail(userId) {
+function openChatFor(userId) {
+  var m = _myMentees.find(function(x){ return x.user_id===userId; });
+  if (m && m.chat_url) window.open(m.chat_url,'_blank');
+  else toast('チャットURLが登録されていません','err');
+}
+
+function openBookingFor(userId) {
+  var m = _myMentees.find(function(x){ return x.user_id===userId; });
+  if (m) { _currentMentee = m; openBookingCreate(); }
+}
+
+function openMemberDetail(userId, cardEl) {
   var m = _myMentees.find(function(x){ return x.user_id === userId; });
   if (!m) return;
   _mdCurrentMentee = m;
   _mdCurrentSig    = m.status || 'green';
-  var panel = document.getElementById('memberDetailPanel');
-  if (panel) panel.style.display = '';
 
-  document.getElementById('md-name').textContent      = m.name;
-  document.getElementById('md-workplace').textContent  = m.workplace   || '—';
-  document.getElementById('md-workstatus').textContent = m.work_status || '—';
-  document.getElementById('md-wage').textContent       = m.hourly_wage ? '¥'+Number(m.hourly_wage).toLocaleString()+'/h' : '—';
+  // ドロワー方式：カードの直下に展開
+  var drawer = document.getElementById('memberDetailDrawer');
+  var expand = document.getElementById('md-expand-' + userId);
 
-  // チャットボタン
-  var chatBtn = document.getElementById('md-chat-btn');
-  if (chatBtn) { chatBtn.style.display = m.chat_url ? '' : 'none'; }
-
-  // ステータスボタン
-  var sig = SIG_MAP_MD[m.status] || 'gr';
-  ['rd','am','gr','cy'].forEach(function(s){ document.getElementById('md-sig-'+s).className='sig-btn'; });
-  document.getElementById('md-sig-'+sig).className = 'sig-btn sel-'+sig;
-
-  // メモ・レポート読み込み
-  document.getElementById('md-memo-input').value = '';
-  loadMdMemos(userId);
-  loadMdReports(userId);
-
-  // メンバー管理画面に遷移（スケジュール等から呼ばれた場合）
+  // 画面遷移（スケジュール等から呼ばれた場合）
   var sEl = document.getElementById('s-members');
   if (sEl && !sEl.classList.contains('active')) {
     document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
@@ -1414,7 +1762,45 @@ function openMemberDetail(userId) {
     sEl.classList.add('active');
     var tab = document.querySelector('.nav-tab[onclick*="members"]');
     if (tab) tab.classList.add('active');
+    loadMembersTab();
+    setTimeout(function(){ openMemberDetail(userId, null); }, 200);
+    return;
   }
+
+  // ドロワーを対象カードの直下に移動
+  var cardListEl = document.getElementById('memberCardList');
+  if (cardEl) {
+    cardListEl.insertBefore(drawer, cardEl.nextSibling);
+  }
+  drawer.style.display = '';
+
+  // ドロワー内容を更新
+  document.getElementById('md-ava').textContent        = m.name.slice(0,1);
+  document.getElementById('md-name').textContent       = m.name;
+  document.getElementById('md-sub').textContent        = esc(m.workplace||'') + (m.work_status?' · '+esc(m.work_status):'');
+  document.getElementById('md-workplace').textContent  = m.workplace   || '—';
+  document.getElementById('md-workstatus').textContent = m.work_status || '—';
+  document.getElementById('md-wage').textContent       = m.hourly_wage ? '¥'+Number(m.hourly_wage).toLocaleString()+'/h' : '—';
+
+  var chatBtn = document.getElementById('md-chat-btn');
+  if (chatBtn) chatBtn.style.display = m.chat_url ? '' : 'none';
+
+  var sig = SIG_MAP_MD[m.status] || 'gr';
+  ['rd','am','gr','cy'].forEach(function(s){ document.getElementById('md-sig-'+s).className='sig-btn'; });
+  document.getElementById('md-sig-'+sig).className = 'sig-btn sel-'+sig;
+
+  document.getElementById('md-memo-input').value = '';
+  document.getElementById('md-memo-list').innerHTML = '<div class="loading">読み込み中…</div>';
+  document.getElementById('md-reports-list').innerHTML = '<div class="loading">読み込み中…</div>';
+
+  drawer.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  loadMdMemos(userId);
+  loadMdReports(userId);
+}
+
+function closeMemberDetail() {
+  var drawer = document.getElementById('memberDetailDrawer');
+  if (drawer) drawer.style.display = 'none';
 }
 
 function openMemberDetailChat() {
@@ -1734,6 +2120,9 @@ async function submitBookingUpdate() {
   }
 }
 
+function openRecordingUploadGuide() {
+  document.getElementById('uploadGuideModal').classList.add('open');
+}
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 ['delModal','telModal','preDetailModal','telHistModal','bookingCreateModal','bookingUpdateModal'].forEach(function(id){
   var el = document.getElementById(id);
