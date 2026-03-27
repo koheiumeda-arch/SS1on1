@@ -189,6 +189,13 @@ td{padding:10px 14px;font-size:13px}
 #memberDetailPanel .dc-lb{font-size:11px;color:var(--tx3);margin-bottom:3px;font-weight:600}
 #memberDetailPanel .dc-v{font-size:14px;font-weight:700;color:var(--tx)}
 #memberDetailPanel .ac{color:var(--pr)}
+
+/* クイックリンクバー */
+.ql-bar{display:flex;align-items:center;gap:6px;padding:6px 16px;background:var(--bg3);border-bottom:1px solid var(--bd);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:sticky;top:60px;z-index:99;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.ql-bar::-webkit-scrollbar{display:none}
+.ql-bar a{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;font-size:12px;text-decoration:none;color:var(--tx2);white-space:nowrap;flex-shrink:0;transition:all .15s}
+.ql-bar a:hover{background:var(--pr-light);border-color:var(--pr);color:var(--pr)}
+.ql-bar-empty{font-size:12px;color:var(--tx3);padding:4px 0}
 </style>
 </head>
 <body>
@@ -234,6 +241,40 @@ td{padding:10px 14px;font-size:13px}
     <div style="font-size:11px;color:var(--tx3);text-align:center">
       ※ メンティー名のフォルダは自動生成されます<br>
       ※ ファイル名は自動でリネームされます（yymm_メンティー名_1on1.mp4）
+    </div>
+  </div>
+</div>
+
+
+<!-- メンバー詳細クイックモーダル（スケジュール/ダッシュボードから呼び出し） -->
+<div class="modal" id="memberDetailQuickModal">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('memberDetailQuickModal')">✕</span>
+    <!-- ヘッダー -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div id="mqm-ava" style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--pr2));display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;font-weight:700;flex-shrink:0">?</div>
+      <div style="flex:1">
+        <div id="mqm-name" style="font-size:18px;font-weight:700">—</div>
+        <div id="mqm-sub" style="font-size:12px;color:var(--tx3)">—</div>
+      </div>
+    </div>
+    <!-- 基本情報 -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v" id="mqm-workplace">—</div></div>
+      <div class="dc"><div class="dc-lb">雇用形態</div><div class="dc-v" id="mqm-workstatus">—</div></div>
+      <div class="dc"><div class="dc-lb">時給</div><div class="dc-v ac" id="mqm-wage">—</div></div>
+    </div>
+    <!-- アクションボタン -->
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button id="mqm-chat-btn" class="btn" style="display:none;background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff;border:none;padding:12px;font-size:14px">
+        💬 チャットを開く
+      </button>
+      <button id="mqm-book-btn" class="btn btn-p" style="padding:12px;font-size:14px">
+        📅 1on1を予約する
+      </button>
+      <button id="mqm-detail-btn" class="btn btn-g" style="padding:12px;font-size:14px">
+        👤 メンバー管理で詳細を見る →
+      </button>
     </div>
   </div>
 </div>
@@ -326,6 +367,52 @@ td{padding:10px 14px;font-size:13px}
     </a>
   </div>
 </div>
+
+<!-- TELレポート詳細モーダル -->
+<div class="modal" id="telReportDetailModal">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('telReportDetailModal')">✕</span>
+    <div class="modal-title">📞 TELレポート詳細</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <span id="trd-date" style="font-size:13px;color:var(--tx3)">—</span>
+      <span id="trd-status" style="font-size:12px;font-weight:700">—</span>
+    </div>
+    <!-- Meet録音リンク -->
+    <div id="trd-meet-area" style="background:var(--bg3);border-radius:10px;padding:10px 14px;margin-bottom:14px">
+      <a id="trd-meet-link" href="#" target="_blank" style="display:flex;align-items:center;gap:6px;font-size:13px;color:#1a73e8;text-decoration:none">
+        <span>🎙</span><span>ハドル録音・文字起こしを開く →</span>
+      </a>
+    </div>
+    <!-- 4項目 -->
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:4px">📋 話した内容</div>
+        <div id="trd-talk" style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">—</div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--rd);margin-bottom:4px">⚠️ 悩み・課題</div>
+        <div id="trd-concerns" style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">—</div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:4px">✅ 良かった点・成長</div>
+        <div id="trd-good" style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">—</div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:4px">📝 メモ</div>
+        <div id="trd-memo" style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">—</div>
+      </div>
+      <div style="background:var(--pr-light);border-radius:10px;padding:10px 14px">
+        <div style="font-size:11px;font-weight:700;color:var(--pr);margin-bottom:4px">🤖 AIサマリー</div>
+        <div id="trd-summary" style="font-size:13px;color:var(--tx2);line-height:1.7">—</div>
+      </div>
+    </div>
+    <div class="f-foot">
+      <button class="btn btn-g" onclick="closeModal('telReportDetailModal')">閉じる</button>
+      <button id="trd-confirm-btn" class="btn btn-p" style="display:none">✅ このレポートを確定する</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="telHistModal">
   <div class="modal-content">
     <span class="modal-close" onclick="closeModal('telHistModal')">✕</span>
@@ -427,6 +514,8 @@ td{padding:10px 14px;font-size:13px}
     <div class="u-chip"><div class="ava" id="userAva">?</div><div class="u-name" id="userName">読み込み中…</div></div>
   </div>
 </header>
+<!-- クイックリンクバー -->
+<div class="ql-bar" id="mentorQuickLinksBar"><span class="ql-bar-empty">…</span></div>
 
 <div class="layout">
 
@@ -751,12 +840,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initPage(user) {
   _me = user;
+  loadMentorQuickLinks(); // クイックリンクバー
   document.getElementById('userAva').textContent  = (user.name||'?').slice(0,1);
   document.getElementById('userName').textContent = user.name || 'メンター';
   if (user.has_leader_role === 'TRUE' || user.has_leader_role === true) {
     document.getElementById('nav-weeklyTel').style.display = '';
   }
   loadAll();
+}
+
+// クイックリンクバー読み込み
+async function loadMentorQuickLinks() {
+  var container = document.getElementById('mentorQuickLinksBar');
+  if (!container) return;
+  var data = await gasReq('api/mentee/links');
+  if (!data || !data.links || data.links.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  var active = data.links.filter(function(l){
+    return l.is_active === 'TRUE' || l.is_active === 'true' || l.is_active === true;
+  });
+  if (active.length === 0) { container.innerHTML = ''; return; }
+  container.innerHTML = active.map(function(l){
+    return '<a href="' + (l.url||'#') + '" target="_blank">'  
+      + '<span>' + (l.icon||'🔗') + '</span>'
+      + '<span>' + esc(l.title||'') + '</span>'
+      + '</a>';
+  }).join('');
 }
 
 async function loadAll() {
@@ -1171,8 +1282,16 @@ async function loadWeeklyTel() {
   var mentees = (data && data.mentees) ? data.mentees : [];
 
   // assignments形式に変換して後続処理と互換性を持たせる
+  // chat_urlはusersシートから取得（_myMenteesにある場合はそちらを優先）
   var myAssigns = mentees.map(function(m) {
-    return { assignment_id: m.assignment_id, leader_id: _me.user_id, mentee_id: m.user_id, mentee_name: m.name, mentee: m };
+    var menteeExtra = _myMentees.find(function(x){ return x.user_id === m.user_id; }) || {};
+    return {
+      assignment_id: m.assignment_id,
+      leader_id:     _me.user_id,
+      mentee_id:     m.user_id,
+      mentee_name:   m.name,
+      mentee:        Object.assign({}, m, { chat_url: menteeExtra.chat_url || m.chat_url || '' })
+    };
   });
 
   var kpiGrid = document.getElementById('telKpiGrid');
@@ -1405,16 +1524,20 @@ function openTelHistFull(name, menteeId) {
         : '';
       var item = document.createElement('div');
       item.className = 'tel-hist-item';
-      item.style.cssText = 'padding:12px 0;border-bottom:1px solid var(--bd)';
+      item.style.cssText = 'padding:12px 0;border-bottom:1px solid var(--bd);cursor:pointer';
+      item.title = 'クリックで要約を確認';
       item.innerHTML =
         '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
         + '<div class="tel-hist-date">'+fmtDateFull(r.created_at)+'</div>'
         + tagHtml
         + (hasMeet ? '<span style="font-size:10px;background:#e8f4ff;color:#1a73e8;padding:2px 6px;border-radius:5px">🎙 Meet</span>' : '')
+        + '<span style="margin-left:auto;font-size:11px;color:var(--tx3)">詳細 ›</span>'
         + '</div>'
         + '<div style="font-size:13px;color:var(--tx2);margin-bottom:3px">'+esc((r.talk_content||'—').slice(0,80))+'</div>'
         + (r.concerns ? '<div style="font-size:12px;color:var(--rd)">⚠️ '+esc(r.concerns.slice(0,60))+'</div>' : '')
         + meetHtml;
+      // クリックで詳細モーダルを開く
+      (function(rep){ item.onclick = function(){ openTelReportDetail(rep); }; })(r);
       listEl.appendChild(item);
     });
   }
@@ -1745,34 +1868,33 @@ function openBookingFor(userId) {
 }
 
 function openMemberDetail(userId, cardEl) {
+  // _myMentees未ロード時のガード：ロード後に再実行
+  if (!_myMentees || _myMentees.length === 0) {
+    loadMentees().then(function(){ openMemberDetail(userId, cardEl); });
+    return;
+  }
   var m = _myMentees.find(function(x){ return x.user_id === userId; });
-  if (!m) return;
+  if (!m) {
+    toast('メンティー情報が見つかりません（再読み込みしてください）', 'err');
+    return;
+  }
   _mdCurrentMentee = m;
   _mdCurrentSig    = m.status || 'green';
 
-  // ドロワー方式：カードの直下に展開
-  var drawer = document.getElementById('memberDetailDrawer');
-  var expand = document.getElementById('md-expand-' + userId);
-
-  // 画面遷移（スケジュール等から呼ばれた場合）
   var sEl = document.getElementById('s-members');
-  if (sEl && !sEl.classList.contains('active')) {
-    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
-    document.querySelectorAll('.nav-tab').forEach(function(n){ n.classList.remove('active'); });
-    sEl.classList.add('active');
-    var tab = document.querySelector('.nav-tab[onclick*="members"]');
-    if (tab) tab.classList.add('active');
-    loadMembersTab();
-    setTimeout(function(){ openMemberDetail(userId, null); }, 200);
+  var isOnMembersScreen = sEl && sEl.classList.contains('active');
+
+  if (isOnMembersScreen) {
+    // ── メンバー管理画面にいる場合：ドロワー方式 ──
+    var drawer    = document.getElementById('memberDetailDrawer');
+    var cardListEl= document.getElementById('memberCardList');
+    if (cardEl) { cardListEl.insertBefore(drawer, cardEl.nextSibling); }
+    drawer.style.display = '';
+  } else {
+    // ── 他の画面（スケジュール・ダッシュボード）から呼ばれた場合：モーダルで開く ──
+    openMemberDetailModal(m);
     return;
   }
-
-  // ドロワーを対象カードの直下に移動
-  var cardListEl = document.getElementById('memberCardList');
-  if (cardEl) {
-    cardListEl.insertBefore(drawer, cardEl.nextSibling);
-  }
-  drawer.style.display = '';
 
   // ドロワー内容を更新
   document.getElementById('md-ava').textContent        = m.name.slice(0,1);
@@ -1801,6 +1923,49 @@ function openMemberDetail(userId, cardEl) {
 function closeMemberDetail() {
   var drawer = document.getElementById('memberDetailDrawer');
   if (drawer) drawer.style.display = 'none';
+}
+
+// スケジュール/ダッシュボードから「メンバー詳細」を開く（モーダル方式）
+function openMemberDetailModal(m) {
+  var modal = document.getElementById('memberDetailQuickModal');
+  if (!modal) return;
+
+  // モーダル内容を更新
+  document.getElementById('mqm-ava').textContent        = (m.name||'').slice(0,1);
+  document.getElementById('mqm-name').textContent       = m.name || '—';
+  document.getElementById('mqm-sub').textContent        = (m.workplace||'') + (m.work_status ? ' · '+m.work_status : '');
+  document.getElementById('mqm-workplace').textContent  = m.workplace   || '—';
+  document.getElementById('mqm-workstatus').textContent = m.work_status || '—';
+  document.getElementById('mqm-wage').textContent       = m.hourly_wage ? '¥'+Number(m.hourly_wage).toLocaleString()+'/h' : '—';
+
+  // チャットボタン
+  var chatBtn = document.getElementById('mqm-chat-btn');
+  if (chatBtn) {
+    chatBtn.style.display = m.chat_url ? '' : 'none';
+    chatBtn.onclick = function(){ window.open(m.chat_url, '_blank'); };
+  }
+
+  // 予約作成ボタン
+  var bookBtn = document.getElementById('mqm-book-btn');
+  if (bookBtn) { bookBtn.onclick = function(){ closeModal('memberDetailQuickModal'); _currentMentee=m; openBookingCreate(); }; }
+
+  // メンバー管理へ移動ボタン
+  var detailBtn = document.getElementById('mqm-detail-btn');
+  if (detailBtn) {
+    detailBtn.onclick = function(){
+      closeModal('memberDetailQuickModal');
+      document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+      document.querySelectorAll('.nav-tab').forEach(function(n){ n.classList.remove('active'); });
+      var sEl = document.getElementById('s-members');
+      if (sEl) sEl.classList.add('active');
+      var tab = document.querySelector('.nav-tab[onclick*="members"]');
+      if (tab) tab.classList.add('active');
+      loadMembersTab();
+      setTimeout(function(){ openMemberDetail(m.user_id, null); }, 200);
+    };
+  }
+
+  modal.classList.add('open');
 }
 
 function openMemberDetailChat() {
@@ -2123,6 +2288,60 @@ async function submitBookingUpdate() {
 function openRecordingUploadGuide() {
   document.getElementById('uploadGuideModal').classList.add('open');
 }
+// TELレポート詳細を開く
+function openTelReportDetail(r) {
+  var modal = document.getElementById('telReportDetailModal');
+  if (!modal) return;
+  var dt = new Date(r.created_at);
+  var dtStr = dt.getFullYear()+'/'+(dt.getMonth()+1)+'/'+dt.getDate()
+    + ' ' + ('0'+dt.getHours()).slice(-2)+':'+('0'+dt.getMinutes()).slice(-2);
+  var confirmed = r.is_confirmed === 'TRUE' || r.is_confirmed === true;
+  var hasMeet   = !!(r.meet_url || r.recording_url);
+
+  document.getElementById('trd-date').textContent    = dtStr;
+  document.getElementById('trd-status').textContent  = confirmed ? '✅ 確定済み' : '📝 下書き';
+  document.getElementById('trd-status').style.color  = confirmed ? 'var(--gr)' : 'var(--am)';
+  document.getElementById('trd-talk').textContent    = r.talk_content   || '—';
+  document.getElementById('trd-concerns').textContent= r.concerns       || '（なし）';
+  document.getElementById('trd-good').textContent    = r.good_points    || '（なし）';
+  document.getElementById('trd-memo').textContent    = r.memo           || '（なし）';
+  document.getElementById('trd-summary').textContent = r.ai_summary     || '—';
+
+  var meetArea = document.getElementById('trd-meet-area');
+  if (hasMeet) {
+    meetArea.style.display = '';
+    var meetLink = document.getElementById('trd-meet-link');
+    if (meetLink) { meetLink.href = r.meet_url || r.recording_url; }
+  } else {
+    meetArea.style.display = 'none';
+  }
+
+  // 確定ボタン（未確定の場合のみ）
+  var confirmBtn = document.getElementById('trd-confirm-btn');
+  if (confirmBtn) {
+    if (!confirmed) {
+      confirmBtn.style.display = '';
+      confirmBtn.onclick = function(){ confirmTelReport(r.report_id); };
+    } else {
+      confirmBtn.style.display = 'none';
+    }
+  }
+  modal.classList.add('open');
+}
+
+async function confirmTelReport(reportId) {
+  // call_reports の is_confirmed を TRUE に更新
+  var r = await gasReq('api/mentor/call-reports/confirm','POST',{ report_id: reportId });
+  if (r && (r.ok || !r.error)) {
+    closeModal('telReportDetailModal');
+    await loadCallReportsData();
+    await loadWeeklyTel();
+    toast('TELレポートを確定しました');
+  } else {
+    toast('確定に失敗しました: '+(r&&(r.error||r.message)||'GAS応答なし'), 'err');
+  }
+}
+
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 ['delModal','telModal','preDetailModal','telHistModal','bookingCreateModal','bookingUpdateModal'].forEach(function(id){
   var el = document.getElementById(id);
