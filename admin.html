@@ -344,6 +344,17 @@ body.login-mode .main { display:none !important; }
         </div>
       </div>
       <div class="form-group"><label class="form-label">内容<span style="color:var(--rd)">*</span></label><textarea class="inp" id="notice-content" rows="4" placeholder="お知らせ内容を入力…"></textarea></div>
+      <!-- 表示期間 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">表示開始（空欄＝即時）</label>
+          <input class="inp" type="datetime-local" id="notice-from" style="font-size:13px"/>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">表示終了（空欄＝無期限）</label>
+          <input class="inp" type="datetime-local" id="notice-until" style="font-size:13px"/>
+        </div>
+      </div>
       <div id="noticeFormMsg" style="font-size:13px;margin-bottom:8px"></div>
       <div style="display:flex;justify-content:flex-end;gap:10px">
         <button class="btn btn-g" onclick="closeNoticeForm()">キャンセル</button>
@@ -885,18 +896,98 @@ async function deleteLink(linkId, title) {
 //  お知らせ配信
 // ══════════════════════════════════════════════════════════
 async function loadNotices() {
-  // admin向けに全お知らせを取得（api/admin/surveys の admin_memos 全件）
-  const data=await gasReq('api/admin/notices/list');
-  const list=document.getElementById('noticeList');
-  if(!data||!data.notices){
-    // フォールバック: mentee向けAPIで取得
-    const data2=await gasReq('api/mentee/notices');
-    if(!data2||!data2.notices){list.innerHTML='<div class="loading">取得に失敗しました</div>';return;}
-    renderNoticeList(data2.notices,list);
-    return;
+  const data = await gasReq('api/admin/notices/list');
+  const list  = document.getElementById('noticeList');
+  if (!data || !data.notices) {
+    list.innerHTML = '<div class="loading">取得に失敗しました</div>'; return;
   }
-  renderNoticeList(data.notices,list);
+  const notices = data.notices;
+  if (notices.length === 0) {
+    list.innerHTML = '<div class="loading">配信済みのお知らせがありません</div>'; return;
+  }
+  list.innerHTML = '';
+  const now = new Date();
+  notices.forEach(n => {
+    const isActive = n.is_active !== 'FALSE';
+    const from     = n.display_from  ? new Date(n.display_from)  : null;
+    const until    = n.display_until ? new Date(n.display_until) : null;
+    const expired  = until && now > until;
+    const notYet   = from  && now < from;
+
+    let statusLabel, statusColor;
+    if (!isActive)    { statusLabel='⏸ 停止中';  statusColor='var(--tx3)'; }
+    else if (expired) { statusLabel='⏰ 期間終了'; statusColor='var(--tx3)'; }
+    else if (notYet)  { statusLabel='⏳ 配信待ち'; statusColor='var(--am)'; }
+    else              { statusLabel='✅ 表示中';   statusColor='var(--gr)'; }
+
+    const targetLabel = n.target_id==='all' ? '全員'
+      : n.target_id==='mentor' ? 'メンター'
+      : n.target_id==='mentee' ? 'メンティー' : n.target_id;
+    const fmt = dt => dt ? (dt.getMonth()+1)+'/'+dt.getDate()+' '+('0'+dt.getHours()).slice(-2)+':'+('0'+dt.getMinutes()).slice(-2) : null;
+    const fromStr  = fmt(from)  || '即時';
+    const untilStr = fmt(until) || '無期限';
+
+    // DOM構築
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:12px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;gap:10px';
+
+    const infoEl = document.createElement('div');
+    infoEl.style.cssText = 'flex:1';
+    const metaEl = document.createElement('div');
+    metaEl.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap';
+    metaEl.innerHTML =
+      '<span style="font-size:11px;font-weight:700;color:'+statusColor+'">'+statusLabel+'</span>'
+      + '<span style="font-size:11px;color:var(--tx3);background:var(--bg3);padding:2px 8px;border-radius:8px">📣 '+escHtml(targetLabel)+'</span>'
+      + '<span style="font-size:11px;color:var(--tx3)">'+escHtml(fromStr)+' 〜 '+escHtml(untilStr)+'</span>';
+    const contentEl = document.createElement('div');
+    contentEl.style.cssText = 'font-size:13px;color:var(--tx2);white-space:pre-wrap;line-height:1.6';
+    contentEl.textContent = n.content;
+    infoEl.appendChild(metaEl);
+    infoEl.appendChild(contentEl);
+
+    const actsEl = document.createElement('div');
+    actsEl.style.cssText = 'display:flex;flex-direction:column;gap:5px;flex-shrink:0';
+
+    // ON/OFFボタン
+    const togBtn = document.createElement('button');
+    togBtn.className = 'btn btn-sm';
+    togBtn.style.cssText = 'font-size:11px;padding:5px 10px;'+(isActive?'background:var(--am-light);color:var(--am)':'background:var(--pr-light);color:var(--pr)');
+    togBtn.textContent = isActive ? '⏸ 停止' : '▶ 再開';
+    (function(id){ togBtn.onclick = function(){ toggleNotice(id); }; })(n.memo_id);
+    actsEl.appendChild(togBtn);
+
+    // 削除ボタン
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn btn-sm';
+    delBtn.style.cssText = 'font-size:11px;padding:5px 10px;background:var(--rd-light);color:var(--rd)';
+    delBtn.textContent = '🗑 削除';
+    (function(id){ delBtn.onclick = function(){ deleteNotice(id); }; })(n.memo_id);
+    actsEl.appendChild(delBtn);
+
+    row.appendChild(infoEl);
+    row.appendChild(actsEl);
+    list.appendChild(row);
+  });
 }
+
+
+async function toggleNotice(memoId) {
+  const r = await gasReq('api/admin/notices/toggle','POST',{ memo_id: memoId });
+  if (r && r.ok) { await loadNotices(); toast('お知らせを'+(r.is_active==='TRUE'?'再開':'停止')+'しました'); }
+  else { toast('操作に失敗しました','err'); }
+}
+
+async function deleteNotice(memoId) {
+  if (!confirm('このお知らせを削除しますか？')) return;
+  const r = await gasReq('api/admin/notices/delete','POST',{ memo_id: memoId });
+  if (r && r.ok) { await loadNotices(); toast('削除しました'); }
+  else { toast('削除に失敗しました','err'); }
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 
 function renderNoticeList(notices,list) {
   if(notices.length===0){list.innerHTML='<div class="loading">お知らせはありません</div>';return;}
@@ -967,13 +1058,23 @@ function refreshNoticeUserList() {
 }
 
 async function sendNotice() {
-  const content   = document.getElementById('notice-content').value.trim();
-  const target_id = document.getElementById('notice-target').value;
-  const msgEl     = document.getElementById('noticeFormMsg');
-  const btn       = document.getElementById('noticeSendBtn');
+  const content       = document.getElementById('notice-content').value.trim();
+  const target_id     = document.getElementById('notice-target').value;
+  const display_from  = document.getElementById('notice-from').value;
+  const display_until = document.getElementById('notice-until').value;
+  const msgEl         = document.getElementById('noticeFormMsg');
+  const btn           = document.getElementById('noticeSendBtn');
   if (!content) { msgEl.style.color='var(--rd)'; msgEl.textContent='内容を入力してください'; return; }
+  // 期間チェック
+  if (display_from && display_until && new Date(display_from) >= new Date(display_until)) {
+    msgEl.style.color='var(--rd)'; msgEl.textContent='終了日時は開始日時より後に設定してください'; return;
+  }
   btn.textContent='配信中…'; btn.disabled=true;
-  const r = await gasReq('api/admin/notices','POST',{content,target_id});
+  const r = await gasReq('api/admin/notices','POST',{
+    content, target_id,
+    display_from:  display_from  ? new Date(display_from).toISOString()  : '',
+    display_until: display_until ? new Date(display_until).toISOString() : ''
+  });
   btn.textContent='📢 配信する'; btn.disabled=false;
   if (r && (r.ok || r.memo_id)) {
     closeNoticeForm(); await loadNotices(); toast('お知らせを配信しました');

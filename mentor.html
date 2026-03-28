@@ -196,6 +196,11 @@ td{padding:10px 14px;font-size:13px}
 .ql-bar a{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;font-size:12px;text-decoration:none;color:var(--tx2);white-space:nowrap;flex-shrink:0;transition:all .15s}
 .ql-bar a:hover{background:var(--pr-light);border-color:var(--pr);color:var(--pr)}
 .ql-bar-empty{font-size:12px;color:var(--tx3);padding:4px 0}
+
+/* レポートタブ */
+.rep-tab{padding:9px 18px;background:none;border:none;border-bottom:3px solid transparent;font-size:13px;font-weight:600;color:var(--tx3);cursor:pointer;margin-bottom:-2px}
+.rep-tab.active{color:var(--pr);border-bottom-color:var(--pr)}
+.rep-tab:hover{color:var(--pr)}
 </style>
 </head>
 <body>
@@ -275,6 +280,61 @@ td{padding:10px 14px;font-size:13px}
       <button id="mqm-detail-btn" class="btn btn-g" style="padding:12px;font-size:14px">
         👤 メンバー管理で詳細を見る →
       </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- 1on1レポート詳細・編集モーダル -->
+<div class="modal" id="mentorReportDetailModal">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('mentorReportDetailModal')">✕</span>
+    <div class="modal-title">📋 1on1レポート</div>
+    <input type="hidden" id="mrd-report-id" />
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="font-size:15px;font-weight:700" id="mrd-mentee">—</div>
+      <span id="mrd-date" style="font-size:12px;color:var(--tx3)">—</span>
+      <span id="mrd-status" style="font-size:12px;font-weight:700">—</span>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">AIサマリー（編集可）</label>
+      <textarea class="inp" id="mrd-summary" rows="3"></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">メンターからのアドバイス（編集可）</label>
+      <textarea class="inp" id="mrd-advice" rows="3"></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label class="form-label">次回の目標（編集可）</label>
+      <textarea class="inp" id="mrd-goal" rows="2"></textarea>
+    </div>
+    <div class="f-foot">
+      <button class="btn btn-g" onclick="closeModal('mentorReportDetailModal')">閉じる</button>
+      <button class="btn btn-g" onclick="saveMentorReport()">💾 保存</button>
+      <button id="mrd-publish-btn" class="btn btn-p" onclick="publishMentorReport()">📤 メンティーに公開</button>
+    </div>
+  </div>
+</div>
+
+<!-- 事前レポート詳細モーダル -->
+<div class="modal" id="preReportDetailModal">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('preReportDetailModal')">✕</span>
+    <div class="modal-title">📝 事前レポート</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <div style="font-size:15px;font-weight:700" id="prd-mentee">—</div>
+      <span id="prd-date" style="font-size:12px;color:var(--tx3)">—</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div><div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:3px">今月の業務目標</div><div id="prd-project" style="font-size:13px;color:var(--tx2)">—</div></div>
+      <div><div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:3px">6ヶ月業務目標</div><div id="prd-goal6m" style="font-size:13px;color:var(--tx2)">—</div></div>
+      <div><div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:3px">今月の業務結果</div><div id="prd-result" style="font-size:13px;color:var(--tx2)">—</div></div>
+      <div><div style="font-size:11px;font-weight:700;color:var(--gr);margin-bottom:3px">良かった点</div><div id="prd-good" style="font-size:13px;color:var(--tx2)">—</div></div>
+      <div><div style="font-size:11px;font-weight:700;color:var(--am);margin-bottom:3px">改善点</div><div id="prd-improve" style="font-size:13px;color:var(--tx2)">—</div></div>
+      <div><div style="font-size:11px;font-weight:700;color:var(--pr);margin-bottom:3px">来月の目標</div><div id="prd-next" style="font-size:13px;color:var(--tx2)">—</div></div>
+    </div>
+    <div class="f-foot" style="margin-top:16px">
+      <button class="btn btn-g" onclick="closeModal('preReportDetailModal')">閉じる</button>
     </div>
   </div>
 </div>
@@ -512,10 +572,18 @@ td{padding:10px 14px;font-size:13px}
     </div>
   </div>
   <div class="header-r">
-    <div class="nb" id="notifBtn">🔔<div class="nd" id="notifDot" style="display:none"></div></div>
+    <div class="nb" id="notifBtn" onclick="toggleMentorNoticePanel()" style="cursor:pointer">🔔<div class="nd" id="notifDot" style="display:none"></div></div>
     <div class="u-chip"><div class="ava" id="userAva">?</div><div class="u-name" id="userName">読み込み中…</div></div>
   </div>
 </header>
+<!-- お知らせパネル -->
+<div id="mentorNoticePanel" style="display:none;position:fixed;top:60px;right:16px;width:340px;max-height:400px;background:var(--bg2);border:1px solid var(--bd);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.15);z-index:200;overflow:hidden">
+  <div style="padding:12px 16px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:14px;font-weight:700">📢 お知らせ</div>
+    <button style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--tx3)" onclick="closeMentorNoticePanel()">✕</button>
+  </div>
+  <div id="mentorNoticePanelContent" style="padding:12px 16px;overflow-y:auto;max-height:330px"><div class="loading">読み込み中…</div></div>
+</div>
 <!-- クイックリンクバー -->
 <div class="ql-bar" id="mentorQuickLinksBar"><span class="ql-bar-empty">…</span></div>
 
@@ -675,24 +743,49 @@ td{padding:10px 14px;font-size:13px}
 
 <!-- ════ REPORTS ════ -->
 <div class="screen" id="s-reports">
-  <div class="topbar"><div><div class="page-title">過去レポート</div><div class="page-sub">担当メンティーの過去TEL記録</div></div></div>
-  <div class="card">
-    <!-- 絞り込み・件数 -->
-    <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--bd)">
-      <select class="inp" id="reportsFilterMentee" style="flex:1;min-width:120px;max-width:200px;font-size:13px;padding:7px 10px" onchange="filterReports()">
-        <option value="">全メンティー</option>
-      </select>
-      <select class="inp" id="reportsFilterStatus" style="width:110px;font-size:13px;padding:7px 10px" onchange="filterReports()">
-        <option value="">すべて</option>
-        <option value="confirmed">✅ 確定済み</option>
-        <option value="draft">📝 下書き</option>
-      </select>
-      <div class="ct" id="reportsCount" style="font-size:12px;color:var(--tx3);white-space:nowrap;margin-left:auto">—</div>
+  <div class="topbar"><div><div class="page-title">レポート</div><div class="page-sub">1on1・週次TELの記録</div></div></div>
+
+  <!-- レポートタブ -->
+  <div style="display:flex;gap:0;border-bottom:2px solid var(--bd);margin-bottom:14px">
+    <button class="rep-tab active" id="repTab-tel" onclick="switchRepTab('tel')">📞 週次TEL</button>
+    <button class="rep-tab" id="repTab-1on1" onclick="switchRepTab('1on1')">📋 1on1レポート</button>
+    <button class="rep-tab" id="repTab-pre" onclick="switchRepTab('pre')">📝 事前レポート</button>
+  </div>
+
+  <!-- 共通絞り込みバー -->
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+    <select class="inp" id="reportsFilterMentee" style="flex:1;min-width:120px;max-width:180px;font-size:13px;padding:7px 10px" onchange="filterReports()">
+      <option value="">全メンティー</option>
+    </select>
+    <select class="inp" id="reportsFilterStatus" style="width:110px;font-size:13px;padding:7px 10px" onchange="filterReports()">
+      <option value="">すべて</option>
+      <option value="confirmed">✅ 確定済み</option>
+      <option value="draft">📝 下書き</option>
+    </select>
+    <div id="reportsCount" style="font-size:12px;color:var(--tx3);white-space:nowrap;margin-left:auto">—</div>
+  </div>
+
+  <!-- TELレポート -->
+  <div id="repPane-tel">
+    <div class="card">
+      <div id="reportsList"><div class="loading">読み込み中…</div></div>
+      <div id="reportsPager" style="display:none;padding:12px 16px;align-items:center;justify-content:center;gap:8px;border-top:1px solid var(--bd)"></div>
     </div>
-    <!-- レポート一覧 -->
-    <div id="reportsList"><div class="loading">読み込み中…</div></div>
-    <!-- ページネーション -->
-    <div id="reportsPager" style="display:none;padding:12px 16px;align-items:center;justify-content:center;gap:8px;border-top:1px solid var(--bd)"></div>
+  </div>
+
+  <!-- 1on1レポート -->
+  <div id="repPane-1on1" style="display:none">
+    <div class="card">
+      <div id="mentorReportsList"><div class="loading">読み込み中…</div></div>
+      <div id="mentorReportsPager" style="display:none;padding:12px 16px;align-items:center;justify-content:center;gap:8px;border-top:1px solid var(--bd)"></div>
+    </div>
+  </div>
+
+  <!-- 事前レポート -->
+  <div id="repPane-pre" style="display:none">
+    <div class="card">
+      <div id="preReportsList"><div class="loading">読み込み中…</div></div>
+    </div>
   </div>
 </div>
 
@@ -1253,6 +1346,230 @@ function openTelRecordingUploadGuide() {
   document.getElementById('telUploadGuideModal').classList.add('open');
 }
 
+// ── レポート追加状態管理 ──
+var _currentRepTab   = 'tel';
+var _mentorReports   = []; // mentor_reports
+var _preReports      = []; // pre_reports
+var _mentorRepPage   = 1;
+var MENTOR_REP_PER   = 10;
+
+async function loadReports() {
+  // TELレポート
+  var data = await gasReq('api/mentor/call-reports');
+  _myReports = (data && data.reports) ? data.reports
+    .sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); })
+    : [];
+  _reportsFiltered = _myReports.slice();
+  loadReportsScreen();
+}
+
+function switchRepTab(tab) {
+  _currentRepTab = tab;
+  ['tel','1on1','pre'].forEach(function(t) {
+    document.getElementById('repTab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('repPane-'+t).style.display = t===tab ? '' : 'none';
+  });
+  // 確定状態フィルターをTEL以外では非表示
+  var stSel = document.getElementById('reportsFilterStatus');
+  if (stSel) stSel.style.display = tab==='tel' ? '' : 'none';
+
+  if (tab === '1on1' && _mentorReports.length === 0) {
+    loadMentorReports();
+  } else if (tab === 'pre' && _preReports.length === 0) {
+    loadPreReports();
+  } else {
+    filterReports();
+  }
+}
+
+// ── 1on1レポート（mentor_reports）読み込みと表示 ──
+async function loadMentorReports() {
+  var listEl = document.getElementById('mentorReportsList');
+  listEl.innerHTML = '<div class="loading">読み込み中…</div>';
+  var data = await gasReq('api/mentor/mentor-reports');
+  _mentorReports = (data && data.reports) ? data.reports : [];
+  renderMentorReports();
+}
+
+function renderMentorReports() {
+  var listEl  = document.getElementById('mentorReportsList');
+  var pagerEl = document.getElementById('mentorReportsPager');
+  var menteeId= document.getElementById('reportsFilterMentee').value;
+  var filtered= _mentorReports.filter(function(r){
+    return !menteeId || r.mentee_id === menteeId;
+  });
+
+  document.getElementById('reportsCount').textContent = filtered.length + '件';
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div class="loading" style="padding:24px">1on1レポートがありません</div>';
+    if (pagerEl) pagerEl.style.display = 'none';
+    return;
+  }
+
+  var total     = filtered.length;
+  var totalPage = Math.ceil(total / MENTOR_REP_PER);
+  var start     = (_mentorRepPage - 1) * MENTOR_REP_PER;
+  var pageItems = filtered.slice(start, start + MENTOR_REP_PER);
+
+  listEl.innerHTML = '';
+  pageItems.forEach(function(r) {
+    var published = r.is_published === 'TRUE';
+    var dt = new Date(r.created_at||'');
+    var item = document.createElement('div');
+    item.className = 'rep-item';
+    item.style.cursor = 'pointer';
+
+    var dateEl = document.createElement('div');
+    dateEl.className = 'rep-date';
+    dateEl.innerHTML = '<div class="rep-d">'+(isNaN(dt)?'?':dt.getDate())+'</div>'
+      + '<div class="rep-m">'+(isNaN(dt)?'':((dt.getMonth()+1)+'月'))+'</div>';
+
+    var infoEl = document.createElement('div');
+    infoEl.className = 'rep-info';
+    infoEl.innerHTML =
+      '<div class="rep-title" style="display:flex;align-items:center;gap:6px">'
+      + '<span>'+esc(r.mentee_name||r.mentee_id||'—')+'</span>'
+      + (published
+          ? '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--pr-light);color:var(--pr);font-weight:600">✅ 公開済み</span>'
+          : '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--am-light);color:var(--am);font-weight:600">📝 未公開</span>')
+      + '</div>'
+      + '<div class="rep-sub">'+esc((r.ai_summary||'—').slice(0,50))+'</div>'
+      + '<div class="rep-sub">'+fmtDateFull(r.created_at)+'</div>';
+
+    var arrEl = document.createElement('div');
+    arrEl.className = 'rep-arr';
+    arrEl.textContent = '›';
+
+    item.appendChild(dateEl); item.appendChild(infoEl); item.appendChild(arrEl);
+    (function(rep){ item.onclick = function(){ open1on1ReportDetail(rep); }; })(r);
+    listEl.appendChild(item);
+  });
+
+  // ページネーション
+  if (!pagerEl) return;
+  if (totalPage <= 1) { pagerEl.style.display = 'none'; return; }
+  pagerEl.style.display = 'flex';
+  pagerEl.innerHTML = '';
+  var pb = document.createElement('button');
+  pb.className='btn btn-g btn-sm'; pb.textContent='← 前へ'; pb.disabled=(_mentorRepPage===1);
+  pb.onclick=function(){ _mentorRepPage--; renderMentorReports(); };
+  pagerEl.appendChild(pb);
+  for (var p=Math.max(1,_mentorRepPage-2); p<=Math.min(totalPage,_mentorRepPage+2); p++) {
+    (function(pg){
+      var pgb=document.createElement('button');
+      pgb.className='btn btn-sm'+(pg===_mentorRepPage?' btn-p':' btn-g');
+      pgb.textContent=pg; pgb.onclick=function(){ _mentorRepPage=pg; renderMentorReports(); };
+      pagerEl.appendChild(pgb);
+    })(p);
+  }
+  var nb=document.createElement('button');
+  nb.className='btn btn-g btn-sm'; nb.textContent='次へ →'; nb.disabled=(_mentorRepPage===totalPage);
+  nb.onclick=function(){ _mentorRepPage++; renderMentorReports(); };
+  pagerEl.appendChild(nb);
+}
+
+// 1on1レポート詳細モーダルを開く
+function open1on1ReportDetail(r) {
+  var modal = document.getElementById('mentorReportDetailModal');
+  if (!modal) return;
+  var published = r.is_published === 'TRUE';
+  document.getElementById('mrd-mentee').textContent = r.mentee_name || r.mentee_id || '—';
+  document.getElementById('mrd-date').textContent   = fmtDateFull(r.created_at);
+  document.getElementById('mrd-status').textContent = published ? '✅ 公開済み' : '📝 未公開';
+  document.getElementById('mrd-status').style.color = published ? 'var(--gr)' : 'var(--am)';
+  document.getElementById('mrd-summary').value  = r.ai_summary  || '';
+  document.getElementById('mrd-advice').value   = r.ai_advice   || '';
+  document.getElementById('mrd-goal').value     = r.next_goal   || '';
+  document.getElementById('mrd-report-id').value= r.report_id   || '';
+  var pubBtn = document.getElementById('mrd-publish-btn');
+  if (pubBtn) pubBtn.style.display = published ? 'none' : '';
+  modal.classList.add('open');
+}
+
+async function saveMentorReport() {
+  var reportId = document.getElementById('mrd-report-id').value;
+  var r = await gasReq('api/mentor/mentor-reports/save','POST',{
+    report_id:  reportId,
+    ai_summary: document.getElementById('mrd-summary').value.trim(),
+    ai_advice:  document.getElementById('mrd-advice').value.trim(),
+    next_goal:  document.getElementById('mrd-goal').value.trim()
+  });
+  if (r && r.ok) { toast('保存しました'); }
+  else { toast('保存に失敗しました','err'); }
+}
+
+async function publishMentorReport() {
+  var reportId = document.getElementById('mrd-report-id').value;
+  if (!confirm('メンティーに公開します。よろしいですか？')) return;
+  var r = await gasReq('api/mentor/mentor-reports/publish','POST',{ report_id: reportId });
+  if (r && r.ok) {
+    closeModal('mentorReportDetailModal');
+    await loadMentorReports();
+    toast('メンティーに公開しました');
+  } else {
+    toast('公開に失敗しました','err');
+  }
+}
+
+// ── 事前レポート読み込みと表示 ──
+async function loadPreReports() {
+  var listEl = document.getElementById('preReportsList');
+  listEl.innerHTML = '<div class="loading">読み込み中…</div>';
+  var data = await gasReq('api/mentor/pre-reports');
+  _preReports = (data && data.reports) ? data.reports : [];
+  renderPreReports();
+}
+
+function renderPreReports() {
+  var listEl   = document.getElementById('preReportsList');
+  var menteeId = document.getElementById('reportsFilterMentee').value;
+  var filtered = _preReports.filter(function(r){
+    return !menteeId || r.user_id === menteeId;
+  });
+  document.getElementById('reportsCount').textContent = filtered.length + '件';
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div class="loading" style="padding:24px">事前レポートがありません</div>';
+    return;
+  }
+  listEl.innerHTML = '';
+  filtered.slice(0,20).forEach(function(r) {
+    var dt = new Date(r.submitted_at||'');
+    var item = document.createElement('div');
+    item.className = 'rep-item'; item.style.cursor = 'pointer';
+    var dateEl = document.createElement('div');
+    dateEl.className = 'rep-date';
+    dateEl.innerHTML = '<div class="rep-d">'+(isNaN(dt)?'?':dt.getDate())+'</div>'
+      + '<div class="rep-m">'+(isNaN(dt)?'':((dt.getMonth()+1)+'月'))+'</div>';
+    var infoEl = document.createElement('div');
+    infoEl.className = 'rep-info';
+    infoEl.innerHTML =
+      '<div class="rep-title">'+esc(r.mentee_name||r.user_id||'—')+'</div>'
+      + '<div class="rep-sub">'+esc((r.current_project||r.goal_work_6m||'—').slice(0,50))+'</div>'
+      + '<div class="rep-sub">提出: '+fmtDateFull(r.submitted_at)+'</div>';
+    var arrEl = document.createElement('div');
+    arrEl.className = 'rep-arr'; arrEl.textContent = '›';
+    item.appendChild(dateEl); item.appendChild(infoEl); item.appendChild(arrEl);
+    (function(rep){ item.onclick = function(){ openPreReportDetail(rep); }; })(r);
+    listEl.appendChild(item);
+  });
+}
+
+function openPreReportDetail(r) {
+  var modal = document.getElementById('preReportDetailModal');
+  if (!modal) return;
+  document.getElementById('prd-mentee').textContent = r.mentee_name || r.user_id || '—';
+  document.getElementById('prd-date').textContent   = fmtDateFull(r.submitted_at);
+  document.getElementById('prd-project').textContent   = r.current_project || '—';
+  document.getElementById('prd-goal6m').textContent    = r.goal_work_6m    || '—';
+  document.getElementById('prd-result').textContent    = r.project_result  || '—';
+  document.getElementById('prd-good').textContent      = r.good_points     || '—';
+  document.getElementById('prd-improve').textContent   = r.improvement_points || '—';
+  document.getElementById('prd-next').textContent      = r.next_month_project_goal || '—';
+  modal.classList.add('open');
+}
+
 async function loadReports() {
   var data = await gasReq('api/mentor/call-reports');
   _myReports = (data && data.reports) ? data.reports
@@ -1284,15 +1601,21 @@ function filterReports() {
   var menteeId = document.getElementById('reportsFilterMentee').value;
   var status   = document.getElementById('reportsFilterStatus').value;
 
-  _reportsFiltered = _myReports.filter(function(r) {
-    if (menteeId && r.mentee_id !== menteeId) return false;
-    if (status === 'confirmed' && r.is_confirmed !== 'TRUE' && r.is_confirmed !== true) return false;
-    if (status === 'draft'     && (r.is_confirmed === 'TRUE' || r.is_confirmed === true)) return false;
-    return true;
-  });
-
-  _reportsPage = 1;
-  renderReports();
+  if (_currentRepTab === 'tel') {
+    _reportsFiltered = _myReports.filter(function(r) {
+      if (menteeId && r.mentee_id !== menteeId) return false;
+      if (status === 'confirmed' && r.is_confirmed !== 'TRUE' && r.is_confirmed !== true) return false;
+      if (status === 'draft'     && (r.is_confirmed === 'TRUE' || r.is_confirmed === true)) return false;
+      return true;
+    });
+    _reportsPage = 1;
+    renderReports();
+  } else if (_currentRepTab === '1on1') {
+    _mentorRepPage = 1;
+    renderMentorReports();
+  } else if (_currentRepTab === 'pre') {
+    renderPreReports();
+  }
 }
 
 function renderReports() {
@@ -1790,7 +2113,12 @@ function nav(id, el) {
   window.scrollTo(0,0);
   if (id === 'schedule')   { loadScheduleSettings(); if (_mySchedules.length===0) loadSchedules(); else renderSchedule(); }
   if (id === 'members')    { loadMembersTab(); }
-  if (id === 'reports')    { if (_myReports.length > 0) { loadReportsScreen(); } else { loadReports(); } }
+  if (id === 'reports') {
+    if (_myReports.length === 0) { loadReports(); }
+    else { loadReportsScreen(); }
+    // タブを初期化
+    if (typeof switchRepTab === 'function') switchRepTab(_currentRepTab || 'tel');
+  }
   if (id === 'weeklyTel')  { loadWeeklyTel(); }
   if (id === 'survey')     { loadSurveys(); }
 }
@@ -2528,6 +2856,58 @@ async function confirmTelReport(reportId) {
     toast('確定に失敗しました: '+(r&&(r.error||r.message)||'GAS応答なし'), 'err');
   }
 }
+
+
+// ── mentor お知らせパネル ──────────────────────────────
+async function toggleMentorNoticePanel() {
+  var panel = document.getElementById('mentorNoticePanel');
+  if (!panel) return;
+  if (panel.style.display !== 'none') {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  loadMentorNotices();
+}
+
+function closeMentorNoticePanel() {
+  var panel = document.getElementById('mentorNoticePanel');
+  if (panel) panel.style.display = 'none';
+}
+
+async function loadMentorNotices() {
+  var content = document.getElementById('mentorNoticePanelContent');
+  if (!content) return;
+  content.innerHTML = '<div class="loading">読み込み中…</div>';
+  var data = await gasReq('api/mentee/notices'); // mentor/mentee共通エンドポイント
+  if (!data || !data.notices || data.notices.length === 0) {
+    content.innerHTML = '<div style="text-align:center;color:var(--tx3);padding:24px;font-size:13px">お知らせはありません</div>';
+    document.getElementById('notifDot').style.display = 'none';
+    return;
+  }
+  document.getElementById('notifDot').style.display = '';
+  content.innerHTML = '';
+  data.notices.forEach(function(n) {
+    var dt = n.created_at ? n.created_at.slice(0,10) : '';
+    var item = document.createElement('div');
+    item.style.cssText = 'padding:10px 0;border-bottom:1px solid var(--bd)';
+    item.innerHTML =
+      '<div style="font-size:11px;color:var(--tx3);margin-bottom:3px">' + esc(dt) + '</div>'
+      + '<div style="font-size:13px;color:var(--tx2);line-height:1.6;white-space:pre-wrap">' + esc(n.content || '') + '</div>';
+    content.appendChild(item);
+  });
+}
+
+// パネル外クリックで閉じる
+document.addEventListener('click', function(e) {
+  var panel  = document.getElementById('mentorNoticePanel');
+  var btn    = document.getElementById('notifBtn');
+  if (panel && panel.style.display !== 'none') {
+    if (!panel.contains(e.target) && !btn.contains(e.target)) {
+      panel.style.display = 'none';
+    }
+  }
+});
 
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 ['delModal','telModal','preDetailModal','telHistModal','bookingCreateModal','bookingUpdateModal'].forEach(function(id){
