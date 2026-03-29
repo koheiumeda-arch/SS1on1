@@ -593,7 +593,7 @@ async function loadDashboard() {
   const [membersData, surveysData, noticesData] = await Promise.all([
     gasReq('api/admin/members'),
     gasReq('api/admin/surveys'),
-    gasReq('api/mentee/notices'),
+    gasReq('api/admin/notices/list'),
   ]);
 
   const members = (membersData && membersData.members) || [];
@@ -615,8 +615,12 @@ async function loadDashboard() {
     const b = document.getElementById('alertBadge');
     b.textContent = gapAlerts.length; b.style.display = '';
   }
-  if (noticesData && noticesData.notices && noticesData.notices.length > 0) {
-    document.getElementById('notifDot').style.display = '';
+  // お知らせバッジ（is_notice=TRUEかつ表示中のもの）
+  const activeNotices = (noticesData && noticesData.notices || [])
+    .filter(n => String(n.is_active||'TRUE').toUpperCase() !== 'FALSE');
+  if (activeNotices.length > 0) {
+    const dot = document.getElementById('notifDot');
+    if (dot) dot.style.display = '';
   }
 
   // バーチャート: メンター別メンティー数
@@ -989,18 +993,6 @@ function escHtml(s) {
 }
 
 
-function renderNoticeList(notices,list) {
-  if(notices.length===0){list.innerHTML='<div class="loading">お知らせはありません</div>';return;}
-  const targetLabel = t => t==='all'?'全員':t.startsWith('role:')?t.replace('role:','')+' 全員':t;
-  list.innerHTML=notices.map(n=>`
-    <div style="padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-      <div style="flex:1">
-        <div style="font-size:11px;color:var(--tx3);margin-bottom:5px">${new Date(n.created_at).toLocaleString('ja-JP')} / 対象: ${esc(targetLabel(n.target_id||'all'))}</div>
-        <div style="font-size:14px;color:var(--tx);line-height:1.6">${esc(n.content)}</div>
-      </div>
-      <button class="btn btn-sm" style="background:var(--rd-light);color:var(--rd);border:none;flex-shrink:0" onclick="deleteNotice('${esc(n.memo_id)}')">削除</button>
-    </div>`).join('');
-}
 
 async function deleteNotice(memoId) {
   if(!confirm('このお知らせを削除しますか？'))return;
@@ -1099,10 +1091,12 @@ async function sendMsg(){
   const btn=document.getElementById('msgSendBtn');
   if(!content){resultEl.style.color='var(--rd)';resultEl.textContent='メッセージを入力してください';return;}
   btn.textContent='送信中…';btn.disabled=true;
-  const r=await gasReq('api/admin/notices','POST',{content,target_id:_msgTargetId});
+  // api/admin/memos: 内部メモとして保存（is_notice=FALSE→メンティーには表示されない）
+  // お知らせとして表示したい場合は「お知らせ配信」画面を使用
+  const r=await gasReq('api/admin/memos','POST',{target_id:_msgTargetId, content});
   btn.textContent='送信';btn.disabled=false;
-  if(r&&!r.error){closeModal('msgModal');toast('メッセージを送信しました');}
-  else{resultEl.style.color='var(--rd)';resultEl.textContent='送信に失敗しました';}
+  if(r&&(r.ok||r.memo_id)){closeModal('msgModal');toast('メモを保存しました');}
+  else{resultEl.style.color='var(--rd)';resultEl.textContent='保存に失敗しました';}
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1135,6 +1129,24 @@ async function loadCallReports(){
   document.getElementById('cr-kpi-recording').textContent =reports.filter(r=>r.recording_url).length+'件';
   document.getElementById('cr-kpi-thisweek').textContent  =reports.filter(r=>new Date(r.created_at)>=ws).length+'件';
   renderCallReportsTable(_allCallReports);
+}
+
+function onCrMentorChange() {
+  const mentorId = document.getElementById('cr-filter-mentor').value;
+  const menteeSel = document.getElementById('cr-filter-mentee');
+  if (!menteeSel) return;
+  // メンター選択によってメンティーセレクトを絞り込む
+  const opts = Array.from(menteeSel.options);
+  opts.forEach(o => {
+    if (!o.value) return; // 「全員」はスキップ
+    const u = _crUsers[o.value];
+    o.hidden = mentorId && u && u.mentor_id !== mentorId;
+  });
+  // 選択中が非表示になったらリセット
+  if (menteeSel.options[menteeSel.selectedIndex] && menteeSel.options[menteeSel.selectedIndex].hidden) {
+    menteeSel.value = '';
+  }
+  filterCallReports();
 }
 
 function filterCallReports(){

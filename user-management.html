@@ -562,8 +562,7 @@ const PER_PAGE   = 15;
 
 function getToken() {
   // admin.html と同じキー名で取得（iframe内でも親のlocalStorageを参照）
-  return localStorage.getItem('1on1_token') || sessionStorage.getItem('1on1_token')
-      || localStorage.getItem('token')       || sessionStorage.getItem('token') || '';
+  return localStorage.getItem('1on1_token') || sessionStorage.getItem('1on1_token') || '';
 }
 
 async function api(action, extra = {}) {
