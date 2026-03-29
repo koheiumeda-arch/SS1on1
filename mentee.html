@@ -220,6 +220,7 @@ input[type="month"].inp{padding:11px 14px}
         <button class="sub-btn accent" onclick="goScreen('preReport')">📝 事前レポート提出</button>
         <button class="sub-btn" onclick="goNav('booking')">📅 予約を変更</button>
       </div>
+      <div id="homeCancelArea" style="display:none;margin-top:6px"></div>
     </div>
   </div>
   <div class="card">
@@ -230,6 +231,8 @@ input[type="month"].inp{padding:11px 14px}
 
 <!-- ══════════════════════════════════════  BOOKING -->
 <div class="screen" id="s-booking">
+  <!-- 現在の予約 -->
+  <div id="myBookingsList" style="margin-bottom:12px"></div>
   <div style="margin-bottom:4px"><div style="font-size:19px;font-weight:700">新しい1on1を予約</div><div style="font-size:13px;color:var(--tx2);margin-top:3px">日時を選択してください</div></div>
   <div class="card">
     <div class="ch"><div class="ct">📅 日付を選択</div><div style="font-size:12px;color:var(--tx3)" id="calMonthLabel"></div></div>
@@ -875,8 +878,9 @@ function goNav(id) {
   const ni = document.getElementById('ni-' + id);
   if (ni) ni.classList.add('active');
   if (id === 'booking')  loadAvailableSlots();
-  if (id === 'training') loadTraining();
+  if (id === 'training') loadTraining();  if (id === 'booking') { loadMyBookings(); }
 }
+
 
 // ══ モーダル ══
 function closeModal(id) {
@@ -1177,6 +1181,18 @@ function renderHome(data) {
     var meetBtn = document.getElementById('meetBtn');
     if (dateEl) dateEl.textContent = month + '月' + day + '日（' + wd + '）';
     if (timeEl) timeEl.textContent = '🕐 ' + hour + ':' + min + '〜　' + (data.mentor ? data.mentor.name : '');
+    // キャンセルボタン追加
+    var cancelArea = document.getElementById('homeCancelArea');
+    if (cancelArea) {
+      cancelArea.style.display = '';
+      var cBtn = document.createElement('button');
+      cBtn.className = 'sub-btn';
+      cBtn.style.cssText = 'color:var(--rd);font-size:12px';
+      cBtn.textContent = '🗑 この予約をキャンセル';
+      (function(bid){ cBtn.onclick = function(){ cancelMyBooking(bid); }; })(b.booking_id);
+      cancelArea.innerHTML = '';
+      cancelArea.appendChild(cBtn);
+    }
     if (meetBtn) {
       if (b.meet_link) {
         meetBtn.style.display = '';
@@ -1349,6 +1365,68 @@ async function toggleNoticePanel() {
 function openWtUploadGuide() {
   var m = document.getElementById('wtUploadGuideModal');
   if (m) m.classList.add('open');
+}
+
+// ── 予約キャンセル ──────────────────────────────────────
+async function cancelMyBooking(bookingId) {
+  if (!confirm('この予約をキャンセルしますか？\nメンターにキャンセル通知メールが送信されます。')) return;
+  var result = await apiRequest('/api/mentee/booking/cancel', {
+    method: 'POST',
+    body: JSON.stringify({ booking_id: bookingId, reason: 'メンティーによるキャンセル' })
+  });
+  if (result && result.ok) {
+    showToast('✅ 予約をキャンセルしました');
+    loadHomeData();
+    loadAvailableSlots();
+    // 予約画面のリスト更新
+    loadMyBookings();
+  } else {
+    showToast('❌ キャンセルに失敗しました: ' + ((result && (result.error||result.message)) || ''));
+  }
+}
+
+// 自分の予約一覧を取得してs-booking画面に表示
+async function loadMyBookings() {
+  var listEl = document.getElementById('myBookingsList');
+  if (!listEl) return;
+  var data = await apiRequest('/api/mentee/home');
+  if (!data) return;
+
+  listEl.innerHTML = '';
+  if (data.next_booking) {
+    var b   = data.next_booking;
+    var dt  = new Date(b.scheduled_at);
+    var jst = new Date(dt.getTime() + 9 * 60 * 60 * 1000);
+    var dateStr = (jst.getUTCMonth()+1) + '月' + jst.getUTCDate() + '日 '
+      + ('0'+jst.getUTCHours()).slice(-2) + ':' + ('0'+jst.getUTCMinutes()).slice(-2);
+
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'background:var(--bg3);border-radius:12px;padding:14px 16px;margin-bottom:12px';
+
+    var label = document.createElement('div');
+    label.style.cssText = 'font-size:12px;color:var(--tx3);margin-bottom:4px';
+    label.textContent = '📅 現在の予約';
+
+    var dateDiv = document.createElement('div');
+    dateDiv.style.cssText = 'font-size:16px;font-weight:700;margin-bottom:8px';
+    dateDiv.textContent = dateStr;
+
+    var cBtn = document.createElement('button');
+    cBtn.className = 'btn';
+    cBtn.style.cssText = 'background:var(--rd-light);color:var(--rd);border:1px solid var(--rd);font-size:12px';
+    cBtn.textContent = '🗑 この予約をキャンセル';
+    (function(bid){ cBtn.onclick = function(){ cancelMyBooking(bid); }; })(b.booking_id);
+
+    wrap.appendChild(label);
+    wrap.appendChild(dateDiv);
+    wrap.appendChild(cBtn);
+    listEl.appendChild(wrap);
+  } else {
+    var noBooking = document.createElement('div');
+    noBooking.style.cssText = 'text-align:center;color:var(--tx3);padding:20px;font-size:13px';
+    noBooking.textContent = '現在の予約はありません';
+    listEl.appendChild(noBooking);
+  }
 }
 </script>
 </body>
