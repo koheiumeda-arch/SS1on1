@@ -878,7 +878,9 @@ function goNav(id) {
   const ni = document.getElementById('ni-' + id);
   if (ni) ni.classList.add('active');
   if (id === 'booking')  loadAvailableSlots();
-  if (id === 'training') loadTraining();  if (id === 'booking') { loadMyBookings(); }
+  if (id === 'training') loadTraining();
+  if (id === 'booking') { loadMyBookings(); }
+  if (id === 'settings') { loadHomeData(); }
 }
 
 
@@ -1162,10 +1164,28 @@ function renderHome(data) {
       if (lcBtn) lcBtn.style.display = '';
     }
   }
-  if (data.user && data.user.chat_url) {
-    _myChatUrl = data.user.chat_url;
-    var chatBtn = document.getElementById('chatBtn');
-    if (chatBtn) chatBtn.style.display = '';
+  if (data.user) {
+    // チャットURL
+    if (data.user.chat_url) {
+      _myChatUrl = data.user.chat_url;
+      var chatBtn = document.getElementById('chatBtn');
+      if (chatBtn) chatBtn.style.display = '';
+    }
+    // マイページ設定画面の各要素に値をセット
+    var u = data.user;
+    var setEl = function(id, val) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = val || '—';
+    };
+    setEl('set-name-disp',    u.name);
+    setEl('set-email-disp',   u.email);
+    setEl('set-tel-disp',     u.phone_number);
+    setEl('set-workplace',    u.workplace);
+    setEl('set-workstatus',   u.work_status);
+    setEl('set-wage',         u.hourly_wage ? '¥' + Number(u.hourly_wage).toLocaleString() + '/h' : '');
+    // greeting
+    var greetName = document.getElementById('greetName');
+    if (greetName) greetName.textContent = u.name || 'さん';
   }
   if (data.next_booking) {
     var b  = data.next_booking;

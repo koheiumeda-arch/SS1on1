@@ -440,7 +440,7 @@ body.login-mode .main { display:none !important; }
 </div>
 
 <!-- ユーザー管理（iframe） -->
-<div class="screen" id="s-userManagement" style="padding:0;margin:-28px -32px;height:calc(100vh);overflow:hidden;position:fixed;top:0;left:240px;right:0;bottom:0;z-index:50;background:var(--bg)">
+<div class="screen" id="s-userManagement" style="display:none;padding:0;margin:-28px -32px;height:calc(100vh);overflow:hidden;position:fixed;top:0;left:240px;right:0;bottom:0;z-index:50;background:var(--bg)">
   <iframe id="userManagementFrame" src="" style="width:100%;height:100%;border:none;display:block" title="ユーザー管理"></iframe>
 </div>
 
@@ -1315,6 +1315,9 @@ function nav(id, el) {
     s.classList.remove('active');
     s.style.display = ''; // showLoginOverlay等で設定されたinlineスタイルをリセット
   });
+  // ユーザー管理iframeを閉じる（fixed positionのため明示的に非表示）
+  const umSc = document.getElementById('s-userManagement');
+  if (umSc && id !== 'userManagement') umSc.style.display = 'none';
   const screen=document.getElementById('s-'+id);
   if(screen) screen.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -1324,7 +1327,14 @@ function nav(id, el) {
     const frame=document.getElementById('userManagementFrame');
     if(frame&&!frame.src.includes('user-management.html')) frame.src=GITHUB_BASE+'/user-management.html';
     document.getElementById('nav-userManagement').classList.add('active');
-    return; // ← iframeは screen の CSS管理外のため早期return
+    // 他のscreenを非表示、s-userManagementを表示
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.remove('active');
+      s.style.display = '';
+    });
+    const umScreen = document.getElementById('s-userManagement');
+    if (umScreen) umScreen.style.display = 'block';
+    return;
   }
   if(id==='survey')            loadSurveys();
   if(id==='members')           renderMembersTable();

@@ -657,18 +657,28 @@ td{padding:10px 14px;font-size:13px}
 <div class="screen" id="s-schedule">
   <div class="topbar"><div><div class="page-title">スケジュール管理</div><div class="page-sub">担当メンティーとの予約一覧</div></div></div>
 
-  <!-- 予約可能時間設定 -->
+  <!-- 予約可能時間設定（折りたたみ式） -->
   <div class="card" style="margin-bottom:16px">
-    <div class="ch">
+    <div class="ch" style="cursor:pointer" onclick="toggleScheduleSettings()" id="scheduleSettingsHeader">
       <div class="ct">⏰ 予約可能時間の設定</div>
-      <button class="btn btn-p btn-sm" onclick="saveScheduleSettings()">💾 保存</button>
-    </div>
-    <div style="padding:16px">
-      <div style="font-size:12px;color:var(--tx3);margin-bottom:12px">メンティーが1on1を予約できる時間帯を曜日ごとに設定します（30分単位）</div>
-      <div id="scheduleSettingsGrid" style="display:flex;flex-direction:column;gap:10px">
-        <div class="loading">読み込み中…</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="scheduleSettingsToggleIcon" style="font-size:13px;color:var(--tx3)">▶ 展開して設定</span>
       </div>
-      <div id="scheduleSettingsMsg" style="font-size:12px;margin-top:8px"></div>
+    </div>
+    <div id="scheduleSettingsPanel" style="display:none">
+      <div style="padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--bd)">
+        <span style="font-size:12px;color:var(--tx3)">メンティーが1on1を予約できる時間帯を曜日ごとに設定します（30分単位）</span>
+      </div>
+      <div style="padding:12px 16px">
+        <div id="scheduleSettingsGrid" style="display:flex;flex-direction:column;gap:8px">
+          <div class="loading">読み込み中…</div>
+        </div>
+        <div id="scheduleSettingsMsg" style="font-size:12px;margin-top:8px"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px;gap:8px">
+          <button class="btn btn-g btn-sm" onclick="toggleScheduleSettings()">閉じる</button>
+          <button class="btn btn-p btn-sm" onclick="saveScheduleSettings()">💾 保存</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2248,6 +2258,15 @@ function renderScheduleSettings() {
   });
 }
 
+function toggleScheduleSettings() {
+  var panel = document.getElementById('scheduleSettingsPanel');
+  var icon  = document.getElementById('scheduleSettingsToggleIcon');
+  if (!panel) return;
+  var isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  icon.textContent    = isOpen ? '▶ 展開して設定' : '▲ 閉じる';
+}
+
 async function saveScheduleSettings() {
   var schedules = Object.keys(_scheduleSettings).map(function(dow) {
     var s = _scheduleSettings[dow];
@@ -2259,7 +2278,7 @@ async function saveScheduleSettings() {
   if (r && r.ok) {
     msgEl.style.color = 'var(--gr)'; msgEl.textContent = '✅ 保存しました';
     toast('スケジュール設定を保存しました');
-    setTimeout(function(){ msgEl.textContent=''; }, 3000);
+    setTimeout(function(){ toggleScheduleSettings(); msgEl.textContent=''; }, 3000);
   } else {
     msgEl.style.color = 'var(--rd)'; msgEl.textContent = '❌ 保存に失敗しました';
   }
@@ -2895,8 +2914,16 @@ async function confirmTelReport(reportId) {
   var r = await gasReq('api/mentor/call-reports/confirm','POST',{ report_id: reportId });
   if (r && (r.ok || !r.error)) {
     closeModal('telReportDetailModal');
-    await loadCallReportsData();
-    await loadWeeklyTel();
+    await loadCallReportsData(); // _allCallReports 更新
+    await loadWeeklyTel();       // 週次TEL画面を更新
+    // レポート画面が開いていれば _myReports も更新（タブが TEL の場合）
+    if (_currentRepTab === 'tel') {
+      _myReports = _allCallReports.filter(function(r2){
+        return r2.leader_id === _me.user_id;
+      }).sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); });
+      _reportsFiltered = _myReports.slice();
+      renderReports();
+    }
     toast('TELレポートを確定しました');
   } else {
     toast('確定に失敗しました: '+(r&&(r.error||r.message)||'GAS応答なし'), 'err');
