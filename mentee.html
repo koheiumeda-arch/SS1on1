@@ -1362,25 +1362,56 @@ async function loadTraining() {
 
 // ══ お知らせパネル ══
 async function toggleNoticePanel() {
-  const panel = document.getElementById('noticePanel');
+  var panel = document.getElementById('noticePanel');
   if (!panel) return;
   if (panel.style.display !== 'none') {
     panel.style.display = 'none';
     return;
   }
   panel.style.display = 'block';
-  const content = document.getElementById('noticePanelContent');
-  const data = await apiRequest('/api/mentee/notices');
-  if (!data || !data.notices || data.notices.length === 0) {
+  var content = document.getElementById('noticePanelContent');
+  content.innerHTML = '<div style="text-align:center;color:var(--tx3)">読み込み中…</div>';
+
+  // apiRequest と同じ形式で送信（デバッグしやすいよう直接実装）
+  var token = Auth.getToken();
+  var payload = {
+    path:    'api/mentee/notices',
+    _method: 'GET',
+    _auth:   token ? 'Bearer ' + token : ''
+  };
+  var data = null;
+  try {
+    var res  = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+    var text = await res.text();
+    try { data = JSON.parse(text); } catch(pe) {
+      console.error('[notices] JSON parse error:', text.slice(0, 200));
+    }
+  } catch(fetchErr) {
+    console.error('[notices] fetch error:', fetchErr);
+  }
+
+  if (!data) {
+    content.innerHTML = '<div style="text-align:center;color:var(--tx3)">取得に失敗しました</div>';
+    return;
+  }
+  if (!data.notices || data.notices.length === 0) {
     content.innerHTML = '<div style="text-align:center;color:var(--tx3)">お知らせはありません</div>';
     return;
   }
-  content.innerHTML = data.notices.map(n =>
-    '<div style="padding:8px 0;border-bottom:1px solid var(--bd)">' +
-    '<div style="font-size:12px;color:var(--tx3)">' + (n.created_at || '').slice(0,10) + '</div>' +
-    '<div>' + (n.content || '') + '</div>' +
-    '</div>'
-  ).join('');
+  content.innerHTML = '';
+  data.notices.forEach(function(n) {
+    var item = document.createElement('div');
+    item.style.cssText = 'padding:10px 0;border-bottom:1px solid var(--bd)';
+    var dt = document.createElement('div');
+    dt.style.cssText = 'font-size:12px;color:var(--tx3);margin-bottom:3px';
+    dt.textContent = (n.created_at || '').slice(0, 10);
+    var body_el = document.createElement('div');
+    body_el.style.cssText = 'font-size:13px;white-space:pre-wrap;line-height:1.6';
+    body_el.textContent = n.content || '';
+    item.appendChild(dt);
+    item.appendChild(body_el);
+    content.appendChild(item);
+  });
 }
 function openWtUploadGuide() {
   var m = document.getElementById('wtUploadGuideModal');
