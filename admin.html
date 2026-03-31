@@ -275,6 +275,7 @@ body.login-mode .main { display:none !important; }
     <div class="topbar-r">
       <button class="btn btn-sm" id="detail-chat-btn" style="display:none;background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff;border:none" onclick="openDetailChat()">💬 チャットを開く</button>
       <button class="btn btn-sm" id="detail-create-chat-btn" style="display:none;background:var(--bg3);color:var(--tx2);border:1px solid var(--bd)" onclick="createChatSpace()">🔗 URLを登録</button>
+      <button class="btn btn-sm" id="detail-webhook-btn" style="display:none;font-size:11px;padding:5px 10px;background:var(--am-light);color:var(--am);border:1px solid var(--am)" onclick="saveWebhookUrl()">🔔 Webhook登録</button>
       <button class="btn btn-p" id="detail-msg-btn">📨 メッセージ送信</button>
     </div>
   </div>
@@ -734,6 +735,7 @@ function showMemberDetail(m) {
   loadMemberSurveys(m.user_id);
   loadAdminMemos(m.user_id);
   nav('memberDetail');
+  loadWebhookStatus(m.user_id);
 }
 
 async function loadAdminMemos(userId) {
@@ -1292,20 +1294,78 @@ function createChatSpace() {
 }
 
 async function saveChatUrl(chatUrl) {
-  var r = await gasReq('api/admin/create-chat-space','POST',{
+  // 新APIを使用: chat_space_id も自動抽出して保存
+  var r = await gasReq('api/admin/chat-space/register','POST',{
     user_id:  _currentDetailUserId,
     chat_url: chatUrl,
   });
   if (r && r.ok) {
-    toast('チャットURLを登録しました');
+    toast('チャットURLを登録しました（Space ID: ' + (r.chat_space_id || '取得中') + '）');
     var m = _allMembers.find(function(x){ return x.user_id === _currentDetailUserId; });
     if (m) {
-      m.chat_url = chatUrl;
+      m.chat_url      = chatUrl;
+      m.chat_space_id = r.chat_space_id || '';
       showMemberDetail(m);
     }
+    // Webhookボタンを表示
+    var wbtn = document.getElementById('detail-webhook-btn');
+    if (wbtn) wbtn.style.display = '';
     window.open(chatUrl, '_blank');
   } else {
     toast('登録に失敗: ' + (r && (r.error||r.message) || 'GAS応答なし'), 'err');
+  }
+}
+
+// ── Webhook URL の保存 ──
+async function saveWebhookUrl() {
+  var url = prompt(
+    'Google Chat のこのスペースで取得した Webhook URL を貼り付けてください。\n\n' +
+    '【取得手順】\n' +
+    '① Google Chat でこのメンバーのスペースを開く\n' +
+    '② スペース名の横の「∨」→「アプリと統合」→「Webhookを追加」\n' +
+    '③ 名前（例: 1on1通知）を入力して「保存」\n' +
+    '④ 表示されたURLをコピーして下に貼り付ける\n\n' +
+    '例: https://chat.googleapis.com/v1/spaces/XXXX/messages?key=...'
+  );
+  if (!url || !url.trim()) return;
+  if (!url.includes('chat.googleapis.com')) {
+    toast('Google Chat の Webhook URL を入力してください', 'err'); return;
+  }
+  var r = await gasReq('api/admin/chat-webhook/save','POST',{
+    user_id:     _currentDetailUserId,
+    webhook_url: url.trim(),
+  });
+  if (r && r.ok) {
+    toast('✅ Webhook URLを保存しました。今後、通知が自動送信されます。');
+    var wbtn = document.getElementById('detail-webhook-btn');
+    if (wbtn) {
+      wbtn.textContent = '✅ Webhook登録済み';
+      wbtn.style.background = 'var(--gr-light)';
+      wbtn.style.color = 'var(--gr)';
+    }
+  } else {
+    toast('保存に失敗: ' + (r && (r.error||r.message) || 'GAS応答なし'), 'err');
+  }
+}
+
+// ── Webhook設定状況を取得してボタンに反映 ──
+async function loadWebhookStatus(userId) {
+  var r = await gasReq('api/admin/chat-webhook','GET',{ user_id: userId });
+  var wbtn = document.getElementById('detail-webhook-btn');
+  if (!wbtn) return;
+  if (r && r.has_webhook) {
+    wbtn.textContent = '✅ Webhook登録済み';
+    wbtn.style.background = 'var(--gr-light)';
+    wbtn.style.color = 'var(--gr)';
+    wbtn.style.display = '';
+  } else if (r && r.chat_url) {
+    // chat_urlはあるがwebhookがない場合はボタンを表示
+    wbtn.textContent = '🔔 Webhook登録';
+    wbtn.style.background = '';
+    wbtn.style.color = '';
+    wbtn.style.display = '';
+  } else {
+    wbtn.style.display = 'none';
   }
 }
 
