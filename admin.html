@@ -1370,39 +1370,48 @@ async function loadWebhookStatus(userId) {
 }
 
 function nav(id, el) {
-  // inline styleをクリアしてからclass制御に委ねる
-  document.querySelectorAll('.screen').forEach(s => {
-    s.classList.remove('active');
-    s.style.display = ''; // showLoginOverlay等で設定されたinlineスタイルをリセット
-  });
-  // ユーザー管理iframeを閉じる（fixed positionのため明示的に非表示）
-  const umSc = document.getElementById('s-userManagement');
-  if (umSc && id !== 'userManagement') umSc.style.display = 'none';
-  const screen=document.getElementById('s-'+id);
-  if(screen) screen.classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  if(el) el.classList.add('active');
-
-  if(id==='userManagement'){
-    const frame=document.getElementById('userManagementFrame');
-    if(frame&&!frame.src.includes('user-management.html')) frame.src=GITHUB_BASE+'/user-management.html';
-    document.getElementById('nav-userManagement').classList.add('active');
-    // 他のscreenを非表示、s-userManagementを表示
+  // ── s-userManagement（iframe・fixed）の表示制御 ──
+  const umScreen = document.getElementById('s-userManagement');
+  if (id === 'userManagement') {
+    // ユーザー管理: iframe を表示し、他の screen は非表示
     document.querySelectorAll('.screen').forEach(s => {
       s.classList.remove('active');
       s.style.display = '';
     });
-    const umScreen = document.getElementById('s-userManagement');
     if (umScreen) umScreen.style.display = 'block';
+
+    const frame = document.getElementById('userManagementFrame');
+    if (frame && !frame.src.includes('user-management.html')) {
+      frame.src = GITHUB_BASE + '/user-management.html';
+    }
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const navUm = document.getElementById('nav-userManagement');
+    if (navUm) navUm.classList.add('active');
+    if (el) el.classList.add('active');
     return;
   }
-  if(id==='survey')            loadSurveys();
-  if(id==='members')           renderMembersTable();
-  if(id==='contents')          loadContents();
-  if(id==='links')             loadLinks();
-  if(id==='notices')           loadNotices();
-  if(id==='callReports')       loadCallReports();
-  if(id==='leaderAssignments') loadLeaderAssignments();
+
+  // ── 通常画面: iframe を必ず隠してから .screen を切り替え ──
+  if (umScreen) umScreen.style.display = 'none';
+
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = '';
+  });
+
+  const screen = document.getElementById('s-' + id);
+  if (screen) screen.classList.add('active');
+
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  if (id === 'survey')             loadSurveys();
+  if (id === 'members')            renderMembersTable();
+  if (id === 'contents')           loadContents();
+  if (id === 'links')              loadLinks();
+  if (id === 'notices')            loadNotices();
+  if (id === 'callReports')        loadCallReports();
+  if (id === 'leaderAssignments')  loadLeaderAssignments();
 }
 
 // iframe から「← 管理画面」受信
