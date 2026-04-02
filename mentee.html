@@ -209,6 +209,12 @@ input[type="month"].inp{padding:11px 14px}
     <div class="card-label">🎯 今月の目標</div>
     <div class="goal-text" id="currentGoal">TypeScriptの型定義を完全に理解し、新機能開発で独力実装できるようになる</div>
     <div class="goal-from" id="goalFrom">📋 1/31の1on1レポートより</div>
+    <div id="home-goals-section" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2)">
+      <div class="goal-label" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;margin-bottom:3px">半年業務目標</div>
+      <div id="home-goal-work" style="font-size:13px;color:#fff;margin-bottom:8px">—</div>
+      <div class="goal-label" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;margin-bottom:3px">半年スキル目標</div>
+      <div id="home-goal-skill" style="font-size:13px;color:#fff">—</div>
+    </div>
   </div>
   <div class="next-card">
     <div class="next-hd"><div class="next-hd-t">📅 次回の1on1</div><div class="countdown" id="countdown">明日まで</div></div>
@@ -292,16 +298,16 @@ input[type="month"].inp{padding:11px 14px}
     <div class="ch"><div class="ct">💼 案件・目標</div></div>
     <div style="padding:16px">
       <div class="form-group">
-        <label class="form-label">現在の案件<span class="req">*</span></label>
-        <input class="inp" id="pr-currentProject" placeholder="参画中のプロジェクト・案件名" />
+        <label class="form-label">現在の案件</label>
+        <div id="pr-currentProject" class="inp readonly-field" style="background:var(--bg4);color:var(--tx2);min-height:38px;display:flex;align-items:center">—</div>
       </div>
       <div class="form-group">
-        <label class="form-label">半年の目標（業務）</label>
-        <textarea class="inp" id="pr-goalWork6m" rows="3" placeholder="業務・スキル面での半年後の目標"></textarea>
+        <label class="form-label">半年の目標（業務）<span style="font-size:11px;color:var(--tx3);font-weight:400;margin-left:6px">※メンターが設定</span></label>
+        <div id="pr-goalWork6m-disp" class="inp readonly-field" style="background:var(--bg4);color:var(--tx2);min-height:38px;display:flex;align-items:center">—</div>
       </div>
       <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">半年の目標（資格取得・スキルアップ）</label>
-        <textarea class="inp" id="pr-goalSkill6m" rows="3" placeholder="取得したい資格や習得したいスキル"></textarea>
+        <label class="form-label">半年の目標（資格取得・スキルアップ）<span style="font-size:11px;color:var(--tx3);font-weight:400;margin-left:6px">※メンターが設定</span></label>
+        <div id="pr-goalSkill6m-disp" class="inp readonly-field" style="background:var(--bg4);color:var(--tx2);min-height:38px;display:flex;align-items:center">—</div>
       </div>
     </div>
   </div>
@@ -344,6 +350,12 @@ input[type="month"].inp{padding:11px 14px}
   </div>
 
   <!-- ⑤ 次月目標 -->
+  <!-- 前回Mentorとの合意目標（公開済みレポートがある場合のみ表示） -->
+  <div id="pr-prevNextGoalBox" style="display:none;background:var(--pr-light);border:1px solid rgba(93,175,167,.3);border-radius:12px;padding:14px 16px;margin-bottom:4px">
+    <div style="font-size:12px;font-weight:700;color:var(--pr);margin-bottom:8px">📌 前回Mentorとの合意目標（参考・変更不可）</div>
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:6px"><span style="font-weight:600">案件：</span><span id="pr-prevNextProject">—</span></div>
+    <div style="font-size:12px;color:var(--tx2)"><span style="font-weight:600">学習：</span><span id="pr-prevNextStudy">—</span></div>
+  </div>
   <div class="card">
     <div class="ch"><div class="ct">🎯 次月の目標</div></div>
     <div style="padding:16px">
@@ -453,7 +465,10 @@ input[type="month"].inp{padding:11px 14px}
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">担当リーダー</span><span style="font-size:14px;font-weight:600" id="set-leader">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">稼働場所</span><span style="font-size:14px;font-weight:600" id="set-workplace">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">雇用形態</span><span style="font-size:14px;font-weight:600" id="set-workstatus">—</span></div>
-      <div style="display:flex;justify-content:space-between;padding:10px 0"><span style="font-size:13px;color:var(--tx2)">時給</span><span style="font-size:14px;font-weight:600" id="set-wage">—</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">半年業務目標</span><span style="font-size:14px;font-weight:600;max-width:60%;text-align:right;line-height:1.5" id="set-goal-work">—</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">半年スキル目標</span><span style="font-size:14px;font-weight:600;max-width:60%;text-align:right;line-height:1.5" id="set-goal-skill">—</span></div>
+      <!-- 時給表示: 表示するには style="display:none" を削除 -->
+      <div class="wage-row" style="display:none"><div style="display:flex;justify-content:space-between;padding:10px 0"><span style="font-size:13px;color:var(--tx2)">時給</span><span style="font-size:14px;font-weight:600" id="set-wage">—</span></div></div>
     </div>
   </div>
   <div class="card" style="background:var(--am-light);border-color:var(--am)">
@@ -530,6 +545,20 @@ input[type="month"].inp{padding:11px 14px}
 
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
+
+// ── クライアントサイドキャッシュ ──
+const Cache = {
+  set(k, d, ttl) { try { localStorage.setItem('c_'+k, JSON.stringify({d, exp: Date.now()+ttl*1000})); } catch(e){} },
+  get(k) {
+    try {
+      var v = JSON.parse(localStorage.getItem('c_'+k));
+      if (!v || Date.now() > v.exp) { localStorage.removeItem('c_'+k); return null; }
+      return v.d;
+    } catch(e) { return null; }
+  },
+  bust(prefix) { Object.keys(localStorage).filter(k=>k.startsWith('c_'+prefix)).forEach(k=>localStorage.removeItem(k)); }
+};
+
 // ══════════════════════════════════════════════════════════
 //  設定値（本番時は環境変数 or ビルド時に埋め込む）
 // ══════════════════════════════════════════════════════════
@@ -870,6 +899,26 @@ function goScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const s = document.getElementById('s-' + id);
   if (s) s.classList.add('active');
+  // 事前レポート画面: 公開済みレポートの次月目標を readonly 参照表示
+  if (id === 'preReport') updatePreReportNextMonthGoals();
+}
+
+function updatePreReportNextMonthGoals() {
+  // 最新の公開済みメンターレポートから next_month goals を取得
+  var latest = _myMentorReports.find(function(r) {
+    return r.is_published === 'TRUE' && (r.next_month_project_goal || r.next_month_study_goal);
+  });
+  var projEl  = document.getElementById('pr-prevNextProject');
+  var studyEl = document.getElementById('pr-prevNextStudy');
+  var refBox  = document.getElementById('pr-prevNextGoalBox');
+  if (!refBox) return;
+  if (latest) {
+    if (projEl)  projEl.textContent  = latest.next_month_project_goal || '—';
+    if (studyEl) studyEl.textContent = latest.next_month_study_goal   || '—';
+    refBox.style.display = '';
+  } else {
+    refBox.style.display = 'none';
+  }
 }
 
 function goNav(id) {
@@ -958,16 +1007,17 @@ async function loadSurveyData() {
 
 // ══ 事前レポート送信 ══
 async function submitPreReport() {
-  var g = function(id){ var el=document.getElementById(id); return el ? el.value : ''; };
+  var g = function(id){ var el=document.getElementById(id); return el ? (el.value||el.textContent||'') : ''; };
+  var gTxt = function(id){ var el=document.getElementById(id); return el ? (el.textContent||'').replace(/^—$/,'') : ''; };
   if (!g('pr-targetMonth') || !g('pr-projectResult') || !g('pr-goodPoints') || !g('pr-nextMonthProjectGoal')) {
     showToast('❌ 必須項目を入力してください'); return;
   }
   var body = {
     target_month:            g('pr-targetMonth'),
     session_date:            g('pr-sessionDate'),
-    current_project:         g('pr-currentProject'),
-    goal_work_6m:            g('pr-goalWork6m'),
-    goal_skill_6m:           g('pr-goalSkill6m'),
+    current_project:         gTxt('pr-currentProject'),
+    goal_work_6m:            gTxt('pr-goalWork6m-disp'),
+    goal_skill_6m:           gTxt('pr-goalSkill6m-disp'),
     project_result:          g('pr-projectResult'),
     study_hours:             parseInt(g('pr-studyHours')) || 0,
     study_content:           g('pr-studyContent'),
@@ -1243,6 +1293,25 @@ function renderHome(data) {
     if (prs) prs.textContent = (_myMentorName||'メンター') + ' — 次回の予約なし';
     if (svs) svs.textContent = '— 回答待ちのアンケートなし';
   }
+
+  // 半年目標・案件情報を3箇所に反映
+  var setGoalEl = function(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = (val && val.trim()) ? val : '—';
+  };
+  var goalWork  = data.goal_work_6m    || '';
+  var goalSkill = data.goal_skill_6m   || '';
+  var curProj   = data.current_project || '';
+  // ① ホーム画面
+  setGoalEl('home-goal-work',  goalWork);
+  setGoalEl('home-goal-skill', goalSkill);
+  // ② 事前アンケート（読み取り専用div）
+  setGoalEl('pr-goalWork6m-disp',  goalWork);
+  setGoalEl('pr-goalSkill6m-disp', goalSkill);
+  setGoalEl('pr-currentProject',   curProj);
+  // ③ 設定画面
+  setGoalEl('set-goal-work',  goalWork);
+  setGoalEl('set-goal-skill', goalSkill);
 }
 
 function openMyChat() {
@@ -1257,7 +1326,9 @@ function openLeaderChat() {
 
 // ══ クイックリンク ══
 async function loadQuickLinks() {
-  const data = await apiRequest('/api/mentee/links');
+  var cached = Cache.get('links');
+  const data = cached ? cached : await apiRequest('/api/mentee/links');
+  if (!cached && data) Cache.set('links', data, 600);
   if (!data || !data.links) return;
   const container = document.getElementById('quickLinksBar');
   if (!container) return;
@@ -1274,10 +1345,13 @@ async function loadQuickLinks() {
 }
 
 // ══ レポート一覧 ══
+var _myMentorReports = []; // 公開済みメンターレポートのキャッシュ
+
 async function loadReports() {
   const data = await apiRequest('/api/mentee/reports');
   if (!data) return;
   const reports = data.reports || [];
+  _myMentorReports = reports; // キャッシュ
 
   // レポート一覧画面
   const container = document.getElementById('reportsList');
@@ -1293,9 +1367,12 @@ async function loadReports() {
         div.className = 'rep-item';
         div.setAttribute('data-rid', r.report_id || '');
         div.onclick   = function(){ showReport(this.getAttribute('data-rid')); };
+        var pdfIcon = r.pdf_url
+          ? '<a href="' + r.pdf_url + '" target="_blank" onclick="event.stopPropagation()" style="font-size:16px;margin-left:6px" title="PDFを開く">📄</a>'
+          : '';
         div.innerHTML = '<div class="rep-date"><div class="rep-d">' + dt.getDate() + '</div>' +
           '<div class="rep-m">' + (dt.getMonth()+1) + '月</div></div>' +
-          '<div class="rep-info"><div class="rep-title">' + (r.ai_summary||'レポート').substring(0,40) + '</div>' +
+          '<div class="rep-info"><div class="rep-title" style="display:flex;align-items:center">' + (r.ai_summary||'レポート').substring(0,40) + pdfIcon + '</div>' +
           '<div class="rep-sub">' + r.created_at.slice(0,10) + ' / ' + (_myMentorName||'メンター') + '</div></div>' +
           '<div class="rep-arr">›</div>';
         container.appendChild(div);

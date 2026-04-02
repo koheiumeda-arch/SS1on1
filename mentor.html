@@ -304,9 +304,18 @@ td{padding:10px 14px;font-size:13px}
       <label class="form-label">メンターからのアドバイス（編集可）</label>
       <textarea class="inp" id="mrd-advice" rows="3"></textarea>
     </div>
-    <div class="form-group" style="margin-bottom:16px">
+    <div class="form-group" style="margin-bottom:12px">
       <label class="form-label">次回の目標（編集可）</label>
       <textarea class="inp" id="mrd-goal" rows="2"></textarea>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--tx3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">次月目標（Menteeに公開される）</div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">次月プロジェクト目標</label>
+      <textarea class="inp" id="mrd-next-project" rows="2" placeholder="来月に案件で達成する目標"></textarea>
+    </div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label class="form-label">次月学習目標</label>
+      <textarea class="inp" id="mrd-next-study" rows="2" placeholder="来月の学習目標"></textarea>
     </div>
     <div class="f-foot">
       <button class="btn btn-g" onclick="closeModal('mentorReportDetailModal')">閉じる</button>
@@ -501,6 +510,14 @@ td{padding:10px 14px;font-size:13px}
       <input class="inp" type="datetime-local" id="bcDatetimeInput" onchange="onBcDatetimeChange(this.value)"/>
     </div>
     <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">所要時間</label>
+      <select class="inp" id="bc-duration">
+        <option value="30">30分</option>
+        <option value="60">60分</option>
+        <option value="90">90分</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
       <label class="form-label">Google Meet URL（任意）</label>
       <input class="inp" id="bc-meet" placeholder="https://meet.google.com/xxx-xxxx-xxx"/>
     </div>
@@ -670,6 +687,16 @@ td{padding:10px 14px;font-size:13px}
         <span style="font-size:12px;color:var(--tx3)">メンティーが1on1を予約できる時間帯を曜日ごとに設定します（30分単位）</span>
       </div>
       <div style="padding:12px 16px">
+        <!-- デフォルト1on1時間 -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 12px;background:var(--pr-light);border-radius:10px;border:1px solid rgba(93,175,167,.25)">
+          <span style="font-size:13px;font-weight:600;color:var(--tx2);white-space:nowrap">⏱ デフォルト1on1時間</span>
+          <select class="inp" id="sched-default-duration" style="width:110px;font-size:13px;padding:6px 10px">
+            <option value="30">30分</option>
+            <option value="60">60分</option>
+            <option value="90">90分</option>
+          </select>
+          <span style="font-size:11px;color:var(--tx3)">新規予約時の初期値</span>
+        </div>
         <div id="scheduleSettingsGrid" style="display:flex;flex-direction:column;gap:8px">
           <div class="loading">読み込み中…</div>
         </div>
@@ -735,6 +762,24 @@ td{padding:10px 14px;font-size:13px}
       </div>
     </div>
 
+    <!-- 半年目標設定 -->
+    <div class="card" style="margin-top:10px">
+      <div class="ch"><div class="ct">🎯 半年目標設定</div></div>
+      <div style="padding:12px 16px 8px">
+        <div class="form-group">
+          <label class="form-label">半年業務目標</label>
+          <textarea class="inp" id="md-goal-work" rows="2" placeholder="業務面での半年後の目標…" style="margin-bottom:8px"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+          <label class="form-label">半年スキル目標</label>
+          <textarea class="inp" id="md-goal-skill" rows="2" placeholder="取得したい資格・習得したいスキル…"></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end">
+          <button class="btn btn-p btn-sm" onclick="saveMenteeGoals()">🎯 目標を保存</button>
+        </div>
+      </div>
+    </div>
+
     <!-- メモ -->
     <div class="card" style="margin-top:10px">
       <div class="ch"><div class="ct">📝 メモ</div></div>
@@ -772,11 +817,17 @@ td{padding:10px 14px;font-size:13px}
     <select class="inp" id="reportsFilterMentee" style="flex:1;min-width:120px;max-width:180px;font-size:13px;padding:7px 10px" onchange="filterReports()">
       <option value="">全メンティー</option>
     </select>
+    <select class="inp" id="reportsFilterMonth" style="width:130px;font-size:13px;padding:7px 10px" onchange="filterReports()">
+      <option value="">全期間</option>
+    </select>
     <select class="inp" id="reportsFilterStatus" style="width:110px;font-size:13px;padding:7px 10px" onchange="filterReports()">
       <option value="">すべて</option>
       <option value="confirmed">✅ 確定済み</option>
       <option value="draft">📝 下書き</option>
     </select>
+    <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap">
+      <input type="checkbox" id="reportsFilterMine" onchange="filterReports()"> 自分の担当のみ
+    </label>
     <div id="reportsCount" style="font-size:12px;color:var(--tx3);white-space:nowrap;margin-left:auto">—</div>
   </div>
 
@@ -807,7 +858,7 @@ td{padding:10px 14px;font-size:13px}
 <!-- ════ WEEKLY TEL ════ -->
 <div class="screen" id="s-weeklyTel">
   <div class="topbar"><div><div class="page-title">週次TEL</div><div class="page-sub">担当メンティーへの週次電話レポート</div></div></div>
-  <!-- 録音未アップロードバナー -->
+  <!-- 録音未アップロードバナー（非表示：UIシンプル化） -->
   <div id="telRecordingBanner" style="display:none;background:var(--am-light);border:1px solid var(--am);border-radius:12px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:var(--am)"></div>
   <div class="grid3" id="telKpiGrid" style="display:none">
     <div class="kpi-card"><div class="kpi-lb">今週の実施数</div><div class="kpi-v" id="tel-kpi-week">—</div></div>
@@ -836,6 +887,19 @@ td{padding:10px 14px;font-size:13px}
 // ══════════════════════════════════════════════════════════
 const GAS_URL     = 'https://script.google.com/macros/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
 const GITHUB_BASE = 'https://koheiumeda-arch.github.io/SS1on1';
+
+// ── クライアントサイドキャッシュ ──
+const Cache = {
+  set(k, d, ttl) { try { localStorage.setItem('c_'+k, JSON.stringify({d, exp: Date.now()+ttl*1000})); } catch(e){} },
+  get(k) {
+    try {
+      var v = JSON.parse(localStorage.getItem('c_'+k));
+      if (!v || Date.now() > v.exp) { localStorage.removeItem('c_'+k); return null; }
+      return v.d;
+    } catch(e) { return null; }
+  },
+  bust(prefix) { Object.keys(localStorage).filter(k=>k.startsWith('c_'+prefix)).forEach(k=>localStorage.removeItem(k)); }
+};
 
 // ══ 認証 ══
 const Auth = {
@@ -995,23 +1059,29 @@ async function loadMentorQuickLinks() {
 }
 
 async function loadAll() {
-  await Promise.all([loadMentees(), loadSchedules(), loadCallReportsData()]);
-  loadSurveys();
+  // 起動時はサイドバー描画に必要なメンティー情報のみロード。
+  // schedules / callReports / surveys は各タブ初回アクセス時に遅延ロードする。
+  await loadMentees();
 }
 
 // ══════════════════════════════════════════════════════════
 //  担当メンティー
 // ══════════════════════════════════════════════════════════
 async function loadMentees() {
-  var data = await gasReq('api/mentor/my-mentees');
-  if (!data || !data.mentees) {
-    // フォールバック: admin/members から自分のメンティーを絞り込む
-    var d2 = await gasReq('api/admin/members');
-    if (d2 && d2.members) {
-      _myMentees = d2.members.filter(function(m) { return m.mentor_id === _me.user_id; });
+  var cacheKey = 'mentees_' + (_me ? _me.user_id : '');
+  var cached = Cache.get(cacheKey);
+  if (cached) { _myMentees = cached; }
+  else {
+    var data = await gasReq('api/mentor/my-mentees');
+    if (!data || !data.mentees) {
+      var d2 = await gasReq('api/admin/members');
+      if (d2 && d2.members) {
+        _myMentees = d2.members.filter(function(m) { return m.mentor_id === _me.user_id; });
+      }
+    } else {
+      _myMentees = data.mentees;
     }
-  } else {
-    _myMentees = data.mentees;
+    Cache.set(cacheKey, _myMentees, 600);
   }
 
   // サイドバー描画
@@ -1432,21 +1502,31 @@ function switchRepTab(tab) {
   }
 }
 
-// ── 1on1レポート（mentor_reports）読み込みと表示 ──
+// ── 1on1レポート: 全mentee分を all-reports エンドポイントから取得 ──
+var _allMenteeReports = [];
 async function loadMentorReports() {
   var listEl = document.getElementById('mentorReportsList');
   listEl.innerHTML = '<div class="loading">読み込み中…</div>';
-  var data = await gasReq('api/mentor/mentor-reports');
-  _mentorReports = (data && data.reports) ? data.reports : [];
+  var data = await gasReq('api/mentor/all-reports');
+  _allMenteeReports = (data && data.reports) ? data.reports : [];
+  _mentorReports = _allMenteeReports; // 後方互換
   renderMentorReports();
 }
 
 function renderMentorReports() {
-  var listEl  = document.getElementById('mentorReportsList');
-  var pagerEl = document.getElementById('mentorReportsPager');
-  var menteeId= document.getElementById('reportsFilterMentee').value;
-  var filtered= _mentorReports.filter(function(r){
-    return !menteeId || r.mentee_id === menteeId;
+  var listEl   = document.getElementById('mentorReportsList');
+  var pagerEl  = document.getElementById('mentorReportsPager');
+  var menteeId = document.getElementById('reportsFilterMentee').value;
+  var month    = document.getElementById('reportsFilterMonth').value;
+  var mineOnly = document.getElementById('reportsFilterMine').checked;
+  var filtered = _mentorReports.filter(function(r) {
+    if (menteeId && r.mentee_id !== menteeId) return false;
+    if (month) {
+      var d = (r.created_at || r.session_date || '').slice(0,7);
+      if (d !== month) return false;
+    }
+    if (mineOnly && r.mentor_id !== _me.user_id) return false;
+    return true;
   });
 
   document.getElementById('reportsCount').textContent = filtered.length + '件';
@@ -1477,12 +1557,16 @@ function renderMentorReports() {
 
     var infoEl = document.createElement('div');
     infoEl.className = 'rep-info';
+    var pdfLink = r.pdf_url
+      ? ' <a href="'+esc(r.pdf_url)+'" target="_blank" onclick="event.stopPropagation()" style="font-size:14px" title="PDFを開く">📄</a>'
+      : '';
     infoEl.innerHTML =
       '<div class="rep-title" style="display:flex;align-items:center;gap:6px">'
       + '<span>'+esc(r.mentee_name||r.mentee_id||'—')+'</span>'
       + (published
           ? '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--pr-light);color:var(--pr);font-weight:600">✅ 公開済み</span>'
           : '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--am-light);color:var(--am);font-weight:600">📝 未公開</span>')
+      + pdfLink
       + '</div>'
       + '<div class="rep-sub">'+esc((r.ai_summary||'—').slice(0,50))+'</div>'
       + '<div class="rep-sub">'+fmtDateFull(r.created_at)+'</div>';
@@ -1528,10 +1612,12 @@ function open1on1ReportDetail(r) {
   document.getElementById('mrd-date').textContent   = fmtDateFull(r.created_at);
   document.getElementById('mrd-status').textContent = published ? '✅ 公開済み' : '📝 未公開';
   document.getElementById('mrd-status').style.color = published ? 'var(--gr)' : 'var(--am)';
-  document.getElementById('mrd-summary').value  = r.ai_summary  || '';
-  document.getElementById('mrd-advice').value   = r.ai_advice   || '';
-  document.getElementById('mrd-goal').value     = r.next_goal   || '';
-  document.getElementById('mrd-report-id').value= r.report_id   || '';
+  document.getElementById('mrd-summary').value      = r.ai_summary              || '';
+  document.getElementById('mrd-advice').value       = r.ai_advice               || '';
+  document.getElementById('mrd-goal').value         = r.next_goal               || '';
+  document.getElementById('mrd-next-project').value = r.next_month_project_goal || '';
+  document.getElementById('mrd-next-study').value   = r.next_month_study_goal   || '';
+  document.getElementById('mrd-report-id').value    = r.report_id               || '';
   var pubBtn = document.getElementById('mrd-publish-btn');
   if (pubBtn) pubBtn.style.display = published ? 'none' : '';
   modal.classList.add('open');
@@ -1540,10 +1626,12 @@ function open1on1ReportDetail(r) {
 async function saveMentorReport() {
   var reportId = document.getElementById('mrd-report-id').value;
   var r = await gasReq('api/mentor/mentor-reports/save','POST',{
-    report_id:  reportId,
-    ai_summary: document.getElementById('mrd-summary').value.trim(),
-    ai_advice:  document.getElementById('mrd-advice').value.trim(),
-    next_goal:  document.getElementById('mrd-goal').value.trim()
+    report_id:               reportId,
+    ai_summary:              document.getElementById('mrd-summary').value.trim(),
+    ai_advice:               document.getElementById('mrd-advice').value.trim(),
+    next_goal:               document.getElementById('mrd-goal').value.trim(),
+    next_month_project_goal: document.getElementById('mrd-next-project').value.trim(),
+    next_month_study_goal:   document.getElementById('mrd-next-study').value.trim()
   });
   if (r && r.ok) { toast('保存しました'); }
   else { toast('保存に失敗しました','err'); }
@@ -1638,10 +1726,34 @@ function loadReportsScreen() {
   // メンティー絞り込みセレクト初期化
   var sel = document.getElementById('reportsFilterMentee');
   if (sel && sel.options.length <= 1) {
-    _myMentees.forEach(function(m) {
+    // 全メンティーを列挙（_allMenteeReports と _myMentees を合わせてユニーク化）
+    var seen = {};
+    var allItems = _allMenteeReports.concat(_myReports);
+    allItems.forEach(function(r) {
+      var id = r.mentee_id || r.user_id;
+      if (id && !seen[id]) {
+        seen[id] = r.mentee_name || id;
+      }
+    });
+    _myMentees.forEach(function(m) { if (!seen[m.user_id]) seen[m.user_id] = m.name; });
+    Object.keys(seen).sort(function(a,b){ return seen[a].localeCompare(seen[b],'ja'); }).forEach(function(uid) {
       var opt = document.createElement('option');
-      opt.value = m.user_id; opt.textContent = m.name;
+      opt.value = uid; opt.textContent = seen[uid];
       sel.appendChild(opt);
+    });
+  }
+  // 月フィルター選択肢を生成（TELと1on1の全レポートから月一覧）
+  var mSel = document.getElementById('reportsFilterMonth');
+  if (mSel && mSel.options.length <= 1) {
+    var months = {};
+    _myReports.concat(_allMenteeReports).forEach(function(r) {
+      var d = r.created_at || r.session_date || '';
+      if (d && d.length >= 7) months[d.slice(0,7)] = true;
+    });
+    Object.keys(months).sort().reverse().forEach(function(ym) {
+      var opt = document.createElement('option');
+      opt.value = ym; opt.textContent = ym;
+      mSel.appendChild(opt);
     });
   }
   filterReports();
@@ -1649,11 +1761,18 @@ function loadReportsScreen() {
 
 function filterReports() {
   var menteeId = document.getElementById('reportsFilterMentee').value;
+  var month    = document.getElementById('reportsFilterMonth').value;
   var status   = document.getElementById('reportsFilterStatus').value;
+  var mineOnly = document.getElementById('reportsFilterMine').checked;
 
   if (_currentRepTab === 'tel') {
     _reportsFiltered = _myReports.filter(function(r) {
       if (menteeId && r.mentee_id !== menteeId) return false;
+      if (month) {
+        var d = (r.created_at || '').slice(0,7);
+        if (d !== month) return false;
+      }
+      if (mineOnly && r.leader_id !== _me.user_id) return false;
       if (status === 'confirmed' && r.is_confirmed !== 'TRUE' && r.is_confirmed !== true) return false;
       if (status === 'draft'     && (r.is_confirmed === 'TRUE' || r.is_confirmed === true)) return false;
       return true;
@@ -1882,53 +2001,23 @@ async function loadWeeklyTel() {
     (function(n,u){ repBtn.onclick = function(){ openTelModal(n,u); }; })(mName, uid);
     acts.appendChild(repBtn);
 
-    // 履歴ボタン
-    var histBtn = document.createElement('button');
-    histBtn.className = 'btn btn-g'; histBtn.style.cssText = 'font-size:12px;padding:7px 12px';
-    histBtn.textContent = '📋 履歴';
-    (function(n,u){ histBtn.onclick = function(){ openTelHistFull(n,u); }; })(mName, uid);
-    acts.appendChild(histBtn);
-
-    // 録音UPボタン（最新レポートが未録音の場合）
-    var latestRep = myReps[0];
-    if (!latestRep || !latestRep.recording_url) {
-      var upBtn = document.createElement('button');
-      upBtn.className = 'btn btn-sm';
-      upBtn.style.cssText = 'background:var(--am-light);color:var(--am);border:1px solid var(--am);font-size:11px;padding:5px 10px;animation:pulse-am 2s infinite';
-      upBtn.title = 'ハドル録音をアップロードしてください';
-      upBtn.textContent = '🎙 録音UP';
-      upBtn.onclick = function(){ openTelRecordingUploadGuide(); };
-      acts.appendChild(upBtn);
-    }
+    // 「過去の記録を見る」ボタン（レポートタブへジャンプ）
+    var histJumpBtn = document.createElement('button');
+    histJumpBtn.className = 'btn btn-g';
+    histJumpBtn.style.cssText = 'font-size:12px;padding:7px 12px';
+    histJumpBtn.textContent = '📋 過去の記録 →';
+    (function(n,u){ histJumpBtn.onclick = function(){
+      nav('reports',document.querySelector('.nav-tab[onclick*="reports"]'));
+      switchRepTab('tel');
+      var sel = document.getElementById('reportsFilterMentee');
+      if (sel) { sel.value = u; filterReports(); }
+    }; })(mName, uid);
+    acts.appendChild(histJumpBtn);
 
     hdr.appendChild(ava);
     hdr.appendChild(info);
     hdr.appendChild(acts);
     card.appendChild(hdr);
-
-    // 過去3件の記録
-    var histPanel = document.createElement('div');
-    histPanel.className = 'tel-hist-panel';
-    histPanel.innerHTML = '<div class="tel-hist-panel-title">📋 過去のTEL記録</div>';
-    if (myReps.length === 0) {
-      histPanel.innerHTML += '<div style="font-size:12px;color:var(--tx3);padding:8px 0">記録なし</div>';
-    } else {
-      myReps.slice(0,3).forEach(function(r) {
-        var summary  = (r.ai_summary||r.talk_content||'—').slice(0,60);
-        var hasMeet  = !!(r.meet_url || r.recording_url);
-        var confirmed = r.is_confirmed === 'TRUE' || r.is_confirmed === true;
-        var tag = confirmed
-          ? '<span class="tel-hist-tag" style="background:var(--pr-light);color:var(--pr)">✅ 確定</span>'
-          : '<span class="tel-hist-tag" style="background:var(--gr-light);color:var(--gr)">完了</span>';
-        var meetBadge = hasMeet ? '<span style="font-size:10px;background:#e8f4ff;color:#1a73e8;padding:2px 6px;border-radius:5px;margin-left:4px">🎙 Meet</span>' : '';
-        var item = document.createElement('div');
-        item.className = 'tel-hist-item';
-        item.innerHTML = '<div class="tel-hist-date">'+fmtDate(r.created_at)+meetBadge+'</div>'
-          + '<div class="tel-hist-body">'+tag+'<div class="tel-hist-text">'+esc(summary)+'</div></div>';
-        histPanel.appendChild(item);
-      });
-    }
-    card.appendChild(histPanel);
     cardList.appendChild(card);
   });
 }
@@ -2209,6 +2298,11 @@ async function loadScheduleSettings() {
   ['1','2','3','4','5'].forEach(function(d) {
     if (!_scheduleSettings[d]) _scheduleSettings[d] = { start:'10:00', end:'19:00', active: true };
   });
+  // デフォルト1on1時間セレクトに反映
+  var durSel = document.getElementById('sched-default-duration');
+  if (durSel && data && data.default_duration) {
+    durSel.value = String(data.default_duration);
+  }
   renderScheduleSettings();
 }
 
@@ -2272,9 +2366,11 @@ async function saveScheduleSettings() {
     var s = _scheduleSettings[dow];
     return { day_of_week: dow, start_time: s.start, end_time: s.end, is_active: s.active };
   });
+  var durSel = document.getElementById('sched-default-duration');
+  var defaultDuration = durSel ? durSel.value : '30';
   var msgEl = document.getElementById('scheduleSettingsMsg');
   msgEl.style.color = 'var(--tx3)'; msgEl.textContent = '保存中…';
-  var r = await gasReq('api/mentor/schedule','POST',{ schedules: schedules });
+  var r = await gasReq('api/mentor/schedule','POST',{ schedules: schedules, default_duration: defaultDuration });
   if (r && r.ok) {
     msgEl.style.color = 'var(--gr)'; msgEl.textContent = '✅ 保存しました';
     toast('スケジュール設定を保存しました');
@@ -2444,6 +2540,12 @@ function openMemberDetail(userId, cardEl) {
   document.getElementById('md-memo-list').innerHTML = '<div class="loading">読み込み中…</div>';
   document.getElementById('md-reports-list').innerHTML = '<div class="loading">読み込み中…</div>';
 
+  // 半年目標フィールドに現在値を反映
+  var goalWorkEl  = document.getElementById('md-goal-work');
+  var goalSkillEl = document.getElementById('md-goal-skill');
+  if (goalWorkEl)  goalWorkEl.value  = m.goal_work_6m  || '';
+  if (goalSkillEl) goalSkillEl.value = m.goal_skill_6m || '';
+
   drawer.scrollIntoView({ behavior:'smooth', block:'nearest' });
   loadMdMemos(userId);
   loadMdReports(userId);
@@ -2519,6 +2621,7 @@ async function saveMdStatus() {
   if (!_mdCurrentMentee) return;
   var r = await gasReq('api/mentor/update-status','POST',{ target_id:_mdCurrentMentee.user_id, status:_mdCurrentSig });
   if (r && (r.ok||!r.error)) {
+    Cache.bust('mentees_');
     _mdCurrentMentee.status = _mdCurrentSig;
     var idx = _myMentees.findIndex(function(m){ return m.user_id===_mdCurrentMentee.user_id; });
     if (idx>=0) _myMentees[idx].status = _mdCurrentSig;
@@ -2723,9 +2826,13 @@ async function openBookingCreate() {
   document.getElementById('bcLoading').textContent = 'カレンダーを読み込み中…';
   document.getElementById('bookingCreateModal').classList.add('open');
 
-  // スロット取得（失敗時はdatetime-localフォールバック）
+  // デフォルト時間をMentorの設定から反映
+  var durSel = document.getElementById('bc-duration');
+  if (durSel && _me) durSel.value = String(_me.default_1on1_duration || '30');
+
+  // スロット取得（Mentorカレンダー照合をスキップ、失敗時はdatetime-localフォールバック）
   try {
-    var data = await gasReq('api/mentor/available-slots');
+    var data = await gasReq('api/mentor/available-slots','GET',{ skip_mentor_calendar: true });
     _createSlots = (data && data.slots && Object.keys(data.slots).length > 0) ? data.slots : null;
   } catch(e) { _createSlots = null; }
 
@@ -2987,6 +3094,21 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
   var el = document.getElementById(id);
   if (el) el.addEventListener('click', function(e){ if(e.target===this) closeModal(id); });
 });
+
+// ── Menteeの半年目標保存 ──
+async function saveMenteeGoals() {
+  var m = _mdCurrentMentee || _currentMentee;
+  if (!m) { toast('メンティーを選択してください','err'); return; }
+  var goalWork  = (document.getElementById('md-goal-work')  || {}).value || '';
+  var goalSkill = (document.getElementById('md-goal-skill') || {}).value || '';
+  var r = await gasReq('api/mentor/set-mentee-goals','POST',{
+    mentee_id:    m.user_id,
+    goal_work_6m:  goalWork,
+    goal_skill_6m: goalSkill,
+  });
+  if (r && r.ok) { Cache.bust('mentees_'); toast('半年目標を保存しました'); }
+  else toast('保存に失敗: '+((r&&(r.error||r.message))||'GAS応答なし'),'err');
+}
 </script>
 </body>
 </html>

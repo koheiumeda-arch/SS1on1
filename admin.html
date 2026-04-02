@@ -212,6 +212,8 @@ body.login-mode .main { display:none !important; }
     <div class="nav-item" onclick="nav('callReports',this)"><span class="ic">📞</span>電話レポート</div>
     <div class="nav-sec">Leader管理</div>
     <div class="nav-item" onclick="nav('leaderAssignments',this)"><span class="ic">🤝</span>担当割り当て</div>
+    <div class="nav-sec">データ管理</div>
+    <div class="nav-item" onclick="nav('bulkIO',this)"><span class="ic">📥</span>一括入出力</div>
     <div class="nav-sec">設定</div>
     <div class="nav-item" id="nav-userManagement" onclick="nav('userManagement',this)"><span class="ic">👤</span>ユーザー管理</div>
   </div>
@@ -284,7 +286,26 @@ body.login-mode .main { display:none !important; }
     <div class="dc"><div class="dc-lb">雇用形態</div><div class="dc-v" id="detail-workstatus">—</div></div>
     <div class="dc"><div class="dc-lb">時給</div><div class="dc-v ac" id="detail-wage">—</div></div>
   </div>
+  <!-- Mentor専用: デフォルト1on1時間 -->
+  <div id="md-duration-card" style="display:none;margin-bottom:14px">
+    <div class="card">
+      <div class="ch"><div class="ct">⏱ デフォルト1on1時間（Mentor設定）</div></div>
+      <div style="padding:14px 18px;display:flex;align-items:center;gap:12px">
+        <select class="inp" id="md-duration" style="width:140px;font-size:13px">
+          <option value="30">30分</option>
+          <option value="60">60分</option>
+          <option value="90">90分</option>
+        </select>
+        <button class="btn btn-p btn-sm" onclick="saveMentorDuration()">💾 保存</button>
+      </div>
+    </div>
+  </div>
   <div class="card" style="margin-bottom:14px"><div class="ch"><div class="ct">📋 過去のアンケート回答</div></div><div id="detail-surveys"><div class="loading">読み込み中…</div></div></div>
+  <!-- 1on1レポート（メンティーのみ） -->
+  <div id="detail-mentor-reports-card" class="card" style="display:none;margin-bottom:14px">
+    <div class="ch"><div class="ct">📋 1on1レポート一覧</div></div>
+    <div id="detail-mentor-reports"><div class="loading">読み込み中…</div></div>
+  </div>
   <!-- 管理者メモ -->
   <div class="card">
     <div class="ch"><div class="ct">📝 管理者メモ</div></div>
@@ -440,6 +461,94 @@ body.login-mode .main { display:none !important; }
   <div style="margin-top:16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">Leader別担当状況</div><div id="leaderSummary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div></div>
 </div>
 
+<!-- 一括入出力 -->
+<div class="screen" id="s-bulkIO">
+  <div class="topbar"><div><div class="page-title">📥 一括入出力</div><div class="page-sub">ユーザーの一括登録・エクスポート</div></div></div>
+
+  <!-- タブ -->
+  <div style="display:flex;gap:0;border-bottom:2px solid var(--bd);margin-bottom:18px">
+    <button id="bulkTab-import" class="rep-tab active" onclick="switchBulkTab('import')" style="padding:9px 18px;font-size:13px;font-weight:600;background:none;border:none;cursor:pointer;color:var(--pr);border-bottom:2px solid var(--pr);margin-bottom:-2px">📤 インポート</button>
+    <button id="bulkTab-export" class="rep-tab" onclick="switchBulkTab('export')" style="padding:9px 18px;font-size:13px;font-weight:600;background:none;border:none;cursor:pointer;color:var(--tx2)">📥 エクスポート</button>
+  </div>
+
+  <!-- インポートタブ -->
+  <div id="bulkPane-import">
+    <div class="card" style="margin-bottom:16px">
+      <div class="ch"><div class="ct">📋 CSVフォーマット</div></div>
+      <div style="padding:14px 18px">
+        <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">列順（1行目はヘッダー不要）:</div>
+        <div style="font-size:12px;font-family:monospace;background:var(--bg3);border-radius:8px;padding:10px;color:var(--tx)">name, email, role, birthday, password, workplace, work_status, hourly_wage, phone_number</div>
+        <div style="margin-top:10px">
+          <button class="btn btn-g btn-sm" onclick="downloadBulkTemplate()">⬇ テンプレートCSVダウンロード</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><div class="ct">📝 CSVを貼り付け</div></div>
+      <div style="padding:14px 18px">
+        <textarea class="inp" id="bulk-csv-input" rows="8" placeholder="CSVデータを貼り付けてください（1行目はヘッダーなし）&#10;例: 山田 太郎,yamada@example.com,mentee,1995-06-15,pass123,渋谷,正社員,1500,090-1234-5678" style="font-family:monospace;font-size:12px" oninput="previewBulkCSV()"></textarea>
+        <div id="bulk-preview" style="margin-top:12px"></div>
+        <div id="bulk-msg" style="font-size:13px;margin-top:8px"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px">
+          <button class="btn btn-p" id="bulk-import-btn" onclick="executeBulkImport()">✅ 一括登録</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- エクスポートタブ -->
+  <div id="bulkPane-export" style="display:none">
+    <div class="card">
+      <div class="ch"><div class="ct">🔍 エクスポート設定</div></div>
+      <div style="padding:14px 18px">
+        <div class="form-group">
+          <label class="form-label">出力対象</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <select class="inp" id="exp-scope-filter" style="width:180px;font-size:13px" onchange="onExpScopeChange()">
+              <option value="">全員</option>
+              <option value="mentee">メンティーのみ</option>
+              <option value="mentor">メンターのみ</option>
+              <option value="admin">管理者のみ</option>
+              <option value="by_mentor">担当Mentee別</option>
+              <option value="individual">個人指定</option>
+            </select>
+            <!-- 担当Mentee別: メンター選択 -->
+            <select class="inp" id="exp-mentor-filter" style="width:180px;font-size:13px;display:none">
+              <option value="">メンターを選択…</option>
+            </select>
+            <!-- 個人指定: ユーザー選択 -->
+            <select class="inp" id="exp-user-filter" style="width:200px;font-size:13px;display:none">
+              <option value="">ユーザーを選択…</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">出力フィールド選択</label>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="name" checked> 氏名</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="email" checked> メール</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="role" checked> ロール</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="phone_number" checked> 電話番号</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="workplace"> 稼働場所</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="work_status"> 雇用形態</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="mentor_id"> 担当メンターID</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="status"> ステータス</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="birthday"> 生年月日</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="hourly_wage"> 時給</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="goal_work_6m"> 半年業務目標</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="goal_skill_6m"> 半年スキル目標</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px"><input type="checkbox" value="current_project"> 現在の案件</label>
+          </div>
+        </div>
+        <div id="exp-msg" style="font-size:13px;margin-top:12px"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px">
+          <button class="btn btn-p" id="exp-btn" onclick="executeExport()">📊 スプシに出力</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ユーザー管理（iframe） -->
 <div id="s-userManagement" style="display:none;padding:0;margin:-28px -32px;height:calc(100vh);overflow:hidden;position:fixed;top:0;left:240px;right:0;bottom:0;z-index:50;background:var(--bg)">
   <iframe id="userManagementFrame" src="" style="width:100%;height:100%;border:none;display:block" title="ユーザー管理"></iframe>
@@ -453,6 +562,19 @@ body.login-mode .main { display:none !important; }
 // ══════════════════════════════════════════════════════════
 const GAS_URL     = 'https://script.google.com/macros/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
 const GITHUB_BASE = 'https://koheiumeda-arch.github.io/SS1on1';
+
+// ── クライアントサイドキャッシュ ──
+const Cache = {
+  set(k, d, ttl) { try { localStorage.setItem('c_'+k, JSON.stringify({d, exp: Date.now()+ttl*1000})); } catch(e){} },
+  get(k) {
+    try {
+      var v = JSON.parse(localStorage.getItem('c_'+k));
+      if (!v || Date.now() > v.exp) { localStorage.removeItem('c_'+k); return null; }
+      return v.d;
+    } catch(e) { return null; }
+  },
+  bust(prefix) { Object.keys(localStorage).filter(k=>k.startsWith('c_'+prefix)).forEach(k=>localStorage.removeItem(k)); }
+};
 
 const STATUS_MAP = {
   red:    { label:'🔴 要注意', cls:'t-rd', dot:'d-rd' },
@@ -590,17 +712,28 @@ document.addEventListener('DOMContentLoaded', () => {
 // ══════════════════════════════════════════════════════════
 var _allMembers = [];
 
+// 遅延ロード（_loaded フラグ）: 各タブは初回アクセス時のみデータ取得
+var _surveysLoaded = false;
+var _contentsLoaded = false;
+var _linksLoaded = false;
+var _noticesLoaded = false;
+var _callReportsLoaded = false;
+var _leaderAssignmentsLoaded = false;
+
 async function loadDashboard() {
+  var cachedMembers = Cache.get('allusers');
   const [membersData, surveysData, noticesData] = await Promise.all([
-    gasReq('api/admin/members'),
+    cachedMembers ? Promise.resolve({ members: cachedMembers }) : gasReq('api/admin/members'),
     gasReq('api/admin/surveys'),
     gasReq('api/admin/notices/list'),
   ]);
+  _surveysLoaded = true; // dashboard でサーベイデータを取得済み
 
   const members = (membersData && membersData.members) || [];
   const surveys = (surveysData && surveysData.surveys) || [];
   const gaps    = (surveysData && surveysData.gaps)    || [];
   _allMembers   = members;
+  if (!cachedMembers) Cache.set('allusers', members, 600);
 
   // KPI
   const mentorUsers = members.filter(m => m.role === 'mentor');
@@ -732,8 +865,27 @@ function showMemberDetail(m) {
     if (createChatBtn) createChatBtn.style.display = (m.role === 'mentee') ? '' : 'none';
   }
   document.getElementById('admin-memo-input').value = '';
+  // Mentor用: デフォルト1on1時間カードの表示制御
+  var durationCard = document.getElementById('md-duration-card');
+  var durationSel  = document.getElementById('md-duration');
+  if (m.role === 'mentor') {
+    if (durationCard) durationCard.style.display = '';
+    if (durationSel) durationSel.value = m.default_1on1_duration || '30';
+  } else {
+    if (durationCard) durationCard.style.display = 'none';
+  }
   loadMemberSurveys(m.user_id);
   loadAdminMemos(m.user_id);
+  // 1on1レポート（メンティーのみ表示）
+  var mrCard = document.getElementById('detail-mentor-reports-card');
+  if (mrCard) {
+    if (m.role === 'mentee' || !m.role) {
+      mrCard.style.display = '';
+      loadMemberMentorReports(m.user_id);
+    } else {
+      mrCard.style.display = 'none';
+    }
+  }
   nav('memberDetail');
   loadWebhookStatus(m.user_id);
 }
@@ -783,6 +935,42 @@ async function loadMemberSurveys(userId) {
       <td style="font-family:'Space Mono',monospace">${s.mental_rating||'—'}</td>
       <td class="td-m">${esc(s.comment||'—')}</td>
     </tr>`).join('')}
+  </tbody></table>`;
+}
+
+async function loadMemberMentorReports(userId) {
+  const el = document.getElementById('detail-mentor-reports');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">読み込み中…</div>';
+  const data = await gasReq('api/admin/mentor-reports', 'GET', { mentee_id: userId });
+  if (!data || !data.reports) {
+    el.innerHTML = '<div class="loading">取得できませんでした</div>';
+    return;
+  }
+  const rows = data.reports;
+  if (rows.length === 0) {
+    el.innerHTML = '<div class="loading">レポートがありません</div>';
+    return;
+  }
+  el.innerHTML = `<table><thead><tr>
+    <th>実施月</th><th>メンター</th><th>ステータス</th><th>PDF</th>
+  </tr></thead><tbody>
+    ${rows.map(r => {
+      const dt = r.session_date || r.created_at || '';
+      const ym = dt ? dt.slice(0, 7) : '—';
+      const status = r.is_published === 'TRUE'
+        ? '<span class="tag tag-ok">公開済</span>'
+        : '<span class="tag">下書き</span>';
+      const pdf = r.pdf_url
+        ? `<a href="${esc(r.pdf_url)}" target="_blank" title="PDFを開く" style="font-size:16px;text-decoration:none">📄</a>`
+        : '—';
+      return `<tr>
+        <td class="td-m">${esc(ym)}</td>
+        <td class="td-m">${esc(r.mentor_name || '—')}</td>
+        <td>${status}</td>
+        <td style="text-align:center">${pdf}</td>
+      </tr>`;
+    }).join('')}
   </tbody></table>`;
 }
 
@@ -1405,13 +1593,14 @@ function nav(id, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (el) el.classList.add('active');
 
-  if (id === 'survey')             loadSurveys();
-  if (id === 'members')            renderMembersTable();
-  if (id === 'contents')           loadContents();
-  if (id === 'links')              loadLinks();
-  if (id === 'notices')            loadNotices();
-  if (id === 'callReports')        loadCallReports();
-  if (id === 'leaderAssignments')  loadLeaderAssignments();
+  if (id === 'survey')            { if (!_surveysLoaded) { _surveysLoaded = true; loadSurveys(); } }
+  if (id === 'members')           { renderMembersTable(); }
+  if (id === 'contents')          { if (!_contentsLoaded) { _contentsLoaded = true; loadContents(); } }
+  if (id === 'links')             { if (!_linksLoaded) { _linksLoaded = true; loadLinks(); } }
+  if (id === 'notices')           { if (!_noticesLoaded) { _noticesLoaded = true; loadNotices(); } else { refreshNoticeUserList(); } }
+  if (id === 'callReports')       { if (!_callReportsLoaded) { _callReportsLoaded = true; loadCallReports(); } }
+  if (id === 'leaderAssignments') { if (!_leaderAssignmentsLoaded) { _leaderAssignmentsLoaded = true; loadLeaderAssignments(); } }
+  if (id === 'bulkIO')            { initBulkIO(); }
 }
 
 // iframe から「← 管理画面」受信
@@ -1490,6 +1679,173 @@ function toggleIconPicker() {
 function selectIcon(code) {
   document.getElementById('lk-icon').value = code;
   document.getElementById('iconPicker').style.display = 'none';
+}
+
+// ══ Mentor デフォルト1on1時間保存 ══
+async function saveMentorDuration() {
+  if (!_currentDetailUserId) return;
+  var dur = document.getElementById('md-duration').value;
+  var r = await gasReq('api/admin/users/update','POST',{
+    user_id:              _currentDetailUserId,
+    default_1on1_duration: dur
+  });
+  if (r && r.ok) { Cache.bust('allusers'); toast('デフォルト時間を保存しました'); }
+  else toast('保存に失敗しました','err');
+}
+
+// ══ 一括入出力 ══
+function initBulkIO() {
+  switchBulkTab('import');
+  document.getElementById('bulk-csv-input').value = '';
+  document.getElementById('bulk-preview').innerHTML = '';
+  document.getElementById('bulk-msg').textContent = '';
+  document.getElementById('exp-msg').textContent = '';
+  // エクスポート用フィルターセレクトをリセット
+  document.getElementById('exp-scope-filter').value = '';
+  onExpScopeChange();
+  // メンター／ユーザー選択肢を _allMembers から生成
+  var mentors = _allMembers.filter(function(u){ return u.role === 'mentor'; });
+  var mSel = document.getElementById('exp-mentor-filter');
+  mSel.innerHTML = '<option value="">メンターを選択…</option>' +
+    mentors.map(function(m){ return '<option value="'+esc(m.user_id)+'">'+esc(m.name)+'</option>'; }).join('');
+  var uSel = document.getElementById('exp-user-filter');
+  uSel.innerHTML = '<option value="">ユーザーを選択…</option>' +
+    _allMembers.map(function(u){ return '<option value="'+esc(u.user_id)+'">'+esc(u.name)+'（'+esc(u.role||'')+'）</option>'; }).join('');
+}
+
+function switchBulkTab(tab) {
+  ['import','export'].forEach(function(t) {
+    var btn  = document.getElementById('bulkTab-'+t);
+    var pane = document.getElementById('bulkPane-'+t);
+    if (!btn || !pane) return;
+    if (t === tab) {
+      btn.style.color = 'var(--pr)';
+      btn.style.borderBottom = '2px solid var(--pr)';
+      btn.style.marginBottom = '-2px';
+      pane.style.display = '';
+    } else {
+      btn.style.color = 'var(--tx2)';
+      btn.style.borderBottom = 'none';
+      btn.style.marginBottom = '';
+      pane.style.display = 'none';
+    }
+  });
+}
+
+function downloadBulkTemplate() {
+  var header = 'name,email,role,birthday,password,workplace,work_status,hourly_wage,phone_number\n';
+  var sample = '山田太郎,yamada@example.com,mentee,1995-06-15,pass123,渋谷,正社員,1500,090-1234-5678\n';
+  var blob = new Blob([header + sample], { type: 'text/csv;charset=utf-8;' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url; a.download = 'bulk_import_template.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function previewBulkCSV() {
+  var raw = document.getElementById('bulk-csv-input').value.trim();
+  var previewEl = document.getElementById('bulk-preview');
+  if (!raw) { previewEl.innerHTML = ''; return; }
+  var lines = raw.split('\n').filter(function(l){ return l.trim(); });
+  var cols  = ['氏名','メール','ロール','生年月日','パスワード','稼働場所','雇用形態','時給','電話番号'];
+  var html  = '<div style="font-size:12px;color:var(--tx3);margin-bottom:6px">' + lines.length + '件のプレビュー</div>';
+  html += '<div style="overflow-x:auto"><table style="width:100%;font-size:11px;border-collapse:collapse">';
+  html += '<thead><tr>' + cols.map(function(c){ return '<th style="padding:5px 8px;border:1px solid var(--bd);background:var(--bg3);text-align:left">' + c + '</th>'; }).join('') + '</tr></thead><tbody>';
+  lines.slice(0,10).forEach(function(line) {
+    var cells = line.split(',');
+    html += '<tr>' + cols.map(function(c,i) {
+      return '<td style="padding:4px 8px;border:1px solid var(--bd)">' + (cells[i] ? cells[i].trim() : '') + '</td>';
+    }).join('') + '</tr>';
+  });
+  if (lines.length > 10) html += '<tr><td colspan="' + cols.length + '" style="padding:4px 8px;border:1px solid var(--bd);color:var(--tx3)">...他 '+(lines.length-10)+' 件</td></tr>';
+  html += '</tbody></table></div>';
+  previewEl.innerHTML = html;
+}
+
+async function executeBulkImport() {
+  var raw = document.getElementById('bulk-csv-input').value.trim();
+  var msgEl = document.getElementById('bulk-msg');
+  if (!raw) { msgEl.style.color='var(--rd)'; msgEl.textContent='CSVを入力してください'; return; }
+  var lines = raw.split('\n').filter(function(l){ return l.trim(); });
+  var fieldOrder = ['name','email','role','birthday','password','workplace','work_status','hourly_wage','phone_number'];
+  var rows = lines.map(function(line) {
+    var cells = line.split(',').map(function(c){ return c.trim(); });
+    var obj = {};
+    fieldOrder.forEach(function(f,i){ obj[f] = cells[i] || ''; });
+    return obj;
+  });
+  var btn = document.getElementById('bulk-import-btn');
+  btn.disabled = true; btn.textContent = '登録中…';
+  msgEl.textContent = '';
+  var r = await gasReq('api/admin/users/bulk-import','POST',{ rows: rows });
+  btn.disabled = false; btn.textContent = '✅ 一括登録';
+  if (r && r.ok) {
+    Cache.bust('allusers');
+    msgEl.style.color = 'var(--gr)';
+    msgEl.textContent = '✅ ' + r.success_count + '/' + r.total + '件を登録しました';
+    var errs = (r.results || []).filter(function(x){ return !x.ok; });
+    if (errs.length > 0) {
+      msgEl.textContent += '（失敗: ' + errs.map(function(e){ return e.email + '(' + e.error + ')'; }).join(', ') + '）';
+      msgEl.style.color = 'var(--am)';
+    }
+  } else {
+    msgEl.style.color = 'var(--rd)';
+    msgEl.textContent = '❌ 登録に失敗しました: ' + ((r && (r.error || r.message)) || 'GAS応答なし');
+  }
+}
+
+function onExpScopeChange() {
+  var scope = document.getElementById('exp-scope-filter').value;
+  document.getElementById('exp-mentor-filter').style.display = scope === 'by_mentor'   ? '' : 'none';
+  document.getElementById('exp-user-filter').style.display   = scope === 'individual'  ? '' : 'none';
+}
+
+async function executeExport() {
+  var scope      = document.getElementById('exp-scope-filter').value;
+  var checkboxes = document.querySelectorAll('#bulkPane-export input[type="checkbox"]:checked');
+  var fields     = Array.from(checkboxes).map(function(cb){ return cb.value; });
+  var msgEl = document.getElementById('exp-msg');
+  if (fields.length === 0) { msgEl.style.color='var(--rd)'; msgEl.textContent='フィールドを1つ以上選択してください'; return; }
+  var btn = document.getElementById('exp-btn');
+  btn.disabled = true; btn.textContent = '出力中…';
+  msgEl.textContent = '';
+
+  var payload = { fields: fields };
+
+  // スコープに応じて user_ids を解決
+  if (scope === 'individual') {
+    var uid = document.getElementById('exp-user-filter').value;
+    if (!uid) { btn.disabled=false; btn.textContent='📊 スプシに出力'; msgEl.style.color='var(--rd)'; msgEl.textContent='ユーザーを選択してください'; return; }
+    payload.user_ids = [uid];
+  } else if (scope === 'by_mentor') {
+    var mid = document.getElementById('exp-mentor-filter').value;
+    if (!mid) { btn.disabled=false; btn.textContent='📊 スプシに出力'; msgEl.style.color='var(--rd)'; msgEl.textContent='メンターを選択してください'; return; }
+    // 担当メンターのメンティーIDを絞り込む
+    var allUsers2 = _allMembers.length ? { users: _allMembers } : await gasReq('api/admin/users');
+    if (allUsers2 && allUsers2.users) {
+      payload.user_ids = allUsers2.users
+        .filter(function(u){ return u.mentor_id === mid; })
+        .map(function(u){ return u.user_id; });
+    }
+  } else if (scope) {
+    // role filter (mentee / mentor / admin)
+    var allUsers3 = _allMembers.length ? { users: _allMembers } : await gasReq('api/admin/users');
+    if (allUsers3 && allUsers3.users) {
+      payload.user_ids = allUsers3.users
+        .filter(function(u){ return u.role === scope; })
+        .map(function(u){ return u.user_id; });
+    }
+  }
+
+  var r = await gasReq('api/admin/users/export','GET', payload);
+  btn.disabled = false; btn.textContent = '📊 スプシに出力';
+  if (r && r.ok) {
+    msgEl.style.color = 'var(--gr)';
+    msgEl.innerHTML = '✅ ' + r.count + '件を出力しました。<a href="' + esc(r.sheet_url) + '" target="_blank" style="color:var(--pr);font-weight:600">スプレッドシートを開く →</a>';
+  } else {
+    msgEl.style.color = 'var(--rd)';
+    msgEl.textContent = '❌ 出力に失敗しました: ' + ((r && (r.error || r.message)) || 'GAS応答なし');
+  }
 }
 </script>
 </body>
