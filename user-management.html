@@ -516,6 +516,31 @@
           <label class="form-label">Google Chat URL</label>
           <input class="form-input" id="f_chat" type="url" placeholder="https://chat.google.com/…">
         </div>
+        <div class="form-group">
+          <label class="form-label">Webhook URL</label>
+          <input class="form-input" id="f_webhook" type="url" placeholder="https://chat.googleapis.com/v1/spaces/…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">TEL用Meet URL</label>
+          <input class="form-input" id="f_tel_meet" type="url" placeholder="https://meet.google.com/xxx-xxxx-xxx">
+        </div>
+      </div>
+
+      <!-- TELストックから割り当て（menteeのみ） -->
+      <div id="telStockSection" style="display:none;margin-top:4px">
+        <div class="sec-label" style="margin-bottom:8px">TELスペース割り当て</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <button type="button" class="btn btn-ghost" onclick="loadAndShowTelStock()" style="font-size:12px;padding:6px 14px">
+            📦 ストックから自動入力
+          </button>
+          <select id="f_tel_stock" class="form-select" style="flex:1;min-width:200px;font-size:12px" onchange="applyTelStock()">
+            <option value="">— ストックを選択 —</option>
+          </select>
+          <span id="tel_stock_status" style="font-size:11px;color:var(--text3)"></span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px">
+          ストックを選択するとChat URL・Webhook URL・Meet URLが自動入力されます
+        </div>
       </div>
 
     </div>
@@ -740,6 +765,8 @@ function editUser(u) {
   document.getElementById('f_emp').value=u.employment_type||'';
   document.getElementById('f_wage').value=u.hourly_wage||'';
   document.getElementById('f_chat').value=u.chat_url||'';
+  document.getElementById('f_webhook').value=u.chat_webhook_url||'';
+  document.getElementById('f_tel_meet').value=u.tel_meet_url||'';
   document.getElementById('pwRow').style.display='none';
   populateMentors(u.mentor_id);
   onRoleChange();
@@ -751,7 +778,9 @@ function editUser(u) {
 }
 
 function resetForm() {
-  ['f_name','f_email','f_birthday','f_phone','f_workplace','f_wage','f_chat'].forEach(id=>document.getElementById(id).value='');
+  ['f_name','f_email','f_birthday','f_phone','f_workplace','f_wage','f_chat','f_webhook','f_tel_meet'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f_tel_stock').value='';
+  document.getElementById('tel_stock_status').textContent='';
   document.getElementById('f_role').value=''; document.getElementById('f_emp').value='';
   document.getElementById('f_leader').checked=false; document.getElementById('f_mentor').value='';
   document.getElementById('f_mentor').disabled=true;
@@ -764,13 +793,16 @@ function onRoleChange() {
   const hint=document.getElementById('mentorHint');
   const lsel=document.getElementById('f_leader_user');
   const lhint=document.getElementById('leaderHint');
+  const telSection=document.getElementById('telStockSection');
   if(role==='mentee'){
     sel.disabled=false;  hint.textContent='担当メンターを選択してください';
     lsel.disabled=false; lhint.textContent='担当リーダーを選択してください';
     populateLeaders(lsel.value);
+    if(telSection) telSection.style.display='';
   } else {
     sel.disabled=true;  sel.value='';  hint.textContent='「mentee」選択時に有効になります';
     lsel.disabled=true; lsel.value=''; lhint.textContent='「mentee」選択時に有効になります';
+    if(telSection) telSection.style.display='none';
   }
 }
 
@@ -820,6 +852,8 @@ async function submitUser() {
     employment_type:document.getElementById('f_emp').value,
     hourly_wage:document.getElementById('f_wage').value,
     chat_url:document.getElementById('f_chat').value.trim(),
+    chat_webhook_url:document.getElementById('f_webhook').value.trim(),
+    tel_meet_url:document.getElementById('f_tel_meet').value.trim(),
   };
 
   try {
@@ -898,6 +932,59 @@ function toast(type,msg){
 async function sha256(str){
   const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── TELストック取得・適用 ──
+let _telStockCache = [];
+
+async function loadAndShowTelStock() {
+  const sel    = document.getElementById('f_tel_stock');
+  const status = document.getElementById('tel_stock_status');
+  status.textContent = '読み込み中…';
+  sel.innerHTML = '<option value="">読み込み中…</option>';
+
+  try {
+    const token = getToken();
+    const r = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        path: 'api/admin/tel-stock',
+        _method: 'GET',
+        _token: token
+      })
+    });
+    const d = await r.json();
+    _telStockCache = (d.stocks || []).filter(s => s.status === 'available');
+
+    if (_telStockCache.length === 0) {
+      sel.innerHTML = '<option value="">在庫がありません</option>';
+      status.textContent = '⚠️ 在庫なし';
+      return;
+    }
+
+    sel.innerHTML = '<option value="">— ストックを選択 —</option>'
+      + _telStockCache.map((s, i) =>
+          `<option value="${i}">スペース${i + 1}（${s.chat_url.replace('https://chat.google.com','').substring(0, 30)}…）</option>`
+        ).join('');
+    status.textContent = `✅ ${_telStockCache.length}件の在庫`;
+  } catch(err) {
+    sel.innerHTML = '<option value="">取得失敗</option>';
+    status.textContent = '❌ 取得失敗';
+  }
+}
+
+function applyTelStock() {
+  const sel = document.getElementById('f_tel_stock');
+  const idx = sel.value;
+  if (idx === '' || !_telStockCache[idx]) return;
+
+  const stock = _telStockCache[idx];
+  document.getElementById('f_chat').value     = stock.chat_url    || '';
+  document.getElementById('f_webhook').value  = stock.webhook_url || '';
+  document.getElementById('f_tel_meet').value = stock.meet_url    || '';
+  sel.dataset.stockId = stock.stock_id || '';
+  document.getElementById('tel_stock_status').textContent = '✅ 自動入力しました';
+  toast('ok', 'ストックの情報を入力しました。保存後に確定されます。');
 }
 
 // ── 「← 管理画面」ボタンの処理 ──
