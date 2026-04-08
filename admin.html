@@ -195,6 +195,39 @@ body.login-mode .main { display:none !important; }
   </div>
 </div>
 
+<!-- TEL直接登録モーダル（既存チャット引き継ぎ用） -->
+<div class="modal" id="telDirectModal">
+  <div class="modal-content" style="max-width:520px">
+    <span class="modal-close" onclick="closeModal('telDirectModal')">✕</span>
+    <div class="modal-title">🔗 TEL情報を直接登録</div>
+    <div style="font-size:13px;color:var(--tx2);background:var(--am-light);border-radius:10px;padding:12px 14px;margin-bottom:18px;line-height:1.7">
+      既存のChatスペースを引き継ぐ場合はこちら。<br>
+      <span style="font-size:11px;color:var(--tx3)">※ kohei.umeda@以外がホストのMeetは録音が自動検知されない場合があります</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label">対象メンティー</label>
+      <div id="tel-direct-mentee-name" style="font-size:14px;font-weight:700;color:var(--tx);padding:8px 12px;background:var(--bg3);border-radius:8px">—</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">ChatスペースURL</label>
+      <input class="inp" id="tel-direct-chat-url" type="url" placeholder="https://chat.google.com/room/..."/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Webhook URL</label>
+      <input class="inp" id="tel-direct-webhook-url" type="url" placeholder="https://chat.googleapis.com/v1/spaces/.../messages?key=..."/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">TEL用Meet URL</label>
+      <input class="inp" id="tel-direct-meet-url" type="url" placeholder="https://meet.google.com/xxx-xxxx-xxx"/>
+    </div>
+    <div id="tel-direct-result" style="font-size:13px;min-height:16px;margin-bottom:8px"></div>
+    <div class="f-foot">
+      <button class="btn btn-g" onclick="closeModal('telDirectModal')">キャンセル</button>
+      <button class="btn btn-p" id="tel-direct-save-btn" onclick="submitTelDirect()">💾 登録する</button>
+    </div>
+  </div>
+</div>
+
 <!-- TEL Meet URL設定モーダル -->
 <div class="modal" id="telMeetModal">
   <div class="modal-content" style="max-width:520px">
@@ -312,7 +345,8 @@ body.login-mode .main { display:none !important; }
     <div class="topbar-r">
       <button class="btn btn-sm" id="detail-chat-btn" style="display:none;background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff;border:none" onclick="openDetailChat()">💬 チャットを開く</button>
       <button class="btn btn-sm" id="detail-create-chat-btn" style="display:none;background:var(--bg3);color:var(--tx2);border:1px solid var(--bd)" onclick="createChatSpace()">🔗 URLを登録</button>
-      <button class="btn btn-sm" id="detail-tel-meet-btn" style="display:none;background:var(--cy-light);color:var(--cy);border:1px solid var(--cy)" onclick="openTelAssignFromDetail()">📞 TEL割り当て</button>
+      <button class="btn btn-sm" id="detail-tel-assign-btn" style="display:none;background:var(--cy-light);color:var(--cy);border:1px solid var(--cy)" onclick="openTelAssignFromDetail()">📞 TEL割り当て</button>
+      <button class="btn btn-sm" id="detail-tel-direct-btn" style="display:none;background:var(--am-light);color:var(--am);border:1px solid var(--am)" onclick="openTelDirectModal()">🔗 TEL直接登録</button>
       <button class="btn btn-sm" id="detail-webhook-btn" style="display:none;font-size:11px;padding:5px 10px;background:var(--am-light);color:var(--am);border:1px solid var(--am)" onclick="saveWebhookUrl()">🔔 Webhook登録</button>
       <button class="btn btn-p" id="detail-msg-btn">📨 メッセージ送信</button>
     </div>
@@ -975,13 +1009,27 @@ function showMemberDetail(m) {
     chatBtn.style.display = 'none';
     if (createChatBtn) createChatBtn.style.display = (m.role === 'mentee') ? '' : 'none';
   }
-  // ★ TEL Meet設定ボタン（menteeのみ表示）
-  var telMeetBtn = document.getElementById('detail-tel-meet-btn');
-  if (telMeetBtn) {
-    telMeetBtn.style.display = (m.role === 'mentee') ? '' : 'none';
-    // 設定済みの場合はボタンラベルを変更
-    telMeetBtn.textContent = m.tel_meet_url ? '📞 TEL Meet変更' : '📞 TEL Meet設定';
+  // ★ TELボタン（menteeのみ）
+  // パターンA: ストックから割り当て
+  // パターンB: 既存チャットを直接登録
+  var telAssignBtn = document.getElementById('detail-tel-assign-btn');
+  var telDirectBtn = document.getElementById('detail-tel-direct-btn');
+  if (m.role === 'mentee') {
+    if (telAssignBtn) {
+      telAssignBtn.style.display = '';
+      telAssignBtn.textContent = m.tel_meet_url ? '📞 TEL再割り当て' : '📞 TEL割り当て';
+    }
+    if (telDirectBtn) {
+      telDirectBtn.style.display = '';
+      telDirectBtn.textContent = (m.chat_url || m.tel_meet_url) ? '🔗 TEL情報変更' : '🔗 TEL直接登録';
+    }
+  } else {
+    if (telAssignBtn) telAssignBtn.style.display = 'none';
+    if (telDirectBtn) telDirectBtn.style.display = 'none';
   }
+  // 旧ボタン（後方互換）
+  var telMeetBtn = document.getElementById('detail-tel-meet-btn');
+  if (telMeetBtn) telMeetBtn.style.display = 'none';
   document.getElementById('admin-memo-input').value = '';
   // Mentor用: デフォルト1on1時間カードの表示制御
   var durationCard = document.getElementById('md-duration-card');
@@ -1013,6 +1061,70 @@ function openTelAssignFromDetail() {
   var m = _currentDetailMember;
   if (!m) return;
   openTelAssignModal(m.user_id, m.name, m.tel_meet_url || '');
+}
+
+// ── TEL直接登録（既存チャット引き継ぎ） ──
+function openTelDirectModal() {
+  var m = _currentDetailMember;
+  if (!m) return;
+  document.getElementById('tel-direct-mentee-name').textContent = m.name;
+  document.getElementById('tel-direct-chat-url').value    = m.chat_url         || '';
+  document.getElementById('tel-direct-webhook-url').value = m.chat_webhook_url || '';
+  document.getElementById('tel-direct-meet-url').value    = m.tel_meet_url     || '';
+  document.getElementById('tel-direct-result').textContent = '';
+  openModal('telDirectModal');
+}
+
+async function submitTelDirect() {
+  var m          = _currentDetailMember;
+  var chatUrl    = document.getElementById('tel-direct-chat-url').value.trim();
+  var webhookUrl = document.getElementById('tel-direct-webhook-url').value.trim();
+  var meetUrl    = document.getElementById('tel-direct-meet-url').value.trim();
+  var resultEl   = document.getElementById('tel-direct-result');
+  var btn        = document.getElementById('tel-direct-save-btn');
+
+  if (!chatUrl)    { resultEl.style.color='var(--rd)'; resultEl.textContent='ChatスペースURLを入力してください'; return; }
+  if (!webhookUrl) { resultEl.style.color='var(--rd)'; resultEl.textContent='Webhook URLを入力してください'; return; }
+
+  btn.disabled = true; btn.textContent = '登録中…';
+  resultEl.textContent = '';
+
+  // GASのset-tel-meet-urlを流用しつつchat_url/webhook_urlも更新
+  var r = await gasReq('api/admin/set-tel-meet-url', 'POST', {
+    mentee_id:    m.user_id,
+    tel_meet_url: meetUrl || '',
+    chat_url:     chatUrl,
+    webhook_url:  webhookUrl,
+  });
+
+  btn.disabled = false; btn.textContent = '💾 登録する';
+
+  if (r && r.ok) {
+    // ローカルデータ更新
+    _currentDetailMember.chat_url         = chatUrl;
+    _currentDetailMember.chat_webhook_url = webhookUrl;
+    _currentDetailMember.tel_meet_url     = meetUrl;
+    var idx = _allMembers.findIndex(function(u){ return u.user_id === m.user_id; });
+    if (idx >= 0) {
+      _allMembers[idx].chat_url         = chatUrl;
+      _allMembers[idx].chat_webhook_url = webhookUrl;
+      _allMembers[idx].tel_meet_url     = meetUrl;
+    }
+    // チャットボタン表示更新
+    var chatBtn = document.getElementById('detail-chat-btn');
+    if (chatBtn) { chatBtn.style.display = ''; chatBtn.dataset.url = chatUrl; }
+    var createBtn = document.getElementById('detail-create-chat-btn');
+    if (createBtn) createBtn.style.display = 'none';
+    var dirBtn = document.getElementById('detail-tel-direct-btn');
+    if (dirBtn) dirBtn.textContent = '🔗 TEL情報変更';
+
+    resultEl.style.color = 'var(--gr)';
+    resultEl.textContent = '✅ 登録しました';
+    setTimeout(function(){ closeModal('telDirectModal'); toast('TEL情報を登録しました'); }, 1200);
+  } else {
+    resultEl.style.color = 'var(--rd)';
+    resultEl.textContent = '❌ ' + ((r && (r.error || r.message)) || 'GAS応答なし');
+  }
 }
 
 // ══════════════════════════════════════════════════════════
