@@ -195,6 +195,39 @@ body.login-mode .main { display:none !important; }
   </div>
 </div>
 
+<!-- TEL Meet URL設定モーダル -->
+<div class="modal" id="telMeetModal">
+  <div class="modal-content" style="max-width:520px">
+    <span class="modal-close" onclick="closeModal('telMeetModal')">✕</span>
+    <div class="modal-title">📞 TEL用Meet URL設定</div>
+    <div style="font-size:13px;color:var(--tx2);background:var(--cy-light);border-radius:10px;padding:12px 14px;margin-bottom:18px;line-height:1.7">
+      <strong>設定方法：</strong><br>
+      1. Google ChatスペースをスペースURLから開く<br>
+      2. 「ビデオ通話」ボタンで生成されるMeet URLをコピー<br>
+      3. 以下に貼り付けて保存<br>
+      <span style="font-size:11px;color:var(--tx3);margin-top:4px;display:block">※ スペース名は「TEL: メンティー名」にしてください（録画ファイルの識別に使います）</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label">対象メンティー</label>
+      <div id="tel-meet-mentee-name" style="font-size:14px;font-weight:700;color:var(--tx);padding:8px 12px;background:var(--bg3);border-radius:8px">—</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">現在のTEL Meet URL</label>
+      <div id="tel-meet-current-url" style="font-size:12px;color:var(--tx3);padding:6px 12px;background:var(--bg3);border-radius:8px;word-break:break-all">未設定</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">新しいMeet URL <span style="color:var(--rd)">*</span></label>
+      <input class="inp" id="tel-meet-url-input" type="url" placeholder="https://meet.google.com/xxx-xxxx-xxx"/>
+      <div style="font-size:11px;color:var(--tx3);margin-top:5px">meet.google.com のURLを入力してください</div>
+    </div>
+    <div id="tel-meet-result" style="font-size:13px;margin-bottom:8px;min-height:18px"></div>
+    <div class="f-foot">
+      <button class="btn btn-g" onclick="closeModal('telMeetModal')">キャンセル</button>
+      <button class="btn btn-p" id="tel-meet-save-btn" onclick="saveTelMeetUrl()">💾 保存してチャットに通知</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ サイドバー ══ -->
 <div class="sidebar">
   <div class="logo" onclick="nav('dashboard',document.querySelector('.nav-item[onclick*=\'dashboard\']'))" style="cursor:pointer" title="ダッシュボードへ戻る"><div class="logo-mark">ADMIN PANEL</div><div class="logo-name">1on1管理システム</div></div>
@@ -212,6 +245,8 @@ body.login-mode .main { display:none !important; }
     <div class="nav-item" onclick="nav('callReports',this)"><span class="ic">📞</span>電話レポート</div>
     <div class="nav-sec">Leader管理</div>
     <div class="nav-item" onclick="nav('leaderAssignments',this)"><span class="ic">🤝</span>担当割り当て</div>
+    <div class="nav-sec">TEL設定</div>
+    <div class="nav-item" onclick="nav('telStock',this)"><span class="ic">📞</span>TELスペース管理</div>
     <div class="nav-sec">データ管理</div>
     <div class="nav-item" onclick="nav('bulkIO',this)"><span class="ic">📥</span>一括入出力</div>
     <div class="nav-sec">設定</div>
@@ -277,6 +312,7 @@ body.login-mode .main { display:none !important; }
     <div class="topbar-r">
       <button class="btn btn-sm" id="detail-chat-btn" style="display:none;background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff;border:none" onclick="openDetailChat()">💬 チャットを開く</button>
       <button class="btn btn-sm" id="detail-create-chat-btn" style="display:none;background:var(--bg3);color:var(--tx2);border:1px solid var(--bd)" onclick="createChatSpace()">🔗 URLを登録</button>
+      <button class="btn btn-sm" id="detail-tel-meet-btn" style="display:none;background:var(--cy-light);color:var(--cy);border:1px solid var(--cy)" onclick="openTelAssignFromDetail()">📞 TEL割り当て</button>
       <button class="btn btn-sm" id="detail-webhook-btn" style="display:none;font-size:11px;padding:5px 10px;background:var(--am-light);color:var(--am);border:1px solid var(--am)" onclick="saveWebhookUrl()">🔔 Webhook登録</button>
       <button class="btn btn-p" id="detail-msg-btn">📨 メッセージ送信</button>
     </div>
@@ -459,6 +495,80 @@ body.login-mode .main { display:none !important; }
   </div>
   <div class="card"><div class="ch"><div class="ct">担当割り当て一覧</div></div><div id="assignmentsTable"><div class="loading">読み込み中…</div></div></div>
   <div style="margin-top:16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px">Leader別担当状況</div><div id="leaderSummary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div></div>
+</div>
+
+<!-- TELスペース管理 -->
+<div class="screen" id="s-telStock">
+  <div class="topbar">
+    <div><div class="page-title">📞 TELスペース管理</div><div class="page-sub">ChatスペースのストックとメンティーへのTEL割り当て</div></div>
+    <div class="topbar-r"><button class="btn btn-g" onclick="openTelStockAddModal()">＋ ストック追加</button></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">
+    <div class="kpi-card"><div class="kpi-lb">ストック総数</div><div class="kpi-v" id="ts-kpi-total">—</div></div>
+    <div class="kpi-card"><div class="kpi-lb">未割り当て（在庫）</div><div class="kpi-v" id="ts-kpi-available" style="color:var(--gr)">—</div></div>
+    <div class="kpi-card"><div class="kpi-lb">割り当て済み</div><div class="kpi-v" id="ts-kpi-assigned" style="color:var(--pr)">—</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="ch"><div class="ct">📦 未割り当てストック</div></div>
+    <div id="telStockTable"><div class="loading">読み込み中…</div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">✅ 割り当て済み</div></div>
+    <div id="telAssignedTable"><div class="loading">読み込み中…</div></div>
+  </div>
+</div>
+
+<!-- TELストック追加モーダル -->
+<div class="modal" id="telStockAddModal">
+  <div class="modal-content" style="max-width:580px">
+    <span class="modal-close" onclick="closeModal('telStockAddModal')">✕</span>
+    <div class="modal-title">📦 TELスペースをストックに追加</div>
+    <div style="font-size:13px;color:var(--tx2);background:var(--bg3);border-radius:10px;padding:12px 14px;margin-bottom:16px;line-height:1.7">
+      Google Chatで事前に作成したスペースのURLとWebhook URLを登録します。<br>
+      <span style="font-size:11px;color:var(--tx3)">スペース名は仮でOK（割り当て時に「TEL: メンティー名」に自動変更）</span>
+    </div>
+    <div id="telStockRows">
+      <div class="tel-stock-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label class="form-label">スペースURL</label><input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px"/></div>
+        <div><label class="form-label">Webhook URL</label><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px"/></div>
+      </div>
+    </div>
+    <button class="btn btn-g btn-sm" onclick="addTelStockRow()" style="margin-bottom:14px">＋ 行を追加</button>
+    <div id="tel-stock-add-result" style="font-size:13px;min-height:16px;margin-bottom:8px"></div>
+    <div class="f-foot">
+      <button class="btn btn-g" onclick="closeModal('telStockAddModal')">キャンセル</button>
+      <button class="btn btn-p" id="tel-stock-add-btn" onclick="submitTelStockAdd()">📦 登録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEL割り当てモーダル -->
+<div class="modal" id="telAssignModal">
+  <div class="modal-content" style="max-width:500px">
+    <span class="modal-close" onclick="closeModal('telAssignModal')">✕</span>
+    <div class="modal-title">📞 TELスペースを割り当て</div>
+    <div class="form-group">
+      <label class="form-label">対象メンティー</label>
+      <div id="tel-assign-mentee-name" style="font-size:14px;font-weight:700;color:var(--tx);padding:8px 12px;background:var(--bg3);border-radius:8px">—</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">割り当てるスペース</label>
+      <select class="inp" id="tel-assign-stock-select"><option value="">自動選択（在庫から先頭）</option></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">TEL用Meet URL <span style="font-size:11px;color:var(--tx3)">（スペースの「ビデオ通話」ボタンのURL）</span></label>
+      <input class="inp" id="tel-assign-meet-url" type="url" placeholder="https://meet.google.com/xxx-xxxx-xxx"/>
+    </div>
+    <div style="font-size:12px;color:var(--tx3);background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:14px;line-height:1.6">
+      ✅ スペース名が自動で「TEL: メンティー名」に変更されます<br>
+      ✅ Meet URLがチャットに自動通知されます
+    </div>
+    <div id="tel-assign-result" style="font-size:13px;min-height:16px;margin-bottom:8px"></div>
+    <div class="f-foot">
+      <button class="btn btn-g" onclick="closeModal('telAssignModal')">キャンセル</button>
+      <button class="btn btn-p" id="tel-assign-btn" onclick="submitTelAssign()">📞 割り当て実行</button>
+    </div>
+  </div>
 </div>
 
 <!-- 一括入出力 -->
@@ -842,9 +952,11 @@ function renderMembersTable() {
 }
 
 var _currentDetailUserId = null;
+var _currentDetailMember = null; // TEL Meet設定用に現在のメンバー情報を保持
 
 function showMemberDetail(m) {
   _currentDetailUserId = m.user_id;
+  _currentDetailMember = m;
   document.getElementById('detail-breadcrumb').textContent  = m.name;
   document.getElementById('detail-name').textContent        = m.name;
   document.getElementById('detail-sub').textContent         = 'メンター: '+(m.mentor_name||'—')+(m.has_leader_role==='TRUE'?' ／ リーダーロールあり':'');
@@ -861,8 +973,14 @@ function showMemberDetail(m) {
     if (createChatBtn) createChatBtn.style.display = 'none';
   } else {
     chatBtn.style.display = 'none';
-    // menteeのみスペース作成ボタンを表示
     if (createChatBtn) createChatBtn.style.display = (m.role === 'mentee') ? '' : 'none';
+  }
+  // ★ TEL Meet設定ボタン（menteeのみ表示）
+  var telMeetBtn = document.getElementById('detail-tel-meet-btn');
+  if (telMeetBtn) {
+    telMeetBtn.style.display = (m.role === 'mentee') ? '' : 'none';
+    // 設定済みの場合はボタンラベルを変更
+    telMeetBtn.textContent = m.tel_meet_url ? '📞 TEL Meet変更' : '📞 TEL Meet設定';
   }
   document.getElementById('admin-memo-input').value = '';
   // Mentor用: デフォルト1on1時間カードの表示制御
@@ -888,6 +1006,238 @@ function showMemberDetail(m) {
   }
   nav('memberDetail');
   loadWebhookStatus(m.user_id);
+}
+
+// ── TEL割り当て（メンバー詳細から） ──
+function openTelAssignFromDetail() {
+  var m = _currentDetailMember;
+  if (!m) return;
+  openTelAssignModal(m.user_id, m.name, m.tel_meet_url || '');
+}
+
+// ══════════════════════════════════════════════════════════
+//  TELスペース管理
+// ══════════════════════════════════════════════════════════
+var _telStocks = [];
+
+async function loadTelStock() {
+  document.getElementById('telStockTable').innerHTML    = '<div class="loading">読み込み中…</div>';
+  document.getElementById('telAssignedTable').innerHTML = '<div class="loading">読み込み中…</div>';
+  var data = await gasReq('api/admin/tel-stock');
+  if (!data || !data.ok) {
+    document.getElementById('telStockTable').innerHTML = '<div class="loading" style="color:var(--rd)">取得失敗</div>';
+    return;
+  }
+  _telStocks = data.stocks || [];
+  var available = _telStocks.filter(function(s){ return s.status === 'available'; });
+  var assigned  = _telStocks.filter(function(s){ return s.status === 'assigned'; });
+
+  document.getElementById('ts-kpi-total').textContent     = _telStocks.length + '件';
+  document.getElementById('ts-kpi-available').textContent = available.length + '件';
+  document.getElementById('ts-kpi-assigned').textContent  = assigned.length + '件';
+
+  // 未割り当てテーブル
+  var stEl = document.getElementById('telStockTable');
+  if (available.length === 0) {
+    stEl.innerHTML = '<div class="loading">在庫がありません。「＋ ストック追加」から追加してください。</div>';
+  } else {
+    stEl.innerHTML = '<table><thead><tr><th>スペースURL</th><th>Webhook</th><th>登録日</th><th></th></tr></thead><tbody>'
+      + available.map(function(s) {
+          return '<tr>'
+            + '<td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><a href="' + esc(s.chat_url) + '" target="_blank" style="color:var(--pr)">' + esc(s.chat_url.replace('https://chat.google.com','').substring(0,40)) + '…</a></td>'
+            + '<td><span style="font-size:11px;padding:2px 8px;background:var(--gr-light);color:var(--gr);border-radius:6px">✅ 設定済</span></td>'
+            + '<td class="td-m">' + fmtDate(s.created_at) + '</td>'
+            + '<td><button class="btn btn-sm" style="background:var(--rd-light);color:var(--rd);border:none" onclick="deleteTelStock(\'' + s.stock_id + '\')">削除</button></td>'
+            + '</tr>';
+        }).join('')
+      + '</tbody></table>';
+  }
+
+  // 割り当て済みテーブル
+  var asEl = document.getElementById('telAssignedTable');
+  if (assigned.length === 0) {
+    asEl.innerHTML = '<div class="loading">割り当て済みスペースはありません</div>';
+  } else {
+    asEl.innerHTML = '<table><thead><tr><th>メンティー</th><th>スペース</th><th>Meet URL</th><th>割り当て日</th></tr></thead><tbody>'
+      + assigned.map(function(s) {
+          return '<tr>'
+            + '<td style="font-weight:600">' + esc(s.assigned_name || s.assigned_to) + '</td>'
+            + '<td style="font-size:12px"><a href="' + esc(s.chat_url) + '" target="_blank" style="color:var(--pr)">Chat開く →</a></td>'
+            + '<td style="font-size:12px">' + (s.meet_url ? '<a href="' + esc(s.meet_url) + '" target="_blank" style="color:var(--pr)">Meet開く →</a>' : '—') + '</td>'
+            + '<td class="td-m">' + fmtDate(s.assigned_at) + '</td>'
+            + '</tr>';
+        }).join('')
+      + '</tbody></table>';
+  }
+}
+
+function openTelStockAddModal() {
+  // 行を1行にリセット
+  var rows = document.getElementById('telStockRows');
+  rows.innerHTML = '<div class="tel-stock-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
+    + '<div><label class="form-label">スペースURL</label><input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px"/></div>'
+    + '<div><label class="form-label">Webhook URL</label><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px"/></div>'
+    + '</div>';
+  document.getElementById('tel-stock-add-result').textContent = '';
+  openModal('telStockAddModal');
+}
+
+function addTelStockRow() {
+  var rows = document.getElementById('telStockRows');
+  var div  = document.createElement('div');
+  div.className = 'tel-stock-row';
+  div.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px';
+  div.innerHTML = '<div><input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px"/></div>'
+    + '<div><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px"/></div>';
+  rows.appendChild(div);
+}
+
+async function submitTelStockAdd() {
+  var chatUrls    = Array.from(document.querySelectorAll('.ts-chat-url')).map(function(el){ return el.value.trim(); });
+  var webhookUrls = Array.from(document.querySelectorAll('.ts-webhook-url')).map(function(el){ return el.value.trim(); });
+  var items = [];
+  chatUrls.forEach(function(chat, i) {
+    if (chat && webhookUrls[i]) items.push({ chat_url: chat, webhook_url: webhookUrls[i] });
+  });
+  var resultEl = document.getElementById('tel-stock-add-result');
+  if (items.length === 0) { resultEl.style.color='var(--rd)'; resultEl.textContent='URLを入力してください'; return; }
+
+  var btn = document.getElementById('tel-stock-add-btn');
+  btn.disabled = true; btn.textContent = '登録中…';
+  resultEl.textContent = '';
+
+  var r = await gasReq('api/admin/tel-stock/add', 'POST', { items: items });
+  btn.disabled = false; btn.textContent = '📦 登録する';
+  if (r && r.ok) {
+    resultEl.style.color = 'var(--gr)';
+    resultEl.textContent = '✅ ' + r.added + '件を登録しました';
+    await loadTelStock();
+    setTimeout(function(){ closeModal('telStockAddModal'); }, 1200);
+  } else {
+    resultEl.style.color = 'var(--rd)';
+    resultEl.textContent = '❌ 登録失敗: ' + ((r && (r.error || r.message)) || 'GAS応答なし');
+  }
+}
+
+async function deleteTelStock(stockId) {
+  if (!confirm('このストックを削除しますか？')) return;
+  var r = await gasReq('api/admin/tel-stock/delete', 'POST', { stock_id: stockId });
+  if (r && r.ok) { await loadTelStock(); toast('削除しました'); }
+  else toast('削除失敗: ' + ((r && (r.error || r.message)) || 'GAS応答なし'), 'err');
+}
+
+var _telAssignMenteeId = '';
+async function openTelAssignModal(menteeId, menteeName, currentMeetUrl) {
+  _telAssignMenteeId = menteeId;
+  document.getElementById('tel-assign-mentee-name').textContent = menteeName;
+  document.getElementById('tel-assign-meet-url').value = currentMeetUrl || '';
+  document.getElementById('tel-assign-result').textContent = '';
+
+  // 在庫一覧をセレクトに反映
+  var sel = document.getElementById('tel-assign-stock-select');
+  sel.innerHTML = '<option value="">自動選択（在庫から先頭）</option>';
+  var available = _telStocks.filter(function(s){ return s.status === 'available'; });
+  if (available.length === 0) {
+    // ストック未ロードの場合は再取得
+    var data = await gasReq('api/admin/tel-stock');
+    if (data && data.ok) {
+      _telStocks = data.stocks || [];
+      available = _telStocks.filter(function(s){ return s.status === 'available'; });
+    }
+  }
+  available.forEach(function(s) {
+    var opt = document.createElement('option');
+    opt.value = s.stock_id;
+    opt.textContent = s.chat_url.replace('https://chat.google.com','').substring(0, 50);
+    sel.appendChild(opt);
+  });
+
+  openModal('telAssignModal');
+}
+
+async function submitTelAssign() {
+  var menteeId = _telAssignMenteeId;
+  var stockId  = document.getElementById('tel-assign-stock-select').value;
+  var meetUrl  = document.getElementById('tel-assign-meet-url').value.trim();
+  var resultEl = document.getElementById('tel-assign-result');
+  var btn      = document.getElementById('tel-assign-btn');
+
+  if (!meetUrl) { resultEl.style.color='var(--rd)'; resultEl.textContent='Meet URLを入力してください'; return; }
+  if (meetUrl.indexOf('meet.google.com') < 0) { resultEl.style.color='var(--rd)'; resultEl.textContent='Google MeetのURLを入力してください'; return; }
+
+  btn.disabled = true; btn.textContent = '処理中…';
+  resultEl.textContent = '';
+
+  var payload = { mentee_id: menteeId, meet_url: meetUrl };
+  if (stockId) payload.stock_id = stockId;
+
+  var r = await gasReq('api/admin/tel-stock/assign', 'POST', payload);
+  btn.disabled = false; btn.textContent = '📞 割り当て実行';
+
+  if (r && r.ok) {
+    var msgs = ['✅ 割り当て完了: ' + r.mentee_name];
+    if (r.rename_result && r.rename_result.ok) msgs.push('スペース名変更済み');
+    if (r.pin_result    && r.pin_result.ok)    msgs.push('チャット通知済み');
+    resultEl.style.color = 'var(--gr)';
+    resultEl.textContent = msgs.join(' / ');
+    // ローカルデータ更新
+    if (_currentDetailMember && _currentDetailMember.user_id === menteeId) {
+      _currentDetailMember.tel_meet_url = meetUrl;
+      _currentDetailMember.chat_url     = r.chat_url;
+      var btn2 = document.getElementById('detail-tel-meet-btn');
+      if (btn2) btn2.textContent = '📞 TEL再割り当て';
+    }
+    await loadTelStock();
+    setTimeout(function(){ closeModal('telAssignModal'); toast('TELスペースを割り当てました'); }, 1500);
+  } else {
+    var errMsg = r && (r.error || r.message) || 'GAS応答なし';
+    if (errMsg === 'NO_STOCK_AVAILABLE') errMsg = '在庫がありません。先にストックを追加してください';
+    resultEl.style.color = 'var(--rd)';
+    resultEl.textContent = '❌ ' + errMsg;
+  }
+}
+  var m = _currentDetailMember;
+  if (!m) return;
+  document.getElementById('tel-meet-mentee-name').textContent = m.name;
+  document.getElementById('tel-meet-current-url').textContent = m.tel_meet_url || '未設定';
+  document.getElementById('tel-meet-url-input').value = m.tel_meet_url || '';
+  document.getElementById('tel-meet-result').textContent = '';
+  openModal('telMeetModal');
+}
+
+async function saveTelMeetUrl() {
+  var m      = _currentDetailMember;
+  var url    = document.getElementById('tel-meet-url-input').value.trim();
+  var resultEl = document.getElementById('tel-meet-result');
+  var btn    = document.getElementById('tel-meet-save-btn');
+  if (!url) { resultEl.style.color='var(--rd)'; resultEl.textContent='URLを入力してください'; return; }
+  if (url.indexOf('meet.google.com') < 0) { resultEl.style.color='var(--rd)'; resultEl.textContent='Google MeetのURLを入力してください（meet.google.com）'; return; }
+  btn.disabled = true; btn.textContent = '保存中…';
+  resultEl.textContent = '';
+  const r = await gasReq('api/admin/set-tel-meet-url','POST',{
+    mentee_id:    m.user_id,
+    tel_meet_url: url
+  });
+  btn.disabled = false; btn.textContent = '💾 保存してチャットに通知';
+  if (r && r.ok) {
+    // ローカルのメンバーデータも更新
+    _currentDetailMember.tel_meet_url = url;
+    var idx = _allMembers.findIndex(function(u){ return u.user_id === m.user_id; });
+    if (idx >= 0) _allMembers[idx].tel_meet_url = url;
+    // ボタンラベル更新
+    var btn2 = document.getElementById('detail-tel-meet-btn');
+    if (btn2) btn2.textContent = '📞 TEL Meet変更';
+    // 現在のURL表示更新
+    document.getElementById('tel-meet-current-url').textContent = url;
+    // チャット通知結果
+    var pinMsg = r.pin_result && r.pin_result.ok ? '✅ チャットにも通知しました' : '⚠️ チャット通知は未送信（Webhook未設定）';
+    resultEl.style.color = r.pin_result && r.pin_result.ok ? 'var(--gr)' : 'var(--am)';
+    resultEl.textContent = '✅ 保存しました。' + pinMsg;
+    setTimeout(function(){ closeModal('telMeetModal'); toast('TEL Meet URLを設定しました'); }, 1500);
+  } else {
+    resultEl.style.color = 'var(--rd)';
+    resultEl.textContent = '❌ 保存に失敗: ' + ((r && (r.error || r.message)) || 'GAS応答なし');
+  }
 }
 
 async function loadAdminMemos(userId) {
@@ -1600,6 +1950,7 @@ function nav(id, el) {
   if (id === 'notices')           { if (!_noticesLoaded) { _noticesLoaded = true; loadNotices(); } else { refreshNoticeUserList(); } }
   if (id === 'callReports')       { if (!_callReportsLoaded) { _callReportsLoaded = true; loadCallReports(); } }
   if (id === 'leaderAssignments') { if (!_leaderAssignmentsLoaded) { _leaderAssignmentsLoaded = true; loadLeaderAssignments(); } }
+  if (id === 'telStock')         { loadTelStock(); }
   if (id === 'bulkIO')            { initBulkIO(); }
 }
 
