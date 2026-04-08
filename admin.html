@@ -1196,14 +1196,6 @@ async function submitTelAssign() {
     resultEl.textContent = '❌ ' + errMsg;
   }
 }
-  var m = _currentDetailMember;
-  if (!m) return;
-  document.getElementById('tel-meet-mentee-name').textContent = m.name;
-  document.getElementById('tel-meet-current-url').textContent = m.tel_meet_url || '未設定';
-  document.getElementById('tel-meet-url-input').value = m.tel_meet_url || '';
-  document.getElementById('tel-meet-result').textContent = '';
-  openModal('telMeetModal');
-}
 
 async function saveTelMeetUrl() {
   var m      = _currentDetailMember;
