@@ -745,23 +745,32 @@ async function gasReq(path, method='GET', body=null) {
   const token = Auth.getToken();
   const payload = { path, _method: method, _auth: token ? 'Bearer ' + token : '' };
   if (body) Object.assign(payload, body);
-  console.log('[GAS]', method, path, token ? 'token:OK' : 'token:EMPTY');
-  try {
-    // Content-Type省略でCORSプリフライトを回避
-    const res  = await fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
-    const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); }
-    catch(pe) { console.error('[GAS] JSON parse error:', text.slice(0,200)); return null; }
-    console.log('[GAS] response:', path, data);
-    if (data.error === 'TOKEN_MISSING' || data.error === 'INVALID_TOKEN') {
-      Auth.clearAuth(); showLoginOverlay(); return null;
+
+  // タイムアウト付きfetch（30秒）
+  const fetchWithTimeout = (url, opts, ms) => {
+    const ctrl = new AbortController();
+    const tid  = setTimeout(() => ctrl.abort(), ms);
+    return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(tid));
+  };
+
+  // リトライ処理（最大2回）
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res  = await fetchWithTimeout(GAS_URL, { method: 'POST', body: JSON.stringify(payload) }, 30000);
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch(e) { console.error('[GAS] parse error', text.slice(0,200)); return null; }
+      if (data?.error === 'TOKEN_MISSING' || data?.error === 'INVALID_TOKEN') {
+        Auth.clearAuth(); showLoginOverlay(); return null;
+      }
+      return data;
+    } catch(e) {
+      console.error('[GAS] fetch error attempt ' + (attempt+1), e);
+      if (attempt === 1) return null;
+      await new Promise(r => setTimeout(r, 1000));
     }
-    return data;
-  } catch(e) { console.error('[GAS] fetch error:', e); return null; }
+  }
+  return null;
 }
 
 // ユーティリティ
@@ -848,6 +857,8 @@ document.addEventListener('DOMContentLoaded', () => {
     showLoginOverlay();
     return;
   }
+  // GASウォームアップ（コールドスタート対策）
+  fetch(GAS_URL, { method:'POST', body:JSON.stringify({ path:'health', _method:'GET' }) }).catch(()=>{});
   initAdmin(user);
 });
 

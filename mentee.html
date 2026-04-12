@@ -559,6 +559,27 @@ input[type="month"].inp{padding:11px 14px}
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwzQYNRRHO5S7Fq1qBE7qYoMEYoJTjqU1MoQivOWxFpzt4w5NcuICTOYROISn6KYpmQ/exec';
 
+// ── ホームデータキャッシュ（重複リクエスト防止）──
+var _homeDataCache = null;
+var _homeDataPromise = null;
+
+async function fetchHomeData() {
+  if (_homeDataCache) return _homeDataCache;
+  if (_homeDataPromise) return _homeDataPromise; // 同時リクエストを1つに統合
+  _homeDataPromise = apiRequest('/api/mentee/home').then(function(data) {
+    if (data) _homeDataCache = data;
+    _homeDataPromise = null;
+    return data;
+  });
+  return _homeDataPromise;
+}
+
+// GASウォームアップ（コールドスタート対策）
+function warmupGAS() {
+  fetch(GAS_URL, { method:'POST', body:JSON.stringify({ path:'health', _method:'GET' }) })
+    .catch(() => {});
+}
+
 // ── クライアントサイドキャッシュ ──
 const Cache = {
   set(k, d, ttl) { try { localStorage.setItem('c_'+k, JSON.stringify({d, exp: Date.now()+ttl*1000})); } catch(e){} },
@@ -596,23 +617,41 @@ async function apiRequest(endpoint, options) {
   body._method = method;
   body._auth   = token ? 'Bearer ' + token : '';
   body.path    = path;
-  try {
-    var res  = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(body) });
-    var text = await res.text();
-    var data;
-    try { data = JSON.parse(text); } catch(pe) { console.error('[mentee] JSON parse error', text.slice(0,200)); return null; }
-    if (data && (data.error === 'TOKEN_MISSING' || data.error === 'INVALID_TOKEN')) {
-      Auth.clearAuth();
-      window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html';
-      return null;
+
+  // タイムアウト付きfetch（30秒）
+  const fetchWithTimeout = (url, opts, ms) => {
+    const ctrl = new AbortController();
+    const tid  = setTimeout(() => ctrl.abort(), ms);
+    return fetch(url, { ...opts, signal: ctrl.signal }).finally(() => clearTimeout(tid));
+  };
+
+  // リトライ処理（最大2回）
+  for (var attempt = 0; attempt < 2; attempt++) {
+    try {
+      var res  = await fetchWithTimeout(GAS_URL, { method: 'POST', body: JSON.stringify(body) }, 30000);
+      var text = await res.text();
+      var data;
+      try { data = JSON.parse(text); } catch(pe) { console.error('[mentee] JSON parse error', text.slice(0,200)); return null; }
+      if (data && (data.error === 'TOKEN_MISSING' || data.error === 'INVALID_TOKEN')) {
+        Auth.clearAuth();
+        window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html';
+        return null;
+      }
+      return data;
+    } catch(e) {
+      console.error('[mentee] fetch error attempt ' + (attempt+1), e);
+      if (attempt === 1) return null;
+      await new Promise(r => setTimeout(r, 1000));
     }
-    return data;
-  } catch(e) {
-    console.error('[mentee] API Error [' + path + ']:', e);
-    return null;
   }
+  return null;
 }
 
+// GASウォームアップ
+function warmupGAS() {
+  fetch(GAS_URL, { method:'POST', body:JSON.stringify({ path:'health', _method:'GET' }) })
+    .catch(() => {});
+}
 
 function logout() {
   Auth.clearAuth();
@@ -634,7 +673,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const _role = (Auth.getUser() || {}).role;
   if (_role && _role !== 'mentee' && _role !== 'admin') { window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html'; return; }
 
-  // ③ ページビュー記録（F-07）
+  // ③ ページビュー記録（F-07）+ GASウォームアップを並列実行
+  warmupGAS();
   apiRequest('/api/analytics/page-view', {
     method: 'POST',
     body: JSON.stringify({ page: 'mentee', action: 'load' })
@@ -660,18 +700,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const userAvaEl = document.getElementById('userAva');
   if (userAvaEl) userAvaEl.textContent = (user.name || '').slice(0, 1) || '木';
 
-  // ③ クイックリンク読み込み（要件②）
-  await loadQuickLinks();
-
-  // ④ ホーム画面データ読み込み（APIから）
-  const home = await apiRequest('/api/mentee/home');
+  // ③ クイックリンク・ホームデータ・リーダー情報を並列取得
+  const [home] = await Promise.all([
+    fetchHomeData(),
+    loadQuickLinks(),
+    loadLeaderInfo(),
+  ]);
   if (home) { renderHome(home); updatePreReportMentor(); }
 
   // ⑤ レポート一覧読み込み
   loadReports();
-
-  // ⑥ 担当Leader情報読み込み
-  loadLeaderInfo();
 
   // ⑥ 設定画面にユーザー情報を反映（表示専用）
   var setDisp = function(id, val) { var el=document.getElementById(id); if(el) el.textContent = val||'—'; };
@@ -1045,7 +1083,7 @@ async function submitSurvey() {
 
 async function loadSurveyData() {
   // 次回予約を取得してsurveyフォームに設定
-  const data = await apiRequest('/api/mentee/home');
+  const data = await fetchHomeData();
   const booking = data?.next_booking;
   const bookingInput = document.getElementById('survey-booking-id');
   if (bookingInput) {
@@ -1224,7 +1262,7 @@ async function bookSlot() {
 
 // ══ ホームデータ読み込み ══
 async function loadHomeData() {
-  const data = await apiRequest('/api/mentee/home');
+  const data = await fetchHomeData();
   if (!data) return;
   renderHome(data);
   loadLeaderInfo();
@@ -1613,7 +1651,7 @@ async function loadMyBookings() {
   if (!listEl) return;
   // _allUpcomingBookings がまだ空の場合はAPIから取得
   if (_allUpcomingBookings.length === 0) {
-    var data = await apiRequest('/api/mentee/home');
+    var data = await fetchHomeData();
     if (data) {
       _allUpcomingBookings = (data.all_upcoming_bookings || []).slice();
     }
