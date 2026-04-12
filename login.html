@@ -248,22 +248,26 @@ body::after{
 
 <script>
 // ══════════════════════════════════════════════════════════
-//  設定値（本番時は実際の n8n URL を設定）
+//  設定値
 // ══════════════════════════════════════════════════════════
-const GAS_URL   = 'https://script.google.com/macros/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
+const GAS_URL     = 'https://script.google.com/macros/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
 const GITHUB_BASE = 'https://koheiumeda-arch.github.io/SS1on1';
 
-// Google OAuth クライアントID（本番時に設定）
-const GOOGLE_CLIENT_ID = '293215192019-68vlrdh8s8o0v1vh50vrueal073crm5d.apps.googleusercontent.com';
+// ══════════════════════════════════════════════════════════
+//  フロントエンド SHA-256 ハッシュ（セキュリティ強化）
+//  パスワードをプレーンテキストで送信しないようにする
+// ══════════════════════════════════════════════════════════
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
 
 // ══════════════════════════════════════════════════════════
-//  認証モジュール
+//  認証モジュール（getToken 追加・修正済み）
 // ══════════════════════════════════════════════════════════
 const Auth = {
-  setAuth: (token, user) => {
-    localStorage.setItem('1on1_token', token);
-    localStorage.setItem('1on1_user', JSON.stringify(user));
-  },
+  setAuth:    (token, user) => { localStorage.setItem('1on1_token', token); localStorage.setItem('1on1_user', JSON.stringify(user)); },
+  getToken:   () => localStorage.getItem('1on1_token'),
   isLoggedIn: () => !!localStorage.getItem('1on1_token'),
   getUser:    () => { try { return JSON.parse(localStorage.getItem('1on1_user') || 'null'); } catch { return null; } },
 };
@@ -288,11 +292,9 @@ function decodeJwtRole(token) {
 }
 
 function redirectByRole(user, token) {
-  // user.role が取れない場合は JWT ペイロードから取得
   let role = user?.role;
   if (!role && token) {
     role = decodeJwtRole(token);
-    // localStorage のユーザー情報にも role を補完
     if (role && user) {
       user.role = role;
       localStorage.setItem('1on1_user', JSON.stringify(user));
@@ -336,6 +338,7 @@ function setLoading(loading) {
 
 // ══════════════════════════════════════════════════════════
 //  メール / パスワード ログイン
+//  ★ セキュリティ強化: フロントでSHA-256ハッシュ化してから送信
 // ══════════════════════════════════════════════════════════
 async function handleLogin(e) {
   e.preventDefault();
@@ -348,8 +351,10 @@ async function handleLogin(e) {
 
   setLoading(true);
   try {
-    // GAS WebApp への送信（CORS回避のため Content-Type なし・POSTのみ）
-    const payload = { path: 'auth/login', _method: 'POST', email, password };
+    // フロントでSHA-256ハッシュ化（プレーンテキスト送信を防止）
+    const passwordHash = await sha256Hex(password);
+
+    const payload = { path: 'auth/login', _method: 'POST', email, password_hash: passwordHash };
     const res = await fetch(GAS_URL, {
       method: 'POST',
       body:   JSON.stringify(payload),
@@ -361,10 +366,12 @@ async function handleLogin(e) {
 
     if (data.error) {
       const msgMap = {
-        USER_NOT_FOUND:    'メールアドレスまたはパスワードが正しくありません',
-        INVALID_PASSWORD:  'メールアドレスまたはパスワードが正しくありません',
+        USER_NOT_FOUND:              'メールアドレスまたはパスワードが正しくありません',
+        INVALID_PASSWORD:            'メールアドレスまたはパスワードが正しくありません',
         EMAIL_AND_PASSWORD_REQUIRED: 'メールアドレスとパスワードを入力してください',
-        USER_DELETED:      'このアカウントは無効です',
+        USER_DELETED:                'このアカウントは無効です',
+        TOO_MANY_ATTEMPTS:           'ログイン試行回数が上限を超えました。5分後に再試行してください',
+        INVALID_EMAIL_FORMAT:        'メールアドレスの形式が正しくありません',
       };
       showErr(msgMap[data.error] || `ログインに失敗しました: ${data.error}`);
       return;
@@ -374,79 +381,20 @@ async function handleLogin(e) {
 
     Auth.setAuth(data.token, data.user);
     showOk(`ログイン成功！${data.user.name} さん、ようこそ`);
-
     setTimeout(() => redirectByRole(data.user, data.token), 800);
 
   } catch (err) {
-    showErr(`通信エラーが発生しました。接続を確認してください。`);
+    showErr('通信エラーが発生しました。接続を確認してください。');
   } finally {
     setLoading(false);
   }
 }
 
 // ══════════════════════════════════════════════════════════
-//  Google OAuth ログイン
+//  Google OAuth ログイン（現在準備中）
 // ══════════════════════════════════════════════════════════
 function handleGoogleLogin() {
-  if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
-    showErr('Google ログインは設定後にご利用いただけます（GOOGLE_CLIENT_ID 未設定）');
-    return;
-  }
-
-  // Google Identity Services (GIS) を使用
-  if (typeof google === 'undefined' || !google.accounts) {
-    showErr('Google ライブラリが読み込まれていません');
-    return;
-  }
-
-  google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback:  handleGoogleCallback,
-  });
-  google.accounts.id.prompt();
-}
-
-async function handleGoogleCallback(response) {
-  clearAlert();
-  const googleBtn = document.getElementById('googleBtn');
-  googleBtn.disabled = true;
-  googleBtn.textContent = '認証中…';
-
-  try {
-    // Googleログインは現在未対応です（GAS側にauth/googleルートが未実装）
-    showErr('Google ログインは現在準備中です。メールアドレスとパスワードでログインしてください。');
-    googleBtn.disabled = false;
-    googleBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/></svg> Google アカウントでログイン';
-    return;
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      body:   JSON.stringify({ path: 'auth/google', _method: 'POST', id_token: response.credential }),
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      const code = data?.error?.code || '';
-      const msgMap = {
-        GOOGLE_TOKEN_INVALID: 'Google 認証に失敗しました',
-        USER_NOT_REGISTERED:  'このGoogleアカウントは登録されていません。管理者にお問い合わせください',
-      };
-      showErr(msgMap[code] || data?.error?.message || `Google ログインに失敗しました（${res.status}）`);
-      return;
-    }
-
-    if (!data.token || !data.user) { showErr('サーバーからの応答が不正です'); return; }
-
-    Auth.setAuth(data.token, data.user);
-    showOk(`ログイン成功！${data.user.name} さん、ようこそ`);
-    setTimeout(() => redirectByRole(data.user, data.token), 800);
-
-  } catch (err) {
-    showErr('通信エラーが発生しました');
-  } finally {
-    googleBtn.disabled = false;
-    googleBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/><path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg> Google アカウントでログイン';
-  }
+  showErr('Google ログインは現在準備中です。メールアドレスとパスワードでログインしてください。');
 }
 </script>
 </body>

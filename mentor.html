@@ -268,6 +268,7 @@ td{padding:10px 14px;font-size:13px}
       <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v" id="mqm-workplace">—</div></div>
       <div class="dc"><div class="dc-lb">雇用形態</div><div class="dc-v" id="mqm-workstatus">—</div></div>
       <div class="dc"><div class="dc-lb">時給</div><div class="dc-v ac" id="mqm-wage">—</div></div>
+      <div class="dc" id="mqm-tenure-wrap" style="display:none"><div class="dc-lb">在籍期間</div><div class="dc-v" id="mqm-tenure" style="color:var(--pr);font-weight:700">—</div></div>
     </div>
     <!-- アクションボタン -->
     <div style="display:flex;flex-direction:column;gap:8px">
@@ -642,6 +643,7 @@ td{padding:10px 14px;font-size:13px}
           <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v" id="dc-place">—</div></div>
           <div class="dc"><div class="dc-lb">稼働状況</div><div class="dc-v" id="dc-work">—</div></div>
           <div class="dc"><div class="dc-lb">時給</div><div class="dc-v ac" id="dc-wage">—</div></div>
+          <div class="dc" id="dc-tenure-wrap" style="display:none"><div class="dc-lb">在籍期間</div><div class="dc-v" id="dc-tenure" style="color:var(--pr);font-weight:700">—</div></div>
         </div>
         <div class="pre-summary" id="preSummary" style="display:none">
           <div class="pre-summary-head">
@@ -749,6 +751,7 @@ td{padding:10px 14px;font-size:13px}
         <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v" id="md-workplace">—</div></div>
         <div class="dc"><div class="dc-lb">雇用形態</div><div class="dc-v" id="md-workstatus">—</div></div>
         <div class="dc"><div class="dc-lb">時給</div><div class="dc-v ac" id="md-wage">—</div></div>
+        <div class="dc" id="md-tenure-wrap" style="display:none"><div class="dc-lb">在籍期間</div><div class="dc-v" id="md-tenure" style="color:var(--pr);font-weight:700">—</div></div>
       </div>
       <!-- ステータス -->
       <div style="padding:12px 16px">
@@ -889,6 +892,37 @@ td{padding:10px 14px;font-size:13px}
 const GAS_URL     = 'https://script.google.com/macros/s/AKfycbzdwzQYNRRHO5S7Fq1qBE7qYoMEYoJTjqU1MoQivOWxFpzt4w5NcuICTOYROISn6KYpmQ/exec';
 const GITHUB_BASE = 'https://koheiumeda-arch.github.io/SS1on1';
 
+// ★ セキュリティ: フロントエンドでSHA-256ハッシュ化（パスワードを平文送信しない）
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── 在籍期間計算ユーティリティ ──
+function calcTenure(hireDateStr) {
+  if (!hireDateStr) return null;
+  const hire = new Date(hireDateStr);
+  if (isNaN(hire)) return null;
+  const now = new Date();
+  let months = (now.getFullYear() - hire.getFullYear()) * 12 + (now.getMonth() - hire.getMonth());
+  if (now.getDate() < hire.getDate()) months--;
+  if (months < 0) months = 0;
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  if (y === 0) return { months, label: m + 'ヶ月' };
+  if (m === 0) return { months, label: y + '年' };
+  return { months, label: y + '年' + m + 'ヶ月' };
+}
+
+// tenureラベルをセットするユーティリティ（wrap/label の id ペアで使用）
+function setTenure(wrapId, labelId, hireDateStr, tenureLabel) {
+  var wrap = document.getElementById(wrapId);
+  var el   = document.getElementById(labelId);
+  var label = tenureLabel || (calcTenure(hireDateStr)||{}).label || null;
+  if (wrap) wrap.style.display = label ? '' : 'none';
+  if (el && label) el.textContent = label;
+}
+
 // ── クライアントサイドキャッシュ ──
 const Cache = {
   set(k, d, ttl) { try { localStorage.setItem('c_'+k, JSON.stringify({d, exp: Date.now()+ttl*1000})); } catch(e){} },
@@ -997,7 +1031,9 @@ async function doLogin() {
   if (!email || !password) { msgEl.textContent='メールとパスワードを入力してください'; return; }
   btn.textContent='ログイン中…'; btn.disabled=true;
   try {
-    var res  = await fetch(GAS_URL, { method:'POST', body:JSON.stringify({ path:'auth/login', _method:'POST', email:email, password:password }) });
+    // ★ セキュリティ強化: フロントでSHA-256ハッシュ化してから送信
+    var passwordHash = await sha256Hex(password);
+    var res  = await fetch(GAS_URL, { method:'POST', body:JSON.stringify({ path:'auth/login', _method:'POST', email:email, password_hash:passwordHash }) });
     var text = await res.text();
     var data; try { data=JSON.parse(text); } catch(e){ throw new Error('JSONパース失敗'); }
     if (data && data.token && data.user) {
@@ -1009,8 +1045,14 @@ async function doLogin() {
       hideOverlay();
       initPage(data.user);
     } else {
-      var e = data && data.error;
-      msgEl.textContent = e==='INVALID_PASSWORD'?'パスワードが違います':e==='USER_NOT_FOUND'?'ユーザーが見つかりません':'ログインに失敗しました';
+      var errCode = data && data.error;
+      var errMsgMap = {
+        INVALID_PASSWORD:    'パスワードが違います',
+        USER_NOT_FOUND:      'ユーザーが見つかりません',
+        TOO_MANY_ATTEMPTS:   'ログイン試行回数が上限を超えました。5分後に再試行してください',
+        INVALID_EMAIL_FORMAT:'メールアドレスの形式が正しくありません',
+      };
+      msgEl.textContent = errMsgMap[errCode] || 'ログインに失敗しました';
       btn.textContent='ログイン'; btn.disabled=false;
     }
   } catch(e) {
@@ -1184,6 +1226,7 @@ function selectMentee(userId, el) {
   document.getElementById('dc-place').textContent = m.workplace   || '—';
   document.getElementById('dc-work').textContent  = m.work_status || '—';
   document.getElementById('dc-wage').textContent  = m.hourly_wage ? '\xA5'+Number(m.hourly_wage).toLocaleString()+'/h' : '—';
+  setTenure('dc-tenure-wrap', 'dc-tenure', m.hire_date, m.tenure_label);
 
   // ステータスボタン
   ['rd','am','gr','cy'].forEach(function(s){ document.getElementById('sig-'+s).className='sig-btn'; });
@@ -1321,7 +1364,7 @@ async function loadSchedules() {
   }
   _mySchedules = (data && data.bookings) ? data.bookings
     .filter(function(b){ return b.status !== 'cancelled'; })
-    .sort(function(a,b){ return (a.scheduled_at||'').localeCompare(b.scheduled_at||''); })
+    .sort(function(a,b){ return (b.scheduled_at||'').localeCompare(a.scheduled_at||''); })
     : [];
   renderSchedule();
   renderDashSchedule();
@@ -1364,7 +1407,12 @@ function renderSchedule() {
 
 function renderDashSchedule() {
   var dashEl = document.getElementById('dashSchedule');
-  var upcoming = _mySchedules.slice(0, 5);
+  var now = new Date().toISOString();
+  // ダッシュボードは「これから」の予約を近い順（昇順）で最大5件
+  var upcoming = _mySchedules
+    .filter(function(b){ return (b.scheduled_at||'') >= now; })
+    .sort(function(a,b){ return (a.scheduled_at||'').localeCompare(b.scheduled_at||''); })
+    .slice(0, 5);
   if (upcoming.length === 0) {
     dashEl.innerHTML = '<div class="loading">直近の予約はありません</div>';
     return;
@@ -1638,7 +1686,11 @@ function open1on1ReportDetail(r) {
   var modal = document.getElementById('mentorReportDetailModal');
   if (!modal) return;
   var published = r.is_published === 'TRUE';
-  document.getElementById('mrd-mentee').textContent = r.mentee_name || r.mentee_id || '—';
+  // ★ 在籍期間をメンティー名の横に表示
+  var mentee   = _myMentees.find(function(m){ return m.user_id === r.mentee_id; }) || {};
+  var tenure   = calcTenure(mentee.hire_date || r.hire_date);
+  var nameText = (r.mentee_name || r.mentee_id || '—') + (tenure ? '（在籍: ' + tenure.label + '）' : '');
+  document.getElementById('mrd-mentee').textContent = nameText;
   document.getElementById('mrd-date').textContent   = fmtDateFull(r.created_at);
   document.getElementById('mrd-status').textContent = published ? '✅ 公開済み' : '📝 未公開';
   document.getElementById('mrd-status').style.color = published ? 'var(--gr)' : 'var(--am)';
@@ -1847,6 +1899,7 @@ function renderReports() {
     var summary   = (r.talk_content || r.ai_summary || '—').slice(0, 50);
     var confirmed = r.is_confirmed === 'TRUE' || r.is_confirmed === true;
     var hasMeet   = !!(r.recording_url || r.meet_url);
+    var tenure    = mentee ? calcTenure(mentee.hire_date) : null;
 
     var item = document.createElement('div');
     item.className = 'rep-item';
@@ -1861,8 +1914,9 @@ function renderReports() {
     var infoEl = document.createElement('div');
     infoEl.className = 'rep-info';
     infoEl.innerHTML =
-      '<div class="rep-title" style="display:flex;align-items:center;gap:6px">'
+      '<div class="rep-title" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
       + '<span>'+esc(name)+'</span>'
+      + (tenure ? '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--pr-light);color:var(--pr);font-weight:600">🗓 '+tenure.label+'</span>' : '')
       + (confirmed
           ? '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--pr-light);color:var(--pr);font-weight:600">✅ 確定</span>'
           : '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--am-light);color:var(--am);font-weight:600">📝 下書き</span>')
@@ -2008,10 +2062,15 @@ async function loadWeeklyTel() {
 
     var info = document.createElement('div');
     info.style.cssText = 'flex:1;min-width:0';
+    var tenureInfo = calcTenure(mentee.hire_date);
+    var tenureRow  = tenureInfo
+      ? '<div class="tel-meta-row"><span>🗓</span><span>在籍: <strong style="color:var(--pr)">' + tenureInfo.label + '</strong></span></div>'
+      : '';
     info.innerHTML = '<div class="tel-name" style="margin-bottom:2px">'+esc(mName)+'</div>'
       + '<div class="tel-meta">'
       + '<div class="tel-meta-row"><span>📅</span><span>最終TEL: '+esc(lastTel)+'</span></div>'
       + '<div class="tel-meta-row"><span>📊</span><span>今月: '+monthCount+'回 / Meet: '+meetCount+'回</span></div>'
+      + tenureRow
       + '</div>';
 
     var acts = document.createElement('div');
@@ -2058,7 +2117,10 @@ async function loadWeeklyTel() {
 
 function openTelModal(name, menteeId) {
   _telMenteeId = menteeId || (_currentMentee && _currentMentee.user_id) || '';
-  document.getElementById('telTarget').textContent = '対象：' + name + ' さん';
+  var mentee   = _myMentees.find(function(m){ return m.user_id === _telMenteeId; });
+  var tenure   = mentee ? calcTenure(mentee.hire_date) : null;
+  var tenureStr = tenure ? '（在籍: ' + tenure.label + '）' : '';
+  document.getElementById('telTarget').textContent = '対象：' + name + ' さん' + tenureStr;
   ['tel-talk','tel-concerns','tel-good','tel-memo'].forEach(function(id){
     document.getElementById(id).value = '';
   });
@@ -2562,6 +2624,7 @@ function openMemberDetail(userId, cardEl) {
   document.getElementById('md-workplace').textContent  = m.workplace   || '—';
   document.getElementById('md-workstatus').textContent = m.work_status || '—';
   document.getElementById('md-wage').textContent       = m.hourly_wage ? '¥'+Number(m.hourly_wage).toLocaleString()+'/h' : '—';
+  setTenure('md-tenure-wrap', 'md-tenure', m.hire_date, m.tenure_label);
 
   var chatBtn = document.getElementById('md-chat-btn');
   if (chatBtn) chatBtn.style.display = m.chat_url ? '' : 'none';
@@ -2602,6 +2665,7 @@ function openMemberDetailModal(m) {
   document.getElementById('mqm-workplace').textContent  = m.workplace   || '—';
   document.getElementById('mqm-workstatus').textContent = m.work_status || '—';
   document.getElementById('mqm-wage').textContent       = m.hourly_wage ? '¥'+Number(m.hourly_wage).toLocaleString()+'/h' : '—';
+  setTenure('mqm-tenure-wrap', 'mqm-tenure', m.hire_date, m.tenure_label);
 
   // チャットボタン
   var chatBtn = document.getElementById('mqm-chat-btn');

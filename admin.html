@@ -355,6 +355,8 @@ body.login-mode .main { display:none !important; }
     <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v" id="detail-workplace">—</div></div>
     <div class="dc"><div class="dc-lb">雇用形態</div><div class="dc-v" id="detail-workstatus">—</div></div>
     <div class="dc"><div class="dc-lb">時給</div><div class="dc-v ac" id="detail-wage">—</div></div>
+    <div class="dc"><div class="dc-lb">入社日</div><div class="dc-v" id="detail-hire-date">—</div></div>
+    <div class="dc" id="detail-tenure-card" style="display:none"><div class="dc-lb">在籍期間</div><div class="dc-v ac" id="detail-tenure">—</div></div>
   </div>
   <!-- Mentor専用: デフォルト1on1時間 -->
   <div id="md-duration-card" style="display:none;margin-bottom:14px">
@@ -707,6 +709,28 @@ body.login-mode .main { display:none !important; }
 const GAS_URL     = 'https://script.google.com/macros/s/AKfycbzdwzQYNRRHO5S7Fq1qBE7qYoMEYoJTjqU1MoQivOWxFpzt4w5NcuICTOYROISn6KYpmQ/exec';
 const GITHUB_BASE = 'https://koheiumeda-arch.github.io/SS1on1';
 
+// ★ セキュリティ: フロントエンドでSHA-256ハッシュ化（パスワードを平文送信しない）
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── 在籍期間計算ユーティリティ ──
+function calcTenure(hireDateStr) {
+  if (!hireDateStr) return null;
+  const hire = new Date(hireDateStr);
+  if (isNaN(hire)) return null;
+  const now = new Date();
+  let months = (now.getFullYear() - hire.getFullYear()) * 12 + (now.getMonth() - hire.getMonth());
+  if (now.getDate() < hire.getDate()) months--;
+  if (months < 0) months = 0;
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  if (y === 0) return { months, label: m + 'ヶ月' };
+  if (m === 0) return { months, label: y + '年' };
+  return { months, label: y + '年' + m + 'ヶ月' };
+}
+
 // ── クライアントサイドキャッシュ ──
 const Cache = {
   set(k, d, ttl) { try { localStorage.setItem('c_'+k, JSON.stringify({d, exp: Date.now()+ttl*1000})); } catch(e){} },
@@ -805,11 +829,11 @@ async function overlayLogin() {
   if (!email || !password) { msgEl.textContent = 'メールとパスワードを入力してください'; return; }
   btn.textContent = 'ログイン中…'; btn.disabled = true;
   try {
-    // Content-Type を省略することでCORSプリフライト（OPTIONS）を回避
-    // GASはtext/plain扱いでもe.postData.contentsからJSONを読める
+    // ★ セキュリティ強化: フロントでSHA-256ハッシュ化してから送信
+    const passwordHash = await sha256Hex(password);
     const res = await fetch(GAS_URL, {
       method: 'POST',
-      body: JSON.stringify({ path: 'auth/login', _method: 'POST', email: email, password: password })
+      body: JSON.stringify({ path: 'auth/login', _method: 'POST', email: email, password_hash: passwordHash })
     });
     const text = await res.text();
     var data;
@@ -825,8 +849,13 @@ async function overlayLogin() {
       initAdmin(data.user);
     } else {
       var errMsg = data && data.error;
-      msgEl.textContent = errMsg === 'INVALID_PASSWORD' ? 'パスワードが違います' :
-                          errMsg === 'USER_NOT_FOUND'   ? 'ユーザーが見つかりません' : 'ログインに失敗しました';
+      var msgMap = {
+        INVALID_PASSWORD:   'パスワードが違います',
+        USER_NOT_FOUND:     'ユーザーが見つかりません',
+        TOO_MANY_ATTEMPTS:  'ログイン試行回数が上限を超えました。5分後に再試行してください',
+        INVALID_EMAIL_FORMAT:'メールアドレスの形式が正しくありません',
+      };
+      msgEl.textContent = msgMap[errMsg] || 'ログインに失敗しました';
       btn.textContent = 'ログイン'; btn.disabled = false;
     }
   } catch(e) {
@@ -1008,6 +1037,18 @@ function showMemberDetail(m) {
   document.getElementById('detail-workplace').textContent   = m.workplace   || '—';
   document.getElementById('detail-workstatus').textContent  = m.work_status || '—';
   document.getElementById('detail-wage').textContent        = m.hourly_wage ? '¥'+Number(m.hourly_wage).toLocaleString()+'/h' : '—';
+  // ★ 入社日・在籍期間
+  const hireDateEl    = document.getElementById('detail-hire-date');
+  const tenureCard    = document.getElementById('detail-tenure-card');
+  const tenureEl      = document.getElementById('detail-tenure');
+  if (hireDateEl) hireDateEl.textContent = m.hire_date || '—';
+  if (m.hire_date) {
+    const tenure = m.tenure_label || (calcTenure(m.hire_date) || {}).label || '—';
+    if (tenureCard) tenureCard.style.display = '';
+    if (tenureEl)   tenureEl.textContent = tenure;
+  } else {
+    if (tenureCard) tenureCard.style.display = 'none';
+  }
   document.getElementById('detail-msg-btn').onclick = () => openMsg(m.name, m.user_id);
   // チャットボタン
   var chatBtn       = document.getElementById('detail-chat-btn');

@@ -478,6 +478,7 @@ input[type="month"].inp{padding:11px 14px}
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">担当リーダー</span><span style="font-size:14px;font-weight:600" id="set-leader">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">稼働場所</span><span style="font-size:14px;font-weight:600" id="set-workplace">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">雇用形態</span><span style="font-size:14px;font-weight:600" id="set-workstatus">—</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)" id="set-tenure-row" style="display:none"><span style="font-size:13px;color:var(--tx2)">在籍期間</span><span style="font-size:14px;font-weight:700;color:var(--pr)" id="set-tenure">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">半年業務目標</span><span style="font-size:14px;font-weight:600;max-width:60%;text-align:right;line-height:1.5" id="set-goal-work">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">半年スキル目標</span><span style="font-size:14px;font-weight:600;max-width:60%;text-align:right;line-height:1.5" id="set-goal-skill">—</span></div>
       <!-- 時給表示: 表示するには style="display:none" を削除 -->
@@ -558,6 +559,22 @@ input[type="month"].inp{padding:11px 14px}
 
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwzQYNRRHO5S7Fq1qBE7qYoMEYoJTjqU1MoQivOWxFpzt4w5NcuICTOYROISn6KYpmQ/exec';
+
+// ── 在籍期間計算ユーティリティ ──
+function calcTenure(hireDateStr) {
+  if (!hireDateStr) return null;
+  const hire = new Date(hireDateStr);
+  if (isNaN(hire)) return null;
+  const now = new Date();
+  let months = (now.getFullYear() - hire.getFullYear()) * 12 + (now.getMonth() - hire.getMonth());
+  if (now.getDate() < hire.getDate()) months--;
+  if (months < 0) months = 0;
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  if (y === 0) return { months, label: m + 'ヶ月' };
+  if (m === 0) return { months, label: y + '年' };
+  return { months, label: y + '年' + m + 'ヶ月' };
+}
 
 // ── ホームデータキャッシュ（重複リクエスト防止）──
 var _homeDataCache = null;
@@ -721,6 +738,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   setDisp('set-workplace',  user.workplace || '—');
   setDisp('set-workstatus', user.work_status || '—');
   setDisp('set-wage',       user.hourly_wage ? '¥'+Number(user.hourly_wage).toLocaleString()+'/h' : '—');
+  // ★ 在籍期間表示
+  var tenureRow = document.getElementById('set-tenure-row');
+  var tenureEl  = document.getElementById('set-tenure');
+  var tenure    = calcTenure(user.hire_date);
+  if (tenure && tenureRow && tenureEl) {
+    tenureRow.style.display = '';
+    tenureEl.textContent    = tenure.label;
+  } else if (tenureRow) {
+    tenureRow.style.display = 'none';
+  }
   // 研修コンテンツ
   loadTraining();
 
@@ -1329,6 +1356,16 @@ function renderHome(data) {
     setEl('set-workplace',    u.workplace);
     setEl('set-workstatus',   u.work_status);
     setEl('set-wage',         u.hourly_wage ? '¥' + Number(u.hourly_wage).toLocaleString() + '/h' : '');
+    // ★ 在籍期間更新
+    var tenureRowEl = document.getElementById('set-tenure-row');
+    var tenureValEl = document.getElementById('set-tenure');
+    var t = calcTenure(u.hire_date);
+    if (t && tenureRowEl && tenureValEl) {
+      tenureRowEl.style.display = '';
+      tenureValEl.textContent   = t.label;
+    } else if (tenureRowEl) {
+      tenureRowEl.style.display = 'none';
+    }
     // greeting
     var greetName = document.getElementById('greetName');
     if (greetName) greetName.textContent = u.name || 'さん';
@@ -1415,14 +1452,14 @@ function renderHome(data) {
   renderHomeSchedule();
 }
 
-// ── ホーム: 直近のスケジュール（最大3件、降順） ──
+// ── ホーム: 直近のスケジュール（最大3件、近い順） ──
 function renderHomeSchedule() {
   var el = document.getElementById('homeScheduleList');
   if (!el) return;
   var now = new Date();
   var upcoming = _allUpcomingBookings
     .filter(function(b) { return new Date(b.scheduled_at) > now; })
-    .sort(function(a, b) { return b.scheduled_at.localeCompare(a.scheduled_at); });
+    .sort(function(a, b) { return a.scheduled_at.localeCompare(b.scheduled_at); }); // 昇順（近い順）
   if (upcoming.length === 0) {
     el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--tx3);font-size:13px">予約がありません</div>';
     return;
@@ -1668,7 +1705,7 @@ function renderMyBookings() {
   var now = new Date();
   var upcoming = _allUpcomingBookings
     .filter(function(b) { return new Date(b.scheduled_at) > now; })
-    .sort(function(a, b) { return b.scheduled_at.localeCompare(a.scheduled_at); }); // 降順（新しい日付順）
+    .sort(function(a, b) { return a.scheduled_at.localeCompare(b.scheduled_at); }); // 昇順（近い順）
 
   if (upcoming.length === 0) {
     listEl.innerHTML = '<div style="text-align:center;color:var(--tx3);padding:20px;font-size:13px">予約がありません</div>';

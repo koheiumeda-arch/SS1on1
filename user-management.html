@@ -405,13 +405,14 @@
           <th>ロール</th>
           <th onclick="setSort('employment_type')">雇用形態</th>
           <th>担当メンター</th>
+          <th onclick="setSort('hire_date')">在籍期間</th>
           <th>電話番号</th>
           <th onclick="setSort('hourly_wage')">時給</th>
           <th>操作</th>
         </tr>
       </thead>
       <tbody id="tbody">
-        <tr><td colspan="7" class="loading-cell"><span class="spinner"></span>読み込み中…</td></tr>
+        <tr><td colspan="8" class="loading-cell"><span class="spinner"></span>読み込み中…</td></tr>
       </tbody>
     </table>
     <div class="pagination">
@@ -446,6 +447,11 @@
         <div class="form-group">
           <label class="form-label">生年月日<span class="req">*</span></label>
           <input class="form-input" id="f_birthday" type="date" oninput="refreshPw()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">入社日</label>
+          <input class="form-input" id="f_hire_date" type="date" oninput="updateTenureHint()">
+          <span class="form-hint" id="tenureHint" style="color:var(--primary);font-weight:500"></span>
         </div>
         <div class="form-group">
           <label class="form-label">電話番号</label>
@@ -694,6 +700,7 @@ function buildRow(u) {
   const rl = {admin:'管理者',mentor:'メンター',mentee:'メンティー'}[u.role]||u.role;
   const leader = u.has_leader_role ? `<span class="leader-tag">⭐ リーダー</span>` : '';
   const wage   = u.hourly_wage ? `¥${Number(u.hourly_wage).toLocaleString()}` : '—';
+  const tenureLabel = calcTenure(u.hire_date||'');
   const safeU  = esc(JSON.stringify(u));
   return `<tr>
     <td>
@@ -708,6 +715,7 @@ function buildRow(u) {
     <td><span class="role-badge ${rc}">${rl}</span>${leader}</td>
     <td style="color:var(--text2);font-size:12px">${esc(u.employment_type||'—')}</td>
     <td style="color:var(--text2);font-size:12px">${m?esc(m.name):'—'}</td>
+    <td style="font-size:12px;text-align:center">${tenureLabel !== '—' ? `<span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:12px;font-weight:600;font-size:11px">${tenureLabel}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
     <td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${esc(u.phone||'—')}</td>
     <td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${wage}</td>
     <td>
@@ -758,6 +766,8 @@ function editUser(u) {
   document.getElementById('f_email').value=u.email||'';
   document.getElementById('f_email').readOnly=true;
   document.getElementById('f_birthday').value=u.birthday||'';
+  document.getElementById('f_hire_date').value=u.hire_date||'';
+  updateTenureHint(u.hire_date||'');
   document.getElementById('f_phone').value=u.phone||'';
   document.getElementById('f_role').value=u.role||'';
   document.getElementById('f_leader').checked=!!u.has_leader_role;
@@ -778,7 +788,8 @@ function editUser(u) {
 }
 
 function resetForm() {
-  ['f_name','f_email','f_birthday','f_phone','f_workplace','f_wage','f_chat','f_webhook','f_tel_meet'].forEach(id=>document.getElementById(id).value='');
+  ['f_name','f_email','f_birthday','f_hire_date','f_phone','f_workplace','f_wage','f_chat','f_webhook','f_tel_meet'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('tenureHint').textContent='';
   document.getElementById('f_tel_stock').value='';
   document.getElementById('tel_stock_status').textContent='';
   document.getElementById('f_role').value=''; document.getElementById('f_emp').value='';
@@ -826,6 +837,29 @@ async function refreshPw() {
   el.textContent=await sha256(bd.replace(/-/g,''));
 }
 
+// ── 在籍期間計算（フロントエンド版）──
+function calcTenure(hireDateStr) {
+  if (!hireDateStr) return '—';
+  const hire = new Date(hireDateStr);
+  if (isNaN(hire)) return '—';
+  const now = new Date();
+  let months = (now.getFullYear() - hire.getFullYear()) * 12 + (now.getMonth() - hire.getMonth());
+  if (now.getDate() < hire.getDate()) months--;
+  if (months < 0) months = 0;
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  if (y === 0) return m + 'ヶ月';
+  if (m === 0) return y + '年';
+  return y + '年' + m + 'ヶ月';
+}
+
+function updateTenureHint(val) {
+  const hint = document.getElementById('tenureHint');
+  if (!hint) return;
+  const label = calcTenure(val || document.getElementById('f_hire_date').value);
+  hint.textContent = label !== '—' ? '在籍期間: ' + label : '';
+}
+
 /* ══════════════════════════════
    SUBMIT
 ══════════════════════════════ */
@@ -844,6 +878,7 @@ async function submitUser() {
 
   const payload={
     name,email,birthday,role,
+    hire_date:document.getElementById('f_hire_date').value,
     phone:document.getElementById('f_phone').value.trim(),
     has_leader_role:document.getElementById('f_leader').checked,
     mentor_id:document.getElementById('f_mentor').value,
