@@ -204,6 +204,11 @@ input[type="month"].inp{padding:11px 14px}
         <span>☎️</span><span id="leaderPhoneText">電話する</span>
       </a>
     </div>
+    <div id="telStartChip" style="display:none;margin-top:6px">
+      <button id="telStartBtn" onclick="startMenteeTelCall()" style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.2);border:none;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:'Noto Sans JP',sans-serif">
+        <span>📞</span><span>リーダーにTEL</span>
+      </button>
+    </div>
   </div>
   <div class="goal-card">
     <div class="card-label">🎯 今月の目標</div>
@@ -229,6 +234,10 @@ input[type="month"].inp{padding:11px 14px}
       <div id="homeCancelArea" style="display:none;margin-top:6px"></div>
     </div>
   </div>
+  <div class="card" id="homeScheduleCard">
+    <div class="ch"><div class="ct">📅 直近のスケジュール</div><div class="ca" onclick="goNav('booking')">全て見る</div></div>
+    <div id="homeScheduleList"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
   <div class="card">
     <div class="ch"><div class="ct">📂 過去の1on1レポート</div><div class="ca" onclick="goNav('reports')">全て見る</div></div>
     <div id="recentReports"><div class="loading"><div class="spinner"></div></div></div>
@@ -237,8 +246,12 @@ input[type="month"].inp{padding:11px 14px}
 
 <!-- ══════════════════════════════════════  BOOKING -->
 <div class="screen" id="s-booking">
-  <!-- 現在の予約 -->
-  <div id="myBookingsList" style="margin-bottom:12px"></div>
+  <!-- スケジュール一覧 -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="ch"><div class="ct">📅 スケジュール一覧</div></div>
+    <div id="myBookingsList"></div>
+    <div id="myBookingsPager" style="display:none;padding:10px 16px;display:flex;align-items:center;justify-content:center;gap:8px;border-top:1px solid var(--bd)"></div>
+  </div>
   <div style="margin-bottom:4px"><div style="font-size:19px;font-weight:700">新しい1on1を予約</div><div style="font-size:13px;color:var(--tx2);margin-top:3px">日時を選択してください</div></div>
   <div class="card">
     <div class="ch"><div class="ct">📅 日付を選択</div><div style="font-size:12px;color:var(--tx3)" id="calMonthLabel"></div></div>
@@ -544,7 +557,7 @@ input[type="month"].inp{padding:11px 14px}
 <div class="toast" id="toast"></div>
 
 <script>
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwzQYNRRHO5S7Fq1qBE7qYoMEYoJTjqU1MoQivOWxFpzt4w5NcuICTOYROISn6KYpmQ/exec';
 
 // ── クライアントサイドキャッシュ ──
 const Cache = {
@@ -883,6 +896,8 @@ async function submitWtTelReport() {
 
 function showWtTelHistory(userId, name) { showToast('📋 ' + name + ' さんのTEL履歴'); }
 
+var _myTelMeetUrl = ''; // メンティー自身のTEL用Meet URL
+
 async function loadLeaderInfo() {
   try {
     const data = await apiRequest('/api/mentee/leader-info');
@@ -891,7 +906,46 @@ async function loadLeaderInfo() {
     const chipEl = document.getElementById('leaderChip');
     if (nameEl) nameEl.textContent = data.leader.name || '—';
     if (chipEl) chipEl.style.display = 'inline-flex';
+
+    // TEL開始ボタン（tel_meet_urlが設定されている場合のみ表示）
+    _myTelMeetUrl = data.tel_meet_url || '';
+    var telChip = document.getElementById('telStartChip');
+    if (telChip) telChip.style.display = _myTelMeetUrl ? 'block' : 'none';
   } catch(e) {}
+}
+
+// ── メンティーからリーダーへのTEL開始 ──
+async function startMenteeTelCall() {
+  if (!_myTelMeetUrl) { return; }
+
+  var btn = document.getElementById('telStartBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span>📞</span><span>発信中…</span>'; }
+
+  try {
+    const user = Auth.getUser();
+    var r = await apiRequest('/api/mentee/tel-start', {
+      method: 'POST',
+      body: JSON.stringify({ mentee_id: user ? user.user_id : '' })
+    });
+
+    if (r && r.ok) {
+      // MeetをスマホMeetアプリ or ブラウザで開く
+      window.open(r.tel_meet_url, '_blank');
+      // リーダーへのメール通知結果
+      if (r.mail_result && r.mail_result.ok) {
+        showToast('リーダーにメールで通知しました 📧');
+      } else {
+        showToast('Meetを開きました');
+      }
+    } else {
+      var errMsg = r && (r.error || r.message) || 'エラーが発生しました';
+      showToast(errMsg, true);
+    }
+  } catch(e) {
+    showToast('通信エラー: ' + e.message, true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<span>📞</span><span>リーダーにTEL</span>'; }
+  }
 }
 
 // ══ 画面遷移 ══
@@ -1159,6 +1213,7 @@ async function bookSlot() {
     _selectedDate = ''; _selectedTime = '';
     document.getElementById('timeCard').style.display = 'none';
     document.getElementById('bookBtn').style.display  = 'none';
+    _allUpcomingBookings = [];
     await loadAvailableSlots();
     loadHomeData();
   } else {
@@ -1186,6 +1241,9 @@ var _leaderChatUrl = '';
 var _leaderPhone  = '';
 var _myMentorId   = '';  // bookSlot で使用
 var _myMentorName = '';  // 事前レポートで使用
+var _allUpcomingBookings = []; // 全予定予約キャッシュ
+var _bookingsPage = 1;
+var BOOKINGS_PER_PAGE = 5;
 
 function renderHome(data) {
   if (data.mentor) {
@@ -1295,23 +1353,58 @@ function renderHome(data) {
   }
 
   // 半年目標・案件情報を3箇所に反映
-  var setGoalEl = function(id, val) {
+  var setGoalEl = function(id, val, fallback) {
     var el = document.getElementById(id);
-    if (el) el.textContent = (val && val.trim()) ? val : '—';
+    if (el) el.textContent = (val && val.trim()) ? val : (fallback || '—');
   };
   var goalWork  = data.goal_work_6m    || '';
   var goalSkill = data.goal_skill_6m   || '';
   var curProj   = data.current_project || '';
+  var GOAL_PLACEHOLDER = '半期目標を設定してください';
   // ① ホーム画面
-  setGoalEl('home-goal-work',  goalWork);
-  setGoalEl('home-goal-skill', goalSkill);
+  setGoalEl('home-goal-work',  goalWork,  GOAL_PLACEHOLDER);
+  setGoalEl('home-goal-skill', goalSkill, GOAL_PLACEHOLDER);
   // ② 事前アンケート（読み取り専用div）
-  setGoalEl('pr-goalWork6m-disp',  goalWork);
-  setGoalEl('pr-goalSkill6m-disp', goalSkill);
+  setGoalEl('pr-goalWork6m-disp',  goalWork,  GOAL_PLACEHOLDER);
+  setGoalEl('pr-goalSkill6m-disp', goalSkill, GOAL_PLACEHOLDER);
   setGoalEl('pr-currentProject',   curProj);
   // ③ 設定画面
   setGoalEl('set-goal-work',  goalWork);
   setGoalEl('set-goal-skill', goalSkill);
+
+  // 直近のスケジュール（ホーム）
+  _allUpcomingBookings = (data.all_upcoming_bookings || []).slice();
+  renderHomeSchedule();
+}
+
+// ── ホーム: 直近のスケジュール（最大3件、降順） ──
+function renderHomeSchedule() {
+  var el = document.getElementById('homeScheduleList');
+  if (!el) return;
+  var now = new Date();
+  var upcoming = _allUpcomingBookings
+    .filter(function(b) { return new Date(b.scheduled_at) > now; })
+    .sort(function(a, b) { return b.scheduled_at.localeCompare(a.scheduled_at); });
+  if (upcoming.length === 0) {
+    el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--tx3);font-size:13px">予約がありません</div>';
+    return;
+  }
+  var show = upcoming.slice(0, 3);
+  var wds = ['日','月','火','水','木','金','土'];
+  el.innerHTML = show.map(function(b) {
+    var dt  = new Date(b.scheduled_at);
+    var jst = new Date(dt.getTime() + 9 * 60 * 60 * 1000);
+    var mo  = jst.getUTCMonth() + 1;
+    var d   = jst.getUTCDate();
+    var wd  = wds[jst.getUTCDay()];
+    var h   = ('0'+jst.getUTCHours()).slice(-2);
+    var m   = ('0'+jst.getUTCMinutes()).slice(-2);
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--bd)">'
+      + '<div><div style="font-size:14px;font-weight:600">' + mo + '月' + d + '日（' + wd + '）</div>'
+      + '<div style="font-size:12px;color:var(--tx3)">🕐 ' + h + ':' + m + ' (' + (b.duration_minutes||30) + '分)</div></div>'
+      + (b.meet_link ? '<a href="' + b.meet_link + '" target="_blank" style="font-size:11px;color:var(--pr);text-decoration:none;font-weight:600">▶ Meet</a>' : '')
+      + '</div>';
+  }).join('') + (upcoming.length > 3 ? '<div style="padding:8px 16px;text-align:center;font-size:12px;color:var(--tx3)">他' + (upcoming.length - 3) + '件</div>' : '');
 }
 
 function openMyChat() {
@@ -1504,57 +1597,94 @@ async function cancelMyBooking(bookingId) {
   });
   if (result && result.ok) {
     showToast('✅ 予約をキャンセルしました');
+    // キャッシュをクリアしてホームデータ再取得（_allUpcomingBookings も更新される）
+    _allUpcomingBookings = [];
     loadHomeData();
     loadAvailableSlots();
-    // 予約画面のリスト更新
     loadMyBookings();
   } else {
     showToast('❌ キャンセルに失敗しました: ' + ((result && (result.error||result.message)) || ''));
   }
 }
 
-// 自分の予約一覧を取得してs-booking画面に表示
+// 自分の予約一覧を取得してs-booking画面に表示（降順・過去非表示・5件ページネーション）
 async function loadMyBookings() {
   var listEl = document.getElementById('myBookingsList');
   if (!listEl) return;
-  var data = await apiRequest('/api/mentee/home');
-  if (!data) return;
+  // _allUpcomingBookings がまだ空の場合はAPIから取得
+  if (_allUpcomingBookings.length === 0) {
+    var data = await apiRequest('/api/mentee/home');
+    if (data) {
+      _allUpcomingBookings = (data.all_upcoming_bookings || []).slice();
+    }
+  }
+  _bookingsPage = 1;
+  renderMyBookings();
+}
 
-  listEl.innerHTML = '';
-  if (data.next_booking) {
-    var b   = data.next_booking;
+function renderMyBookings() {
+  var listEl  = document.getElementById('myBookingsList');
+  var pagerEl = document.getElementById('myBookingsPager');
+  if (!listEl) return;
+
+  var now = new Date();
+  var upcoming = _allUpcomingBookings
+    .filter(function(b) { return new Date(b.scheduled_at) > now; })
+    .sort(function(a, b) { return b.scheduled_at.localeCompare(a.scheduled_at); }); // 降順（新しい日付順）
+
+  if (upcoming.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;color:var(--tx3);padding:20px;font-size:13px">予約がありません</div>';
+    if (pagerEl) pagerEl.style.display = 'none';
+    return;
+  }
+
+  var total     = upcoming.length;
+  var totalPage = Math.ceil(total / BOOKINGS_PER_PAGE);
+  var start     = (_bookingsPage - 1) * BOOKINGS_PER_PAGE;
+  var pageItems = upcoming.slice(start, start + BOOKINGS_PER_PAGE);
+
+  var wds = ['日','月','火','水','木','金','土'];
+  listEl.innerHTML = pageItems.map(function(b) {
     var dt  = new Date(b.scheduled_at);
     var jst = new Date(dt.getTime() + 9 * 60 * 60 * 1000);
-    var dateStr = (jst.getUTCMonth()+1) + '月' + jst.getUTCDate() + '日 '
-      + ('0'+jst.getUTCHours()).slice(-2) + ':' + ('0'+jst.getUTCMinutes()).slice(-2);
+    var mo  = jst.getUTCMonth() + 1;
+    var d   = jst.getUTCDate();
+    var wd  = wds[jst.getUTCDay()];
+    var h   = ('0'+jst.getUTCHours()).slice(-2);
+    var mi  = ('0'+jst.getUTCMinutes()).slice(-2);
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--bd)">'
+      + '<div>'
+      + '<div style="font-size:14px;font-weight:700">' + mo + '月' + d + '日（' + wd + '）</div>'
+      + '<div style="font-size:12px;color:var(--tx3)">🕐 ' + h + ':' + mi + '〜（' + (b.duration_minutes||30) + '分）</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;align-items:center">'
+      + (b.meet_link ? '<a href="' + b.meet_link + '" target="_blank" style="font-size:11px;color:var(--pr);text-decoration:none;font-weight:600;padding:4px 8px;border:1px solid var(--pr);border-radius:6px">▶ Meet</a>' : '')
+      + '<button class="btn" style="background:var(--rd-light);color:var(--rd);border:1px solid var(--rd);font-size:11px;padding:4px 10px" onclick="cancelMyBooking(\'' + b.booking_id + '\')">🗑</button>'
+      + '</div></div>';
+  }).join('');
 
-    var wrap = document.createElement('div');
-    wrap.style.cssText = 'background:var(--bg3);border-radius:12px;padding:14px 16px;margin-bottom:12px';
-
-    var label = document.createElement('div');
-    label.style.cssText = 'font-size:12px;color:var(--tx3);margin-bottom:4px';
-    label.textContent = '📅 現在の予約';
-
-    var dateDiv = document.createElement('div');
-    dateDiv.style.cssText = 'font-size:16px;font-weight:700;margin-bottom:8px';
-    dateDiv.textContent = dateStr;
-
-    var cBtn = document.createElement('button');
-    cBtn.className = 'btn';
-    cBtn.style.cssText = 'background:var(--rd-light);color:var(--rd);border:1px solid var(--rd);font-size:12px';
-    cBtn.textContent = '🗑 この予約をキャンセル';
-    (function(bid){ cBtn.onclick = function(){ cancelMyBooking(bid); }; })(b.booking_id);
-
-    wrap.appendChild(label);
-    wrap.appendChild(dateDiv);
-    wrap.appendChild(cBtn);
-    listEl.appendChild(wrap);
-  } else {
-    var noBooking = document.createElement('div');
-    noBooking.style.cssText = 'text-align:center;color:var(--tx3);padding:20px;font-size:13px';
-    noBooking.textContent = '現在の予約はありません';
-    listEl.appendChild(noBooking);
+  // ページネーション
+  if (pagerEl) {
+    if (totalPage <= 1) {
+      pagerEl.style.display = 'none';
+    } else {
+      pagerEl.style.display = 'flex';
+      var pages = '';
+      for (var i = 1; i <= totalPage; i++) {
+        pages += '<button onclick="jumpBookingsPage(' + i + ')" style="padding:5px 10px;border-radius:6px;border:1px solid var(--bd);font-size:12px;cursor:pointer;'
+          + (i === _bookingsPage ? 'background:var(--pr);color:#fff;border-color:var(--pr)' : 'background:var(--bg3);color:var(--tx2)')
+          + '">' + i + '</button>';
+      }
+      if (_bookingsPage > 1) pages = '<button onclick="jumpBookingsPage(' + (_bookingsPage-1) + ')" style="padding:5px 10px;border-radius:6px;border:1px solid var(--bd);font-size:12px;cursor:pointer;background:var(--bg3);color:var(--tx2)">‹</button>' + pages;
+      if (_bookingsPage < totalPage) pages += '<button onclick="jumpBookingsPage(' + (_bookingsPage+1) + ')" style="padding:5px 10px;border-radius:6px;border:1px solid var(--bd);font-size:12px;cursor:pointer;background:var(--bg3);color:var(--tx2)">›</button>';
+      pagerEl.innerHTML = pages;
+    }
   }
+}
+
+function jumpBookingsPage(p) {
+  _bookingsPage = p;
+  renderMyBookings();
 }
 </script>
 </body>

@@ -632,6 +632,7 @@ td{padding:10px 14px;font-size:13px}
         <div class="ct" id="panelName">メンバーを選択</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-sm" id="panelChatBtn" style="display:none;background:linear-gradient(135deg,#1a73e8,#0d62d1);color:#fff" onclick="openMenteeChat()">💬 チャット</button>
+          <button class="btn btn-sm" id="panelTelBtn" style="display:none;background:linear-gradient(135deg,var(--pr),var(--pr2));color:#fff" onclick="startTelCall()">📞 TEL開始</button>
           <button class="btn btn-p btn-sm" onclick="openBookingCreate()">＋ 予約</button>
           <button class="btn btn-g btn-sm" onclick="openTelHistModal()">📞 TEL履歴</button>
         </div>
@@ -885,7 +886,7 @@ td{padding:10px 14px;font-size:13px}
 // ══════════════════════════════════════════════════════════
 //  設定
 // ══════════════════════════════════════════════════════════
-const GAS_URL     = 'https://script.google.com/macros/s/AKfycbzFjIakpdDkPKlOXavtgqGLQ-5oKwZ2a0CMmlb1e9Y6TkS3D3hpN9QQJpnuLMK_judJLA/exec';
+const GAS_URL     = 'https://script.google.com/macros/s/AKfycbzdwzQYNRRHO5S7Fq1qBE7qYoMEYoJTjqU1MoQivOWxFpzt4w5NcuICTOYROISn6KYpmQ/exec';
 const GITHUB_BASE = 'https://koheiumeda-arch.github.io/SS1on1';
 
 // ── クライアントサイドキャッシュ ──
@@ -1137,11 +1138,13 @@ function selectMentee(userId, el) {
   // チャットボタン表示制御
   var chatBtn = document.getElementById('panelChatBtn');
   if (chatBtn) {
-    if (m.chat_url) {
-      chatBtn.style.display = '';
-    } else {
-      chatBtn.style.display = 'none';
-    }
+    chatBtn.style.display = m.chat_url ? '' : 'none';
+  }
+
+  // TEL開始ボタン表示制御（tel_meet_urlが設定されているメンティーのみ）
+  var telBtn = document.getElementById('panelTelBtn');
+  if (telBtn) {
+    telBtn.style.display = m.tel_meet_url ? '' : 'none';
   }
 
   // パネルタイトル
@@ -2695,6 +2698,41 @@ function openMenteeChat() {
     toast('チャットURLが登録されていません','err'); return;
   }
   window.open(_currentMentee.chat_url, '_blank');
+}
+
+// ── TEL開始 ──
+async function startTelCall() {
+  var m = _currentMentee;
+  if (!m) return;
+  if (!m.tel_meet_url) { toast('TEL用Meet URLが設定されていません','err'); return; }
+
+  // ボタンを無効化
+  var btn = document.getElementById('panelTelBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '発信中…'; }
+
+  try {
+    var r = await gasReq('api/mentor/tel-start', 'POST', { mentee_id: m.user_id });
+
+    if (r && r.ok) {
+      // Meetを新しいタブで開く
+      window.open(r.tel_meet_url, '_blank');
+
+      // 通知結果をトースト表示
+      if (r.notify_result && r.notify_result.ok) {
+        toast(m.name + ' さんにチャット通知を送信しました 📞');
+      } else {
+        toast('Meetを開きました（チャット通知: ' + (r.notify_result ? r.notify_result.reason : '未設定') + '）');
+      }
+    } else {
+      var errMsg = r && (r.error || r.message) || 'エラーが発生しました';
+      if (errMsg.indexOf('TEL_MEET_URL_NOT_SET') >= 0) errMsg = 'TEL用Meet URLが設定されていません';
+      toast(errMsg, 'err');
+    }
+  } catch(e) {
+    toast('通信エラー: ' + e.message, 'err');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📞 TEL開始'; }
+  }
 }
 
 // ══ 予約作成モーダルを開く ══
