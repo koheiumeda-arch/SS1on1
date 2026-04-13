@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1on1メンター管理システム 操作マニュアル</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans JP',sans-serif;background:#f7faf9;color:#2c3e3a;display:flex;min-height:100vh}
+a{color:#5dafa7;text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Sidebar */
+#sidebar{width:260px;min-width:260px;background:#fff;border-right:1px solid #e0eeec;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:100;padding-bottom:40px}
+#sidebar .logo{background:#5dafa7;color:#fff;padding:20px 18px;font-size:15px;font-weight:700;line-height:1.4}
+#sidebar .logo span{display:block;font-size:11px;font-weight:400;opacity:.85;margin-top:3px}
+#sidebar nav ul{list-style:none;padding:12px 0}
+#sidebar nav ul li a{display:flex;align-items:center;gap:8px;padding:10px 18px;font-size:13px;color:#2c3e3a;border-left:3px solid transparent;transition:.2s}
+#sidebar nav ul li a:hover{background:#f0faf8;color:#5dafa7;text-decoration:none;border-left-color:#5dafa7}
+#sidebar nav ul li.section-header{padding:14px 18px 4px;font-size:11px;font-weight:700;color:#999;letter-spacing:.08em;text-transform:uppercase}
+#sidebar nav ul li a.active{background:#f0faf8;color:#5dafa7;border-left-color:#5dafa7;font-weight:700}
+#sidebar .version{padding:12px 18px;font-size:11px;color:#aaa;border-top:1px solid #eee;margin-top:8px}
+
+/* Main */
+#main{margin-left:260px;flex:1;min-width:0}
+
+/* Cover */
+#cover{background:linear-gradient(135deg,#5dafa7 0%,#3d8f87 60%,#2c6e68 100%);color:#fff;padding:80px 60px;min-height:100vh;display:flex;flex-direction:column;justify-content:center}
+#cover .badge{display:inline-block;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);border-radius:20px;padding:6px 18px;font-size:12px;letter-spacing:.1em;margin-bottom:32px}
+#cover h1{font-size:42px;font-weight:900;line-height:1.2;margin-bottom:16px}
+#cover h1 span{display:block;font-size:22px;font-weight:400;opacity:.85;margin-top:8px}
+#cover .meta{margin-top:40px;display:flex;gap:40px;flex-wrap:wrap}
+#cover .meta-item label{display:block;font-size:11px;opacity:.7;letter-spacing:.08em;margin-bottom:4px}
+#cover .meta-item span{font-size:15px;font-weight:500}
+#cover .toc-box{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:28px 32px;margin-top:48px;max-width:680px}
+#cover .toc-box h3{font-size:14px;letter-spacing:.08em;margin-bottom:16px;opacity:.8}
+#cover .toc-box ol{padding-left:20px;display:grid;grid-template-columns:1fr 1fr;gap:6px 32px}
+#cover .toc-box ol li{font-size:13px;line-height:1.6;opacity:.9}
+
+/* Content sections */
+.content-section{padding:48px 56px;border-bottom:1px solid #e8f0ee}
+.content-section:last-child{border-bottom:none}
+
+/* Section heading */
+.section-num{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:#5dafa7;color:#fff;font-size:16px;font-weight:900;margin-right:12px;flex-shrink:0}
+.section-title{display:flex;align-items:center;margin-bottom:8px}
+.section-title h2{font-size:26px;font-weight:900;color:#2c3e3a}
+.section-subtitle{font-size:14px;color:#6b8a84;margin-bottom:32px;padding-left:48px}
+
+/* Why box */
+.why-box{background:#e6f6f9;border-left:4px solid #5dafa7;border-radius:0 10px 10px 0;padding:16px 20px;margin-bottom:32px;font-size:14px;line-height:1.8;color:#2c4e4a}
+.why-box strong{display:block;font-size:13px;letter-spacing:.06em;color:#5dafa7;margin-bottom:6px}
+
+/* Steps */
+.steps{display:flex;flex-direction:column;gap:24px;margin-bottom:32px}
+.step-card{background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(93,175,167,.08);padding:24px 28px;display:flex;gap:20px;align-items:flex-start}
+.step-badge{width:44px;height:44px;border-radius:50%;background:#5dafa7;color:#fff;font-size:20px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(93,175,167,.35)}
+.step-content h4{font-size:15px;font-weight:700;margin-bottom:6px;color:#2c3e3a}
+.step-content p{font-size:13.5px;line-height:1.8;color:#4a6460}
+.step-content .where{display:inline-block;background:#f0faf8;border:1px solid #c8e8e4;border-radius:6px;padding:2px 10px;font-size:12px;color:#5dafa7;font-weight:700;margin-right:6px}
+.step-content .action{display:inline-block;background:#fff8e6;border:1px solid #f0d080;border-radius:6px;padding:2px 10px;font-size:12px;color:#b87c10;font-weight:700;margin-right:6px}
+.step-content .result{display:inline-block;background:#e8f9f0;border:1px solid #90ddb8;border-radius:6px;padding:2px 10px;font-size:12px;color:#2a8a58;font-weight:700}
+
+/* Callout boxes */
+.callout{border-radius:10px;padding:16px 20px;margin:16px 0;font-size:13.5px;line-height:1.8}
+.callout-warn{background:#fef5e6;border-left:4px solid #e8a852}
+.callout-error{background:#fef2f2;border-left:4px solid #e87171}
+.callout-tip{background:#e6f6f9;border-left:4px solid #5dafa7}
+.callout-ok{background:#e6f9f2;border-left:4px solid #52c997}
+.callout strong{display:block;margin-bottom:4px;font-size:13px}
+.callout-warn strong{color:#b86a00}
+.callout-error strong{color:#c03030}
+.callout-tip strong{color:#3a7a75}
+.callout-ok strong{color:#1a7a4a}
+
+/*困ったときは */
+.trouble-box{background:#fff;border-radius:14px;border:2px solid #e0eeec;padding:20px 24px;margin-top:32px}
+.trouble-box h4{font-size:14px;font-weight:700;color:#5dafa7;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.trouble-box ul{list-style:none;padding:0;display:flex;flex-direction:column;gap:10px}
+.trouble-box ul li{font-size:13px;line-height:1.7;padding-left:18px;position:relative;color:#4a6460}
+.trouble-box ul li::before{content:"Q.";position:absolute;left:0;color:#5dafa7;font-weight:700}
+
+/* Mock UI */
+.mock-browser{background:#fff;border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,.12);margin:24px 0;overflow:hidden;border:1px solid #ddd;max-width:780px}
+.mock-browser .bar{background:#f0f0f0;padding:10px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #ddd}
+.mock-browser .bar .dots{display:flex;gap:5px}
+.mock-browser .bar .dots span{width:11px;height:11px;border-radius:50%;background:#ddd}
+.mock-browser .bar .dots span:nth-child(1){background:#ff5f57}
+.mock-browser .bar .dots span:nth-child(2){background:#febc2e}
+.mock-browser .bar .dots span:nth-child(3){background:#28c840}
+.mock-browser .bar .url{background:#fff;border:1px solid #ccc;border-radius:5px;padding:4px 10px;font-size:11px;color:#666;flex:1;max-width:340px}
+.mock-screen{background:#f7faf9;padding:16px}
+
+/* Mock nav */
+.mock-nav{background:#5dafa7;display:flex;align-items:center;padding:0 16px;height:46px;gap:4px}
+.mock-nav .logo{color:#fff;font-size:13px;font-weight:700;margin-right:16px}
+.mock-nav a{color:rgba(255,255,255,.75);font-size:11px;padding:6px 10px;border-radius:4px}
+.mock-nav a.active{background:rgba(255,255,255,.2);color:#fff}
+.mock-nav .right{margin-left:auto;display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.85);font-size:11px}
+
+/* Mock sidebar */
+.mock-layout{display:flex;gap:12px;margin-top:10px}
+.mock-sidebar{width:170px;flex-shrink:0;background:#fff;border-radius:8px;padding:10px;border:1px solid #e0eeec;font-size:10px}
+.mock-sidebar .progress-label{color:#666;margin-bottom:4px}
+.mock-sidebar .progress-bar{height:6px;background:#e0eeec;border-radius:3px;margin-bottom:10px}
+.mock-sidebar .progress-bar .fill{height:100%;background:#5dafa7;border-radius:3px;width:70%}
+.mock-sidebar .mentee{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:10px}
+.mock-sidebar .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-green{background:#52c997}
+.dot-amber{background:#e8a852}
+.dot-red{background:#e87171}
+.dot-gray{background:#aaa}
+.mock-main{flex:1;min-width:0}
+.mock-card{background:#fff;border-radius:8px;padding:10px 12px;border:1px solid #e0eeec;margin-bottom:8px;font-size:10px}
+.mock-card h5{font-size:11px;font-weight:700;color:#2c3e3a;margin-bottom:6px}
+.mock-btn{display:inline-block;background:#5dafa7;color:#fff;border-radius:5px;padding:4px 10px;font-size:10px;cursor:default}
+.mock-btn-sm{display:inline-block;background:#5dafa7;color:#fff;border-radius:4px;padding:2px 8px;font-size:9px;cursor:default;margin:2px}
+.mock-btn-outline{display:inline-block;background:#fff;color:#5dafa7;border:1px solid #5dafa7;border-radius:4px;padding:2px 8px;font-size:9px;cursor:default;margin:2px}
+.mock-btn-red{display:inline-block;background:#e87171;color:#fff;border-radius:4px;padding:2px 8px;font-size:9px;cursor:default;margin:2px}
+.mock-tag{display:inline-block;border-radius:10px;padding:2px 8px;font-size:9px}
+.tag-green{background:#e6f9f2;color:#1a7a4a}
+.tag-amber{background:#fff8e6;color:#b87c10}
+.tag-red{background:#fef2f2;color:#c03030}
+
+/* Red arrow annotation */
+.annotation{position:relative;display:inline-block}
+.red-arrow{color:#e87171;font-size:18px;font-weight:900}
+
+/* Flow diagram */
+.flow-diagram{display:flex;flex-direction:column;gap:0;align-items:flex-start;max-width:640px;margin:24px auto}
+.flow-item{display:flex;align-items:center;gap:0;width:100%}
+.flow-box{background:#fff;border:2px solid #5dafa7;border-radius:10px;padding:12px 20px;font-size:13px;font-weight:700;color:#2c3e3a;text-align:center;min-width:220px;position:relative}
+.flow-box .flow-num{position:absolute;top:-10px;left:-10px;width:24px;height:24px;border-radius:50%;background:#5dafa7;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.flow-box .flow-sub{font-size:11px;font-weight:400;color:#6b8a84;margin-top:3px}
+.flow-arrow{font-size:22px;color:#5dafa7;line-height:1;margin:0 8px}
+.flow-connector{width:2px;background:#c8e8e4;height:24px;margin-left:109px}
+.flow-row{display:flex;align-items:center;gap:0;margin-bottom:0;width:100%}
+
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:13px;margin:16px 0}
+table th{background:#5dafa7;color:#fff;padding:10px 14px;text-align:left;font-weight:700}
+table td{padding:10px 14px;border-bottom:1px solid #e8f0ee;color:#2c3e3a;vertical-align:top}
+table tr:nth-child(even) td{background:#f7faf9}
+table tr:last-child td{border-bottom:none}
+
+/* Glossary */
+.glossary-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.glossary-item{background:#fff;border-radius:10px;border:1px solid #e0eeec;padding:14px 16px}
+.glossary-item dt{font-size:13px;font-weight:700;color:#5dafa7;margin-bottom:4px}
+.glossary-item dd{font-size:12.5px;color:#4a6460;line-height:1.7}
+
+/* FAQ */
+.faq-list{display:flex;flex-direction:column;gap:16px;margin:16px 0}
+.faq-item{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(93,175,167,.07);overflow:hidden}
+.faq-q{background:#f0faf8;padding:14px 20px;font-size:13.5px;font-weight:700;color:#2c3e3a;display:flex;gap:10px}
+.faq-q span{color:#5dafa7;font-size:15px}
+.faq-a{padding:14px 20px;font-size:13px;line-height:1.8;color:#4a6460}
+.faq-a .err-label{display:inline-block;background:#fef2f2;color:#c03030;border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700;margin-right:6px}
+
+/* Section divider */
+.divider{height:1px;background:linear-gradient(to right,#5dafa7,transparent);margin:0 56px 0 0}
+
+/* Top bar */
+.top-bar{background:#fff;border-bottom:1px solid #e0eeec;padding:14px 56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.top-bar h3{font-size:13px;color:#6b8a84}
+.top-bar .breadcrumb{font-size:12px;color:#aaa}
+
+/* Print */
+@media print{
+  #sidebar{display:none}
+  #main{margin-left:0}
+  .content-section{page-break-inside:avoid}
+}
+
+/* Scroll smooth */
+html{scroll-behavior:smooth}
+
+/* Highlight */
+.hl{background:#fff5c0;padding:0 3px;border-radius:3px}
+
+.mock-input{background:#f7faf9;border:1px solid #c8e8e4;border-radius:5px;padding:5px 8px;font-size:10px;color:#555;width:100%;margin-bottom:6px}
+.mock-select{background:#f7faf9;border:1px solid #c8e8e4;border-radius:5px;padding:5px 8px;font-size:10px;color:#555;width:100%;margin-bottom:6px}
+.mock-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin:6px 0}
+.mock-grid-cell{text-align:center;font-size:9px;padding:3px 0;border-radius:3px}
+.mock-grid-cell.header{background:#5dafa7;color:#fff;font-weight:700}
+.mock-grid-cell.active{background:#5dafa7;color:#fff;border-radius:3px}
+.mock-grid-cell.today{border:1px solid #5dafa7;color:#5dafa7}
+.mock-grid-cell.empty{color:#ccc}
+
+.section-anchor{display:block;height:80px;margin-top:-80px}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav id="sidebar">
+  <div class="logo">
+    1on1メンター管理システム
+    <span>操作マニュアル v1.0</span>
+  </div>
+  <nav>
+    <ul>
+      <li><a href="#cover">表紙</a></li>
+      <li><a href="#flow">業務フロー全体図</a></li>
+      <li class="section-header">日常業務</li>
+      <li><a href="#sec1">1. 毎日の確認作業</a></li>
+      <li><a href="#sec2">2. 週次TEL</a></li>
+      <li class="section-header">月次1on1</li>
+      <li><a href="#sec3">3. 月次1on1の準備</a></li>
+      <li><a href="#sec4">4. 月次1on1の実施</a></li>
+      <li><a href="#sec5">5. 1on1後の処理</a></li>
+      <li><a href="#sec6">6. アンケート回答</a></li>
+      <li class="section-header">管理業務</li>
+      <li><a href="#sec7">7. 予約の変更・キャンセル</a></li>
+      <li><a href="#sec8">8. メンバー管理</a></li>
+      <li class="section-header">サポート</li>
+      <li><a href="#faq">よくあるエラーと対処法</a></li>
+      <li><a href="#glossary">用語集</a></li>
+    </ul>
+  </nav>
+  <div class="version">最終更新: 2026年4月 | 対象: メンター向け</div>
+</nav>
+
+<!-- Main content -->
+<div id="main">
+
+<!-- Cover -->
+<section id="cover">
+  <span class="section-anchor" id="cover-anchor"></span>
+  <div class="badge">MENTOR OPERATIONS MANUAL</div>
+  <h1>1on1メンター管理システム<span>操作マニュアル</span></h1>
+  <div class="meta">
+    <div class="meta-item"><label>対象読者</label><span>正社員メンター（担当メンティー10名前後）</span></div>
+    <div class="meta-item"><label>バージョン</label><span>1.0</span></div>
+    <div class="meta-item"><label>発行日</label><span>2026年4月</span></div>
+  </div>
+  <div class="toc-box">
+    <h3>このマニュアルの構成</h3>
+    <ol>
+      <li>業務フロー全体図</li>
+      <li>毎日の確認作業（ログイン・ダッシュボード）</li>
+      <li>週次TEL（Meetで通話・TELレポート確定）</li>
+      <li>月次1on1の準備（事前レポート確認）</li>
+      <li>月次1on1の実施（スケジュール・録画）</li>
+      <li>1on1後の処理（レポート加筆・公開）</li>
+      <li>アンケート回答</li>
+      <li>予約の変更・キャンセル</li>
+      <li>メンバー管理（ステータス・メモ・目標）</li>
+      <li>よくあるエラーと対処法</li>
+      <li>用語集</li>
+    </ol>
+  </div>
+</section>
+
+<!-- Flow overview -->
+<section class="content-section" id="flow">
+  <span class="section-anchor"></span>
+  <div class="section-title">
+    <h2 style="font-size:24px;font-weight:900;">業務フロー全体図</h2>
+  </div>
+  <p class="section-subtitle" style="padding-left:0;">メンターが行う主な業務の流れを時間軸で整理しています。</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:800px">
+    <div>
+      <h4 style="font-size:13px;font-weight:700;color:#5dafa7;margin-bottom:12px;letter-spacing:.06em">【毎日の業務】</h4>
+      <div class="flow-diagram">
+        <div class="flow-box"><div class="flow-num">1</div>ログイン<div class="flow-sub">システムにアクセス</div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-box"><div class="flow-num">2</div>ダッシュボード確認<div class="flow-sub">お知らせ・スケジュール</div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-box"><div class="flow-num">3</div>メンティー状況把握<div class="flow-sub">サイドバー・メンバーパネル</div></div>
+      </div>
+    </div>
+    <div>
+      <h4 style="font-size:13px;font-weight:700;color:#5dafa7;margin-bottom:12px;letter-spacing:.06em">【週次TEL業務】</h4>
+      <div class="flow-diagram">
+        <div class="flow-box"><div class="flow-num">1</div>週次TEL画面を開く<div class="flow-sub">MeetのURLから参加</div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-box"><div class="flow-num">2</div>通話実施<div class="flow-sub">AI文字起こし自動処理</div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-box"><div class="flow-num">3</div>TELレポート確定<div class="flow-sub">加筆修正後に確定</div></div>
+      </div>
+    </div>
+    <div>
+      <h4 style="font-size:13px;font-weight:700;color:#5dafa7;margin-bottom:12px;letter-spacing:.06em">【月次1on1業務】</h4>
+      <div class="flow-diagram">
+        <div class="flow-box"><div class="flow-num">1</div>事前レポート確認<div class="flow-sub">メンティー提出のレポート</div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-box"><div class="flow-num">2</div>スケジュール確認・Meet参加<div class="flow-sub">録画を必ず実施</div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-box"><div class="flow-num">3</div>録画アップロード<div class="flow-sub">AI文字起こし・自動要約</div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-box"><div class="flow-num">4</div>レポート加筆・公開<div class="flow-sub">メンティーにメール送信</div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-box"><div class="flow-num">5</div>アンケート回答<div class="flow-sub">MTG後に回答</div></div>
+      </div>
+    </div>
+    <div>
+      <h4 style="font-size:13px;font-weight:700;color:#5dafa7;margin-bottom:12px;letter-spacing:.06em">【管理業務（随時）】</h4>
+      <div class="flow-diagram">
+        <div class="flow-box"><div class="flow-num">1</div>予約変更・キャンセル<div class="flow-sub">メンティーに自動通知</div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-box"><div class="flow-num">2</div>ステータス更新<div class="flow-sub">要注意/注意/順調/快調</div></div>
+        <div class="flow-connector"></div>
+        <div class="flow-box"><div class="flow-num">3</div>メモ・目標設定<div class="flow-sub">メンバー管理画面</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-tip" style="max-width:780px;margin-top:24px">
+    <strong>💡 チャット機能について</strong>
+    チャット機能は原則として、メンティーにMeet URLを送信する目的でのみ使用します。日常的な連絡や業務上のやり取りには使用しないようにしてください。
+  </div>
+</section>
+
+<!-- Section 1 -->
+<section class="content-section" id="sec1">
+  <span class="section-anchor"></span>
+  <div class="section-title">
+    <div class="section-num">1</div>
+    <h2>毎日の確認作業<br><span style="font-size:16px;font-weight:400;color:#6b8a84">ログイン・ダッシュボード・お知らせ</span></h2>
+  </div>
+  <p class="section-subtitle">毎朝システムにアクセスし、担当メンティーの状況とスケジュールを把握します</p>
+
+  <div class="why-box">
+    <strong>なぜこの作業が重要なのか</strong>
+    ダッシュボードはシステムの起点です。当日・翌日のスケジュール、メンティーからの事前レポート提出状況、重要なお知らせを一画面で確認できます。毎日確認することで、対応漏れや準備不足を防ぎます。
+  </div>
+
+  <!-- Mock: Login screen -->
+  <div class="mock-browser">
+    <div class="bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">https://1on1-system.example.com/login</div></div>
+    <div class="mock-screen" style="display:flex;align-items:center;justify-content:center;min-height:200px">
+      <div style="background:#fff;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.1);padding:32px 40px;width:320px;text-align:center">
+        <div style="width:48px;height:48px;background:#5dafa7;border-radius:12px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:900">1</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:20px;color:#2c3e3a">メンターログイン</div>
+        <div style="text-align:left;font-size:11px;color:#666;margin-bottom:4px">メールアドレス</div>
+        <div class="mock-input">mentor@example.com</div>
+        <div style="text-align:left;font-size:11px;color:#666;margin-bottom:4px">パスワード</div>
+        <div class="mock-input">••••••••</div>
+        <div class="mock-btn" style="width:100%;text-align:center;margin-top:8px;display:block;padding:10px">ログイン</div>
+        <div style="margin-top:12px;font-size:10px;color:#aaa">※ 5回連続でログインに失敗するとアカウントがロックされます</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-badge">1</div>
+      <div class="step-content">
+        <h4>システムにアクセスしてログインする</h4>
+        <p><span class="where">ログイン画面</span><span class="action">メールアドレスとパスワードを入力して「ログイン」をクリック</span><span class="result">ダッシュボードが表示される</span></p>
+        <div class="callout callout-warn" style="margin-top:10px">
+          <strong>⚠️ ログインロックに注意</strong>
+          パスワードを5回連続で間違えると、アカウントがロックされます。ロックされた場合は管理者に解除を依頼してください。セキュリティのため、パスワードを付箋などに書いて貼ることは避けてください。
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">2</div>
+      <div class="step-content">
+        <h4>ダッシュボードでお知らせを確認する</h4>
+        <p><span class="where">ダッシュボード</span><span class="action">画面上部の通知ベル（🔔）をクリックしてお知らせを確認</span><span class="result">新着通知の内容が表示される</span></p>
+        <p style="margin-top:8px">通知ベルに数字が表示されている場合は、未読のお知らせがあります。必ず確認してください。</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">3</div>
+      <div class="step-content">
+        <h4>直近スケジュールを確認する</h4>
+        <p><span class="where">ダッシュボード中央</span><span class="action">「直近の1on1スケジュール」カードを確認</span><span class="result">当日・今週予定のMTGが一覧表示される</span></p>
+        <p style="margin-top:8px">当日にMTGがある場合は、「Meet」ボタンが表示されます。時間になったらクリックしてMeetに参加します。</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">4</div>
+      <div class="step-content">
+        <h4>サイドバーでメンティーのステータスを確認する</h4>
+        <p><span class="where">左サイドバー</span><span class="action">担当メンティーリストのステータス色を確認</span><span class="result">各メンティーの現在の状況が色でわかる</span></p>
+        <p style="margin-top:8px">ステータスの色の意味: <span style="color:#52c997;font-weight:700">■ 快調</span>（緑）/ <span style="color:#5dafa7;font-weight:700">■ 順調</span>（青緑）/ <span style="color:#e8a852;font-weight:700">■ 注意</span>（黄）/ <span style="color:#e87171;font-weight:700">■ 要注意</span>（赤）</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mock: Dashboard -->
+  <div class="mock-browser">
+    <div class="bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">https://1on1-system.example.com/dashboard</div></div>
+    <div class="mock-screen" style="padding:0">
+      <div class="mock-nav">
+        <span class="logo">1on1</span>
+        <a class="active">ダッシュボード</a><a>スケジュール</a><a>メンバー管理</a><a>レポート</a><a>週次TEL</a><a>アンケート</a>
+        <div class="right">🔔 <span style="background:#e87171;color:#fff;border-radius:8px;padding:1px 5px;font-size:9px">3</span> &nbsp; 田中メンター</div>
+      </div>
+      <div class="mock-layout" style="padding:10px">
+        <div class="mock-sidebar">
+          <div class="progress-label">今月の1on1実施率</div>
+          <div style="font-size:12px;font-weight:700;color:#5dafa7;margin-bottom:3px">7/10名 70%</div>
+          <div class="progress-bar"><div class="fill"></div></div>
+          <div style="font-size:10px;font-weight:700;margin-bottom:6px;color:#2c3e3a">担当メンティー</div>
+          <div class="mentee"><div class="dot dot-green"></div>山田 花子</div>
+          <div class="mentee"><div class="dot dot-green"></div>佐藤 太郎</div>
+          <div class="mentee"><div class="dot dot-amber"></div>鈴木 一郎</div>
+          <div class="mentee"><div class="dot dot-red"></div>田中 美咲</div>
+          <div class="mentee"><div class="dot dot-green"></div>伊藤 健太</div>
+          <div class="mentee"><div class="dot dot-green"></div>高橋 さくら</div>
+          <div class="mentee" style="color:#aaa;font-style:italic">+4名...</div>
+        </div>
+        <div class="mock-main">
+          <div class="mock-card">
+            <h5>📅 直近の1on1スケジュール</h5>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0">
+              <div><div style="font-size:10px;color:#5dafa7;font-weight:700">本日 14:00〜14:30</div><div style="font-size:10px">山田 花子 さん</div></div>
+              <span class="mock-btn-sm">Meetに参加</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0">
+              <div><div style="font-size:10px;color:#666">明日 10:00〜10:30</div><div style="font-size:10px">佐藤 太郎 さん</div></div>
+              <span class="mock-btn-outline">詳細</span>
+            </div>
+          </div>
+          <div class="mock-card">
+            <h5>👥 メンバーパネル — 田中 美咲</h5>
+            <div style="display:flex;gap:8px;margin-bottom:6px">
+              <div style="flex:1;background:#f7faf9;border-radius:6px;padding:6px;font-size:9px"><div style="color:#666;margin-bottom:2px">ステータス</div><div class="tag-red mock-tag">要注意</div></div>
+              <div style="flex:1;background:#f7faf9;border-radius:6px;padding:6px;font-size:9px"><div style="color:#666;margin-bottom:2px">最終1on1</div><div style="font-weight:700">2週間前</div></div>
+            </div>
+            <span class="mock-btn-sm" style="background:#e8a852">ステータス更新</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-ok">
+    <strong>✅ 完了確認</strong>
+    ダッシュボードにアクセスでき、直近スケジュールとメンティーリストが表示されていれば、毎日の確認作業は完了です。
+  </div>
+
+  <div class="trouble-box">
+    <h4>🆘 困ったときは</h4>
+    <ul>
+      <li>ログインできない → パスワードを確認し、5回未満の誤入力であれば再試行してください。ロック状態の場合は管理者へご連絡ください。</li>
+      <li>ダッシュボードが真っ白で表示されない → ブラウザを再読み込み（F5）してください。それでも解決しない場合はキャッシュをクリアしてください。</li>
+      <li>通知ベルに数字が出ているのにお知らせが空 → 一度別のページに移動して戻ると表示されることがあります。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- Section 2 -->
+<section class="content-section" id="sec2">
+  <span class="section-anchor"></span>
+  <div class="section-title">
+    <div class="section-num">2</div>
+    <h2>週次TEL<br><span style="font-size:16px;font-weight:400;color:#6b8a84">Meetで通話・TELレポート確定</span></h2>
+  </div>
+  <p class="section-subtitle">毎週メンティーと行う電話（Meet通話）と、通話後のレポート確定作業です</p>
+
+  <div class="why-box">
+    <strong>なぜこの作業が重要なのか</strong>
+    週次TELはメンティーとの定期的な接点です。通話後、AI文字起こしによる自動要約がシステムに保存されます。この要約を確認・加筆してTELレポートを確定することで、メンティーとの面談記録が蓄積されます。<br>
+    <strong style="color:#c03030">注意: TELレポートの「確定」は1on1レポートの「公開」とは異なります。TELレポート確定ではメンティーへのメール送信は行われません。</strong>
+  </div>
+
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-badge">1</div>
+      <div class="step-content">
+        <h4>週次TEL画面を開く</h4>
+        <p><span class="where">ヘッダーナビ</span><span class="action">「週次TEL」タブをクリック</span><span class="result">週次TEL画面が表示され、担当メンティーのTELカードが一覧で確認できる</span></p>
+        <p style="margin-top:8px">画面上部にはKPIカードが表示されます: 今週の実施数・今月の実施数・担当メンティー数</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">2</div>
+      <div class="step-content">
+        <h4>対象メンティーのMeetに参加する</h4>
+        <p><span class="where">週次TEL画面のTELカード</span><span class="action">対象メンティーのカードにある「Meetに参加」ボタンをクリック</span><span class="result">Google Meetが別タブで開き、通話を開始できる</span></p>
+        <div class="callout callout-tip" style="margin-top:8px">
+          <strong>💡 チャットでMeet URLを共有</strong>
+          メンティーが接続先を知らない場合は、チャット機能を使ってMeet URLをメンティーに送信してください。チャット機能はこの用途を主目的として使用します。
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">3</div>
+      <div class="step-content">
+        <h4>週次TELを実施する</h4>
+        <p>通話を行います。AIによる文字起こしは自動で処理されます（n8nシステムが自動的に録音・文字起こし・AI要約を行います）。</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">4</div>
+      <div class="step-content">
+        <h4>TELレポートを開いて内容を確認・加筆する</h4>
+        <p><span class="where">レポート画面 →「週次TEL」タブ</span><span class="action">または週次TEL画面から対象TELカードの「レポートを書く」ボタンをクリック</span><span class="result">TELレポート入力モーダルが開く</span></p>
+        <p style="margin-top:8px">モーダル内の入力項目:</p>
+        <ul style="margin-top:6px;padding-left:20px;font-size:13px;line-height:1.9;color:#4a6460">
+          <li>話した内容</li>
+          <li>悩み・課題</li>
+          <li>良かった点</li>
+          <li>メモ（自由記入）</li>
+          <li>AIサマリー（自動生成。修正可能）</li>
+        </ul>
+        <div class="callout callout-tip" style="margin-top:10px">
+          <strong>💡 AIサマリーについて</strong>
+          通話後しばらくすると、Gemini APIによるAI要約が自動生成されます。内容を確認し、必要に応じて加筆・修正してください。
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">5</div>
+      <div class="step-content">
+        <h4>TELレポートを確定する</h4>
+        <p><span class="where">TELレポート入力モーダル</span><span class="action">内容を確認後「確定」ボタンをクリック</span><span class="result">レポートが確定状態になり、週次TEL実績として記録される</span></p>
+        <div class="callout callout-warn" style="margin-top:10px">
+          <strong>⚠️ 「確定」と「公開」の違いに注意</strong>
+          TELレポートの「確定」ボタンはレポートをシステム内で確定するものです。メンティーへのメール通知は発生しません。一方、1on1レポートの「公開」はメンティーへメールが送信されます。操作を間違えないよう注意してください。
+        </div>
+        <p style="margin-top:8px">まだ確定したくない場合は「下書き保存」ボタンで一時保存できます。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mock: Weekly TEL screen -->
+  <div class="mock-browser">
+    <div class="bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">https://1on1-system.example.com/weekly-tel</div></div>
+    <div class="mock-screen" style="padding:0">
+      <div class="mock-nav">
+        <span class="logo">1on1</span>
+        <a>ダッシュボード</a><a>スケジュール</a><a>メンバー管理</a><a>レポート</a><a class="active">週次TEL</a><a>アンケート</a>
+        <div class="right">🔔 田中メンター</div>
+      </div>
+      <div style="padding:12px">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">
+          <div class="mock-card" style="text-align:center"><div style="font-size:9px;color:#666;margin-bottom:3px">今週の実施数</div><div style="font-size:18px;font-weight:900;color:#5dafa7">3</div></div>
+          <div class="mock-card" style="text-align:center"><div style="font-size:9px;color:#666;margin-bottom:3px">今月の実施数</div><div style="font-size:18px;font-weight:900;color:#5dafa7">8</div></div>
+          <div class="mock-card" style="text-align:center"><div style="font-size:9px;color:#666;margin-bottom:3px">担当Mentee数</div><div style="font-size:18px;font-weight:900;color:#5dafa7">10</div></div>
+        </div>
+        <div class="mock-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div><div style="font-size:11px;font-weight:700">山田 花子</div><div style="font-size:9px;color:#666">2026/04/10（木）実施</div></div>
+            <div style="display:flex;gap:4px">
+              <span class="mock-btn-sm">Meetに参加</span>
+              <span class="mock-btn-outline" style="font-size:9px">レポートを書く ▶</span>
+            </div>
+          </div>
+          <div style="font-size:9px;color:#aaa">AIサマリー待機中...</div>
+        </div>
+        <div class="mock-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div><div style="font-size:11px;font-weight:700">佐藤 太郎</div><div style="font-size:9px;color:#666">2026/04/09（水）実施</div></div>
+            <div style="display:flex;gap:4px">
+              <span class="mock-btn-outline" style="font-size:9px">レポート確認 ▶</span>
+            </div>
+          </div>
+          <div class="tag-green mock-tag" style="font-size:9px">確定済み</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-ok">
+    <strong>✅ 完了確認</strong>
+    TELカードのステータスが「確定済み」になっていれば、週次TEL業務は完了です。
+  </div>
+
+  <div class="trouble-box">
+    <h4>🆘 困ったときは</h4>
+    <ul>
+      <li>AIサマリーが生成されない → 通話後、AIサマリーの生成には数分〜10分程度かかります。しばらく待ってから画面を再読み込みしてください。</li>
+      <li>「確定」ボタンが押せない → 必須項目（話した内容）が空欄の場合は確定できません。入力してから再試行してください。</li>
+      <li>Meetに入れない → Meet URLが正しいか確認してください。URLはチャット機能でメンティーに共有したものを使用してください。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- Section 3 -->
+<section class="content-section" id="sec3">
+  <span class="section-anchor"></span>
+  <div class="section-title">
+    <div class="section-num">3</div>
+    <h2>月次1on1の準備<br><span style="font-size:16px;font-weight:400;color:#6b8a84">事前レポートの確認</span></h2>
+  </div>
+  <p class="section-subtitle">1on1MTG前に、メンティーが提出した事前レポートを確認し、面談の準備をします</p>
+
+  <div class="why-box">
+    <strong>なぜこの作業が重要なのか</strong>
+    事前レポートにはメンティーの業務目標・6ヶ月目標・業務結果・良かった点・改善点・来月の目標が記載されています。1on1MTG前に必ず確認し、面談の論点を整理しておくことで、質の高い面談を実施できます。
+  </div>
+
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-badge">1</div>
+      <div class="step-content">
+        <h4>レポート画面を開く</h4>
+        <p><span class="where">ヘッダーナビ</span><span class="action">「レポート」タブをクリック</span><span class="result">レポート画面が表示される</span></p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">2</div>
+      <div class="step-content">
+        <h4>「事前レポート」タブを選択する</h4>
+        <p><span class="where">レポート画面</span><span class="action">タブ切り替えから「事前レポート」を選択</span><span class="result">メンティーが提出した事前レポート一覧が表示される</span></p>
+        <p style="margin-top:8px">タブは3種類あります: <span class="hl">週次TEL</span> / <span class="hl">1on1レポート</span> / <span class="hl">事前レポート</span></p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">3</div>
+      <div class="step-content">
+        <h4>対象メンティーの事前レポートを開く</h4>
+        <p><span class="where">事前レポート一覧</span><span class="action">対象メンティーのレポートカードをクリック</span><span class="result">事前レポート詳細モーダルが開く</span></p>
+        <p style="margin-top:8px">モーダルで確認できる内容:</p>
+        <ul style="margin-top:6px;padding-left:20px;font-size:13px;line-height:1.9;color:#4a6460">
+          <li>業務目標</li>
+          <li>6ヶ月目標</li>
+          <li>業務結果（今月の振り返り）</li>
+          <li>良かった点</li>
+          <li>改善点</li>
+          <li>来月の目標</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">4</div>
+      <div class="step-content">
+        <h4>面談の論点をメモする</h4>
+        <p>事前レポートの内容を踏まえ、1on1で話すべきポイントをメンバー管理画面のメモ欄に記録しておくと便利です。</p>
+        <div class="callout callout-tip" style="margin-top:8px">
+          <strong>💡 絞り込みバーを活用しよう</strong>
+          レポート画面の絞り込みバーを使うと、特定のメンティーや期間でレポートを絞り込めます。1on1前の準備に役立ててください。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mock: Report screen - pre-report tab -->
+  <div class="mock-browser">
+    <div class="bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">https://1on1-system.example.com/reports</div></div>
+    <div class="mock-screen" style="padding:0">
+      <div class="mock-nav">
+        <span class="logo">1on1</span>
+        <a>ダッシュボード</a><a>スケジュール</a><a>メンバー管理</a><a class="active">レポート</a><a>週次TEL</a><a>アンケート</a>
+        <div class="right">🔔 田中メンター</div>
+      </div>
+      <div style="padding:12px">
+        <div style="display:flex;gap:4px;margin-bottom:10px;border-bottom:1px solid #e0eeec;padding-bottom:8px">
+          <div style="padding:5px 12px;font-size:10px;border-radius:5px 5px 0 0;background:#f0f0f0;color:#666">週次TEL</div>
+          <div style="padding:5px 12px;font-size:10px;border-radius:5px 5px 0 0;background:#f0f0f0;color:#666">1on1レポート</div>
+          <div style="padding:5px 12px;font-size:10px;border-radius:5px 5px 0 0;background:#5dafa7;color:#fff;font-weight:700">事前レポート</div>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <div class="mock-select" style="width:auto;display:inline-block;padding:4px 8px;font-size:9px">全メンティー ▼</div>
+          <div class="mock-select" style="width:auto;display:inline-block;padding:4px 8px;font-size:9px">2026年4月 ▼</div>
+        </div>
+        <div class="mock-card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div><div style="font-size:11px;font-weight:700">山田 花子 — 2026年4月度 事前レポート</div><div style="font-size:9px;color:#666;margin-top:2px">提出日: 2026/04/08</div></div>
+            <span class="mock-btn-sm">詳細を見る ▶</span>
+          </div>
+          <div style="margin-top:6px;font-size:9px;color:#555;background:#f7faf9;padding:6px 8px;border-radius:4px">
+            業務目標: 新規顧客開拓10件 / 良かった点: 提案資料の質が向上 / 課題: 時間管理...
+          </div>
+        </div>
+        <div class="mock-card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div><div style="font-size:11px;font-weight:700">佐藤 太郎 — 2026年4月度 事前レポート</div><div style="font-size:9px;color:#666;margin-top:2px">提出日: 2026/04/07</div></div>
+            <span class="mock-btn-sm">詳細を見る ▶</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-ok">
+    <strong>✅ 完了確認</strong>
+    事前レポート詳細モーダルで、メンティーの業務結果・課題・目標を確認できたら準備完了です。
+  </div>
+
+  <div class="trouble-box">
+    <h4>🆘 困ったときは</h4>
+    <ul>
+      <li>事前レポートが見つからない → メンティーがまだ提出していない可能性があります。メンティーに提出を依頼してください。</li>
+      <li>内容が古い月のものしか表示されない → 絞り込みバーの「年月」を当月に変更してください。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- Section 4 -->
+<section class="content-section" id="sec4">
+  <span class="section-anchor"></span>
+  <div class="section-title">
+    <div class="section-num">4</div>
+    <h2>月次1on1の実施<br><span style="font-size:16px;font-weight:400;color:#6b8a84">スケジュール確認・Meet録画</span></h2>
+  </div>
+  <p class="section-subtitle">月に1度の最も重要な面談です。スケジュール確認からMeetへの参加、録画の実施まで行います</p>
+
+  <div class="why-box">
+    <strong>なぜこの作業が重要なのか</strong>
+    月次1on1MTGは、メンティーの成長支援において最も重要な機会です。面談を録画することで、後工程のAI文字起こし・自動要約が行われ、レポート作成が大幅に効率化されます。<strong style="color:#c03030">録画を忘れると自動要約が生成されません。必ず録画を開始してからMTGを進めてください。</strong>
+  </div>
+
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-badge">1</div>
+      <div class="step-content">
+        <h4>スケジュール画面で予約を確認する</h4>
+        <p><span class="where">ヘッダーナビ</span><span class="action">「スケジュール」タブをクリック</span><span class="result">予約一覧が表示される</span></p>
+        <p style="margin-top:8px">予約一覧には、メンティーが予約した1on1 MTGが表示されます。日時・メンティー名・Meet URLが確認できます。</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">2</div>
+      <div class="step-content">
+        <h4>時間になったらMeetに参加する</h4>
+        <p><span class="where">スケジュール画面の予約カード</span><span class="action">「Meetに参加」ボタンをクリック</span><span class="result">Google Meetが別タブで開く</span></p>
+        <div class="callout callout-warn" style="margin-top:8px">
+          <strong>⚠️ 録画を必ず開始してください</strong>
+          Meetに入室したら、MTGを開始する前に必ず録画を開始してください。録画なしでMTGを行うと、AI文字起こし・自動要約が生成されず、レポート作成の効率が大幅に下がります。
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">3</div>
+      <div class="step-content">
+        <h4>1on1MTGを実施する</h4>
+        <p>事前レポートで確認した内容をベースに、メンティーと面談を行います。録画は終了まで継続してください。</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">4</div>
+      <div class="step-content">
+        <h4>録画ファイルをGoogle Driveにアップロードする</h4>
+        <p><span class="where">スケジュール画面の予約カード</span><span class="action">「録画アップロード」ボタンをクリック → ガイドモーダルの手順に従ってGoogle Driveにアップロード</span><span class="result">自動処理が開始され、文字起こし・AI要約が生成される</span></p>
+        <div class="callout callout-tip" style="margin-top:8px">
+          <strong>💡 録画アップロードで自動処理が始まります</strong>
+          録画ファイルをGoogle Driveの指定フォルダにアップロードすると、n8nシステムが自動的に以下を行います:
+          <ol style="margin-top:6px;padding-left:18px;font-size:13px;line-height:1.9">
+            <li>ファイルのリネーム</li>
+            <li>文字起こし</li>
+            <li>Gemini APIによるAI要約</li>
+          </ol>
+          処理完了後、1on1レポートにAIサマリーが反映されます。
+        </div>
+        <div class="callout callout-warn" style="margin-top:8px">
+          <strong>⚠️ アップロード先フォルダを間違えないように</strong>
+          録画ガイドモーダルに記載されている指定フォルダに正確にアップロードしてください。フォルダが異なると自動処理が起動しません。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mock: Schedule screen -->
+  <div class="mock-browser">
+    <div class="bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">https://1on1-system.example.com/schedule</div></div>
+    <div class="mock-screen" style="padding:0">
+      <div class="mock-nav">
+        <span class="logo">1on1</span>
+        <a>ダッシュボード</a><a class="active">スケジュール</a><a>メンバー管理</a><a>レポート</a><a>週次TEL</a><a>アンケート</a>
+        <div class="right">🔔 田中メンター</div>
+      </div>
+      <div style="padding:12px">
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="flex:1">
+            <div class="mock-card">
+              <h5 style="margin-bottom:8px">📋 予約一覧</h5>
+              <div style="border:1px solid #e0eeec;border-radius:6px;overflow:hidden">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:0;background:#5dafa7;color:#fff;font-size:9px;padding:5px 8px;font-weight:700">
+                  <span>日時</span><span>メンティー</span><span>ステータス</span><span>操作</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:0;font-size:9px;padding:6px 8px;border-bottom:1px solid #f0f0f0;align-items:center">
+                  <span>4/13 14:00</span><span>山田 花子</span><span class="tag-amber mock-tag">予約済み</span>
+                  <div style="display:flex;flex-wrap:wrap;gap:2px"><span class="mock-btn-sm">Meet</span><span class="mock-btn-outline">変更</span><span class="mock-btn-red">キャンセル</span></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:0;font-size:9px;padding:6px 8px;align-items:center">
+                  <span>4/20 10:00</span><span>佐藤 太郎</span><span class="tag-green mock-tag">完了</span>
+                  <div><span class="mock-btn-outline">録画UP ▶</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="width:160px">
+            <div class="mock-card">
+              <h5 style="font-size:10px;margin-bottom:6px">予約可能時間設定</h5>
+              <div style="font-size:9px;color:#666;margin-bottom:4px">月曜日</div>
+              <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">
+                <span style="background:#e6f9f2;color:#1a7a4a;padding:2px 5px;border-radius:3px;font-size:9px">9:00</span>
+                <span style="background:#e6f9f2;color:#1a7a4a;padding:2px 5px;border-radius:3px;font-size:9px">10:00</span>
+                <span style="background:#f0f0f0;color:#aaa;padding:2px 5px;border-radius:3px;font-size:9px">11:00</span>
+              </div>
+              <span class="mock-btn-sm" style="font-size:9px">保存</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-ok">
+    <strong>✅ 完了確認</strong>
+    MTG実施後、録画をGoogle Driveにアップロードし、1on1レポートにAIサマリーが反映されたことを確認したら完了です。
+  </div>
+
+  <div class="trouble-box">
+    <h4>🆘 困ったときは</h4>
+    <ul>
+      <li>Meetのボタンがない → 予約カードにMeet URLが登録されていない場合があります。「変更」から Meet URLを追加してください。</li>
+      <li>録画アップロード後にAIサマリーが表示されない → 処理には数分〜15分かかります。しばらく待ってから1on1レポートを確認してください。</li>
+      <li>録画を忘れた → AIサマリーは生成されませんが、手動でレポートに内容を入力することは可能です。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- Section 5 -->
+<section class="content-section" id="sec5">
+  <span class="section-anchor"></span>
+  <div class="section-title">
+    <div class="section-num">5</div>
+    <h2>1on1後の処理<br><span style="font-size:16px;font-weight:400;color:#6b8a84">レポート確認・加筆・公開</span></h2>
+  </div>
+  <p class="section-subtitle">1on1MTG後に、AI要約されたレポートを加筆・修正して公開します。公開するとメンティーにレポートがメールで届きます</p>
+
+  <div class="why-box">
+    <strong>なぜこの作業が重要なのか</strong>
+    1on1レポートはメンティーへのフィードバックの公式記録です。AIサマリーを確認・加筆し、アドバイス・次回目標・次月目標を記入して「公開」することで、メンティーにレポートがメールで届きます。レポートの質がメンティーの成長を左右します。
+  </div>
+
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-badge">1</div>
+      <div class="step-content">
+        <h4>レポート画面を開き「1on1レポート」タブを選択する</h4>
+        <p><span class="where">ヘッダーナビ</span><span class="action">「レポート」タブをクリック → 「1on1レポート」タブを選択</span><span class="result">1on1レポート一覧が表示される</span></p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">2</div>
+      <div class="step-content">
+        <h4>対象レポートを開く</h4>
+        <p><span class="where">1on1レポート一覧</span><span class="action">対象のレポートカードをクリック</span><span class="result">1on1レポート詳細・編集モーダルが開く</span></p>
+        <p style="margin-top:8px">モーダルで編集できる項目:</p>
+        <ul style="margin-top:6px;padding-left:20px;font-size:13px;line-height:1.9;color:#4a6460">
+          <li>AIサマリー（自動生成。加筆・修正可能）</li>
+          <li>アドバイス</li>
+          <li>次回目標</li>
+          <li>次月目標</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">3</div>
+      <div class="step-content">
+        <h4>AIサマリーを確認・加筆する</h4>
+        <p><span class="where">レポート編集モーダル</span><span class="action">AIサマリーの内容を読み、必要に応じて修正・加筆</span><span class="result">テキストが編集される</span></p>
+        <p style="margin-top:8px">アドバイス・次回目標・次月目標も忘れずに記入してください。</p>
+        <div class="callout callout-tip" style="margin-top:8px">
+          <strong>💡 下書き保存を活用しよう</strong>
+          「保存（下書き）」ボタンで一時保存できます。すぐに公開しない場合は下書き保存し、後で加筆してから公開してください。
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">4</div>
+      <div class="step-content">
+        <h4>レポートを公開する</h4>
+        <p><span class="where">レポート編集モーダル</span><span class="action">内容を最終確認後、「公開」ボタンをクリック</span><span class="result">メンティーにレポートがメールで送信される</span></p>
+        <div class="callout callout-error" style="margin-top:10px">
+          <strong>❌ 公開は取り消せません</strong>
+          「公開」ボタンをクリックすると、即座にメンティーのメールアドレス宛にレポートが送信されます。内容を十分に確認してから公開してください。誤った内容で公開してしまった場合は管理者に相談してください。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mock: Report detail modal -->
+  <div class="mock-browser">
+    <div class="bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">https://1on1-system.example.com/reports</div></div>
+    <div class="mock-screen" style="padding:0">
+      <div class="mock-nav" style="opacity:.5"><span class="logo">1on1</span><a class="active">レポート</a></div>
+      <div style="padding:12px">
+        <!-- Modal overlay -->
+        <div style="background:#fff;border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,.15);padding:16px;max-width:520px;margin:0 auto">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:700;color:#2c3e3a">1on1レポート詳細・編集 — 山田 花子（2026年4月）</div>
+            <span style="font-size:14px;color:#aaa;cursor:default">✕</span>
+          </div>
+          <div style="font-size:10px;color:#666;margin-bottom:3px">AIサマリー（修正可能）</div>
+          <div style="background:#f7faf9;border:1px solid #c8e8e4;border-radius:5px;padding:8px;font-size:10px;color:#444;min-height:60px;margin-bottom:8px;line-height:1.7">
+            今月は新規提案5件を達成し、前月比120%の結果。コミュニケーション力の向上が見られた。課題は優先順位付けの改善。
+          </div>
+          <div style="font-size:10px;color:#666;margin-bottom:3px">アドバイス</div>
+          <div class="mock-input" style="min-height:40px">引き続き提案件数を維持しつつ、質の向上を意識してください。</div>
+          <div style="font-size:10px;color:#666;margin-bottom:3px">次回目標</div>
+          <div class="mock-input">提案のクロージング率を60%以上にする</div>
+          <div style="font-size:10px;color:#666;margin-bottom:3px">次月目標</div>
+          <div class="mock-input">新規顧客開拓12件</div>
+          <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px">
+            <span class="mock-btn-outline">保存（下書き）</span>
+            <span class="mock-btn" style="background:#52c997;font-size:10px;padding:5px 14px">公開する（メンティーへメール送信）</span>
+          </div>
+          <div style="font-size:9px;color:#e87171;text-align:right;margin-top:4px">※ 公開すると取り消しできません</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-ok">
+    <strong>✅ 完了確認</strong>
+    レポートのステータスが「公開済み」に変わり、メンティーへのメール送信が完了したことを確認してください。
+  </div>
+
+  <div class="trouble-box">
+    <h4>🆘 困ったときは</h4>
+    <ul>
+      <li>AIサマリーが空のままになっている → 録画がアップロードされていないか、処理中の可能性があります。録画アップロード状況を確認してください。</li>
+      <li>「公開」ボタンが表示されない → レポートが既に公開済みの状態です。レポートのステータスを確認してください。</li>
+      <li>誤った内容で公開してしまった → 管理者に連絡し、メンティーへのフォローアップメールの対応を相談してください。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- Section 6 -->
+<section class="content-section" id="sec6">
+  <span class="section-anchor"></span>
+  <div class="section-title">
+    <div class="section-num">6</div>
+    <h2>アンケート回答<br><span style="font-size:16px;font-weight:400;color:#6b8a84">1on1後のアンケート</span></h2>
+  </div>
+  <p class="section-subtitle">1on1MTG後に、メンター側からアンケートに回答します</p>
+
+  <div class="why-box">
+    <strong>なぜこの作業が重要なのか</strong>
+    アンケートへの回答は、1on1の質を継続的に改善するためのデータとなります。MTG後できるだけ早く回答することで、面談内容が記憶に新しいうちに正確な評価が記録できます。
+  </div>
+
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-badge">1</div>
+      <div class="step-content">
+        <h4>アンケート画面を開く</h4>
+        <p><span class="where">ヘッダーナビ</span><span class="action">「アンケート」タブをクリック</span><span class="result">アンケート画面が表示される</span></p>
+        <p style="margin-top:8px">画面には「未回答一覧」と「回答履歴」が表示されます。</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">2</div>
+      <div class="step-content">
+        <h4>未回答アンケートを確認する</h4>
+        <p><span class="where">アンケート画面</span><span class="action">「未回答一覧」に表示されているアンケートを確認</span><span class="result">回答が必要なアンケートが表示される</span></p>
+        <p style="margin-top:8px">1on1MTG実施後に自動的に未回答アンケートとして登録されます。</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">3</div>
+      <div class="step-content">
+        <h4>アンケートに回答して送信する</h4>
+        <p><span class="where">未回答アンケートの「回答する」ボタン</span><span class="action">クリックして各設問に回答 → 「送信」をクリック</span><span class="result">回答が送信され、回答履歴に移動する</span></p>
+        <div class="callout callout-warn" style="margin-top:8px">
+          <strong>⚠️ 送信後は修正できません</strong>
+          アンケートを送信すると内容の修正はできません。回答内容をよく確認してから送信してください。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-ok">
+    <strong>✅ 完了確認</strong>
+    送信後、アンケートが「回答履歴」タブに移動していれば回答完了です。
+  </div>
+
+  <div class="trouble-box">
+    <h4>🆘 困ったときは</h4>
+    <ul>
+      <li>未回答一覧にアンケートが表示されない → 1on1MTGが「完了」ステータスになっていない可能性があります。スケジュール画面でミーティング完了処理が行われているか確認してください。</li>
+      <li>送信ボタンが押せない → 必須項目が未入力の場合があります。すべての設問に回答しているか確認してください。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- Section 7 -->
+<section class="content-section" id="sec7">
+  <span class="section-anchor"></span>
+  <div class="section-title">
+    <div class="section-num">7</div>
+    <h2>予約の変更・キャンセル<br><span style="font-size:16px;font-weight:400;color:#6b8a84">スケジュール調整</span></h2>
+  </div>
+  <p class="section-subtitle">予約済みの1on1 MTGの日時変更やキャンセルを行います。どちらもメンティーに自動で通知メールが届きます</p>
+
+  <div class="why-box">
+    <strong>なぜこの作業が重要なのか</strong>
+    予約変更・キャンセルを行うと、メンティーに自動で通知メールが送られます。システムを通じて変更することで、メンティーへの連絡漏れを防ぎます。また、新しい予約をメンター側から作成することも可能です。
+  </div>
+
+  <h3 style="font-size:16px;font-weight:700;color:#2c3e3a;margin-bottom:16px;margin-top:8px">7-1. 予約を変更する</h3>
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-badge">1</div>
+      <div class="step-content">
+        <h4>スケジュール画面を開く</h4>
+        <p><span class="where">ヘッダーナビ</span><span class="action">「スケジュール」タブをクリック</span><span class="result">予約一覧が表示される</span></p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-badge">2</div>
+      <div class="step-content">
+        <h4>「変更」ボタンをクリックする</h4>
+        <p><span class="where">対象の予約カード</span><span class="action">「変更」ボタンをクリック</span><span class="result">予約変更モーダルが開く</span></p>
+        <p style="margin-top:8px">変更モーダルで入力できる項目:</p>
+        <ul style="margin-top:6px;padding-left:20px;font-size:13px;line-height:1.9;color:#4a6460">
+          <li>新しい日付</li>
+          <li>新しい時間</li>
+          <li>Meet URL（変更する場合）</li>
+          <li>変更メモ（メンティーへの連絡事項）</li>
+        </ul>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-badge">3</div>
+      <div class="step-content">
+        <h4>新しい日時を入力して「変更を確定」する</h4>
+        <p><span class="where">予約変更モーダル</span><span class="action">新しい日時を入力し「変更を確定」ボタンをクリック</span><span class="result">予約が更新され、メンティーに変更通知メールが自動送信される</span></p>
+        <div class="callout callout-warn" style="margin-top:8px">
+          <strong>⚠️ 変更確定でメンティーにメールが送信されます</strong>
+          「変更を確定」をクリックした時点でメンティーに自動メールが送信されます。内容を確認してから確定してください。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:16px;font-weight:700;color:#2c3e3a;margin-bottom:16px;margin-top:24px">7-2. 予約をキャンセルする</h3>
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-badge">1</div>
+      <div class="step-content">
+        <h4>「キャンセル」ボタンをクリックする</h4>
+        <p><span class="where">対象の予約カード</span><span class="action">「キャンセル」ボタン（赤色）をクリック</span><span class="result">キャンセル確認モーダルが開く</span></p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-badge">2</div>
+      <div class="step-content">
+        <h4>キャンセル理由を入力して確定する</h4>
+        <p><span class="where">キャンセルモーダル</span><span class="action">キャンセル理由を入力し「キャンセルを確定」ボタンをクリック</span><span class="result">予約がキャンセルされ、メンティーに通知メールが自動送信される</span></p>
+        <div class="callout callout-error" style="margin-top:8px">
+          <strong>❌ キャンセルは取り消せません</strong>
+          「キャンセルを確定」をクリックすると、予約が削除されメンティーにキャンセル通知メールが即座に送信されます。誤ってキャンセルした場合は、新規予約を作成してメンティーに謝罪の連絡をしてください。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:16px;font-weight:700;color:#2c3e3a;margin-bottom:16px;margin-top:24px">7-3. メンター側から予約を作成する</h3>
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-badge">1</div>
+      <div class="step-content">
+        <h4>「予約作成」ボタンをクリックする</h4>
+        <p><span class="where">スケジュール画面</span><span class="action">「予約作成」ボタンをクリック</span><span class="result">予約作成モーダルが開く</span></p>
+        <p style="margin-top:8px">モーダルで入力する項目:</p>
+        <ul style="margin-top:6px;padding-left:20px;font-size:13px;line-height:1.9;color:#4a6460">
+          <li>カレンダーで日付・時間を選択</li>
+          <li>所要時間（30分 / 60分など）</li>
+          <li>Meet URL</li>
+          <li>メモ</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-ok">
+    <strong>✅ 完了確認</strong>
+    予約一覧に変更後の日時で表示されていれば変更完了です。キャンセルの場合は一覧から予約が消えていれば完了です。
+  </div>
+
+  <div class="trouble-box">
+    <h4>🆘 困ったときは</h4>
+    <ul>
+      <li>「変更」ボタンが表示されない → すでに「完了」または「キャンセル」ステータスの予約は変更できません。</li>
+      <li>間違えてキャンセルした → 「予約作成」から新しい予約を作成し、メンティーに連絡してください。</li>
+      <li>変更後の時間が重複している → 同じ時間帯に別の予約が入っている可能性があります。予約一覧で確認してから再度変更してください。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- Section 8 -->
+<section class="content-section" id="sec8">
+  <span class="section-anchor"></span>
+  <div class="section-title">
+    <div class="section-num">8</div>
+    <h2>メンバー管理<br><span style="font-size:16px;font-weight:400;color:#6b8a84">ステータス更新・メモ・目標設定</span></h2>
+  </div>
+  <p class="section-subtitle">メンティーの状態を管理し、メモや半年目標を設定します</p>
+
+  <div class="why-box">
+    <strong>なぜこの作業が重要なのか</strong>
+    メンバー管理画面では、メンティーの現在の状態（ステータス）・メモ・半年目標・レポート・録画を一元管理できます。ステータスをこまめに更新することで、メンティー全体の状況を瞬時に把握でき、支援が必要なメンティーへの早期対応が可能になります。
+  </div>
+
+  <h3 style="font-size:16px;font-weight:700;color:#2c3e3a;margin-bottom:16px;margin-top:8px">8-1. ステータスを更新する</h3>
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-badge">1</div>
+      <div class="step-content">
+        <h4>メンバー管理画面を開く</h4>
+        <p><span class="where">ヘッダーナビ</span><span class="action">「メンバー管理」タブをクリック</span><span class="result">担当メンティーのカード一覧が表示される</span></p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-badge">2</div>
+      <div class="step-content">
+        <h4>対象メンティーのカードをクリックして詳細を開く</h4>
+        <p><span class="where">メンバー管理画面</span><span class="action">対象メンティーのカードをクリック</span><span class="result">詳細ドロワーが右側に表示される</span></p>
+        <p style="margin-top:8px">詳細ドロワーには: ステータス / 半年目標 / メモ / レポート履歴 / 録画 が表示されます。</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-badge">3</div>
+      <div class="step-content">
+        <h4>ステータスを選択して更新する</h4>
+        <p><span class="where">詳細ドロワー内</span><span class="action">「ステータス更新」ボタンをクリック → 4種類から選択</span><span class="result">ステータスが更新され、サイドバーの色も変わる</span></p>
+
+        <table style="margin-top:10px;font-size:12px">
+          <tr><th>ステータス</th><th>色</th><th>使用目安</th></tr>
+          <tr><td><strong>快調</strong></td><td><span style="color:#52c997;font-weight:700">■ 緑</span></td><td>目標を超えて成果を出しており、意欲・状態ともに良好</td></tr>
+          <tr><td><strong>順調</strong></td><td><span style="color:#5dafa7;font-weight:700">■ 青緑</span></td><td>目標に向けて順調に進んでいる通常状態</td></tr>
+          <tr><td><strong>注意</strong></td><td><span style="color:#e8a852;font-weight:700">■ 黄</span></td><td>やや懸念点あり。注意してフォローが必要</td></tr>
+          <tr><td><strong>要注意</strong></td><td><span style="color:#e87171;font-weight:700">■ 赤</span></td><td>緊急のフォローが必要。優先的に対応する</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:16px;font-weight:700;color:#2c3e3a;margin-bottom:16px;margin-top:24px">8-2. メモを記録する</h3>
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-badge">1</div>
+      <div class="step-content">
+        <h4>詳細ドロワーのメモ欄に入力して保存する</h4>
+        <p><span class="where">詳細ドロワー内「メモ」欄</span><span class="action">テキストを入力して「メモを保存」ボタンをクリック</span><span class="result">メモが保存される</span></p>
+        <div class="callout callout-tip" style="margin-top:8px">
+          <strong>💡 メモの活用例</strong>
+          面談前の論点整理、気になった言動の記録、特別なフォローが必要な事項などを記録してください。メモはメンティーには表示されません（メンターのみ閲覧可）。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:16px;font-weight:700;color:#2c3e3a;margin-bottom:16px;margin-top:24px">8-3. 半年目標を設定する</h3>
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-badge">1</div>
+      <div class="step-content">
+        <h4>詳細ドロワーで半年目標を入力して保存する</h4>
+        <p><span class="where">詳細ドロワー内「半年目標」欄</span><span class="action">目標を入力して「目標を保存」ボタンをクリック</span><span class="result">半年目標が設定される（メンティーにも共有される）</span></p>
+        <div class="callout callout-warn" style="margin-top:8px">
+          <strong>⚠️ 半年目標はメンティーも閲覧できます</strong>
+          設定した半年目標はメンティー側のシステムにも表示されます。内容を慎重に確認してから保存してください。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mock: Member management screen -->
+  <div class="mock-browser">
+    <div class="bar"><div class="dots"><span></span><span></span><span></span></div><div class="url">https://1on1-system.example.com/members</div></div>
+    <div class="mock-screen" style="padding:0">
+      <div class="mock-nav">
+        <span class="logo">1on1</span>
+        <a>ダッシュボード</a><a>スケジュール</a><a class="active">メンバー管理</a><a>レポート</a><a>週次TEL</a><a>アンケート</a>
+        <div class="right">🔔 田中メンター</div>
+      </div>
+      <div style="padding:12px;display:flex;gap:10px">
+        <div style="flex:1">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+            <div class="mock-card" style="cursor:default;border:2px solid #5dafa7">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                <div style="width:28px;height:28px;border-radius:50%;background:#e6f9f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#5dafa7">山</div>
+                <div><div style="font-size:10px;font-weight:700">山田 花子</div><div class="tag-green mock-tag" style="font-size:8px">快調</div></div>
+              </div>
+              <div style="font-size:9px;color:#666">最終1on1: 4/13</div>
+            </div>
+            <div class="mock-card">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                <div style="width:28px;height:28px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#666">佐</div>
+                <div><div style="font-size:10px;font-weight:700">佐藤 太郎</div><div class="tag-green mock-tag" style="font-size:8px">順調</div></div>
+              </div>
+              <div style="font-size:9px;color:#666">最終1on1: 4/10</div>
+            </div>
+            <div class="mock-card">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                <div style="width:28px;height:28px;border-radius:50%;background:#fff8e6;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#b87c10">田</div>
+                <div><div style="font-size:10px;font-weight:700">田中 美咲</div><div class="tag-red mock-tag" style="font-size:8px">要注意</div></div>
+              </div>
+              <div style="font-size:9px;color:#666">最終1on1: 3/20</div>
+            </div>
+          </div>
+        </div>
+        <!-- Drawer -->
+        <div style="width:200px;background:#fff;border-radius:8px;border:1px solid #e0eeec;padding:10px;font-size:10px">
+          <div style="font-size:11px;font-weight:700;margin-bottom:8px;color:#2c3e3a">山田 花子 — 詳細</div>
+          <div style="margin-bottom:6px"><span style="color:#666">ステータス: </span><span class="tag-green mock-tag">快調</span></div>
+          <div class="mock-btn-sm" style="font-size:9px;display:block;width:100%;text-align:center;margin-bottom:8px">ステータス更新</div>
+          <div style="color:#666;margin-bottom:3px">半年目標</div>
+          <div class="mock-input" style="font-size:9px">新規顧客開拓20件達成</div>
+          <div class="mock-btn-outline" style="display:block;text-align:center;margin-bottom:8px">目標を保存</div>
+          <div style="color:#666;margin-bottom:3px">メモ（非公開）</div>
+          <div class="mock-input" style="min-height:40px;font-size:9px">4月面談: 時間管理が課題。来月フォロー</div>
+          <div class="mock-btn-outline" style="display:block;text-align:center">メモを保存</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-ok">
+    <strong>✅ 完了確認</strong>
+    ステータスが変更され、サイドバーのメンティーリストの色が変わっていればステータス更新完了です。
+  </div>
+
+  <div class="trouble-box">
+    <h4>🆘 困ったときは</h4>
+    <ul>
+      <li>メモが保存されない → 入力欄が空のまま「保存」を押してもエラーになります。テキストを入力してから保存してください。</li>
+      <li>ドロワーが開かない → メンバーカードをクリックしてください。ドロワーが表示されない場合はブラウザを再読み込みしてください。</li>
+      <li>ステータスが更新されない → インターネット接続を確認し、再度試みてください。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="content-section" id="faq">
+  <span class="section-anchor"></span>
+  <div class="section-title">
+    <h2 style="font-size:24px;font-weight:900;">よくあるエラーと対処法</h2>
+  </div>
+  <p style="font-size:14px;color:#6b8a84;margin-bottom:24px">システムを使用する上でよく発生するエラーとその解決方法をまとめています。</p>
+
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q"><span>Q.</span>ログインできない・「アカウントがロックされています」と表示される</div>
+      <div class="faq-a">
+        <span class="err-label">原因</span>パスワードを5回以上連続で誤入力したため、セキュリティポリシーによりアカウントが自動ロックされました。<br>
+        <strong>対処法:</strong> システム管理者にアカウントロック解除を依頼してください。パスワードを忘れた場合は、パスワードリセット手順を管理者から確認してください。
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q.</span>AIサマリーが生成されない・いつまでも「生成中」のまま</div>
+      <div class="faq-a">
+        <span class="err-label">原因1</span>録画ファイルがアップロードされていない、または指定フォルダ以外にアップロードされた。<br>
+        <span class="err-label">原因2</span>AI処理中（処理には最大15分程度かかります）。<br>
+        <span class="err-label">原因3</span>Gemini APIの一時的な障害。<br>
+        <strong>対処法:</strong> まず15分程度待ってからページを再読み込みしてください。それでも生成されない場合は、録画ファイルのアップロード先フォルダを確認し、正しい場所に再アップロードしてください。
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q.</span>「公開」ボタンを押したがメンティーにメールが届かない</div>
+      <div class="faq-a">
+        <span class="err-label">原因1</span>メンティーのメールアドレスがシステムに正しく登録されていない。<br>
+        <span class="err-label">原因2</span>メールがメンティーの迷惑メールフォルダに入っている。<br>
+        <strong>対処法:</strong> まずメンティーに迷惑メールフォルダを確認するよう伝えてください。それでも届かない場合は、管理者にメールアドレスの登録状況を確認してもらってください。
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q.</span>「予約可能時間帯の保存に失敗しました」とエラーが出る</div>
+      <div class="faq-a">
+        <span class="err-label">原因</span>ネットワークの一時的なエラー、またはセッションが切れている可能性があります。<br>
+        <strong>対処法:</strong> ページを再読み込みし、再度ログインした後に操作してください。それでも解決しない場合は管理者に連絡してください。
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q.</span>スケジュール画面で予約が「cancelled」として非表示になっている</div>
+      <div class="faq-a">
+        <span class="err-label">原因</span>キャンセル済みの予約はシステムの仕様で一覧から除外されます。<br>
+        <strong>対処法:</strong> これは正常な動作です。キャンセルした予約を再確認する必要がある場合は、管理者にシステム側での確認を依頼してください。誤ってキャンセルした場合は「予約作成」から新しい予約を作成してください。
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q.</span>ダッシュボードに「担当メンティーが見つかりません」と表示される</div>
+      <div class="faq-a">
+        <span class="err-label">原因</span>メンターとメンティーの紐付けがシステムに設定されていない可能性があります。<br>
+        <strong>対処法:</strong> 管理者に担当メンティーの紐付け設定を依頼してください。
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q.</span>Meetに参加しようとしたがURLが無効または会議が見つからない</div>
+      <div class="faq-a">
+        <span class="err-label">原因</span>Meet URLが古い、または誤ったURLが登録されている可能性があります。<br>
+        <strong>対処法:</strong> スケジュール画面の「変更」から新しいMeet URLを登録してください。Meetの新規会議を作成して登録するか、既存の会議のURLを確認してください。
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Glossary -->
+<section class="content-section" id="glossary">
+  <span class="section-anchor"></span>
+  <div class="section-title">
+    <h2 style="font-size:24px;font-weight:900;">用語集</h2>
+  </div>
+  <p style="font-size:14px;color:#6b8a84;margin-bottom:24px">このシステムで使用される主な用語の説明です。</p>
+
+  <div class="glossary-grid">
+    <dl class="glossary-item">
+      <dt>1on1（ワンオンワン）</dt>
+      <dd>メンターとメンティーが1対1で行う面談のこと。本システムでは月に1回実施することを推奨しています。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>メンター</dt>
+      <dd>メンティーを指導・支援する立場の社員。本マニュアルの対象読者。担当メンティー10名前後を管理します。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>メンティー</dt>
+      <dd>メンターから支援を受ける社員。1on1の予約・事前レポート提出・アンケート回答を行います。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>週次TEL</dt>
+      <dd>毎週メンティーと行うGoogle Meet通話のこと。月次1on1とは別に実施します。通話後にAI文字起こしと要約が自動生成されます。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>AIサマリー</dt>
+      <dd>Google MeetのAI文字起こしをGemini APIで要約した内容。週次TELレポートと1on1レポートの両方に生成されます。メンターが加筆・修正することができます。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>事前レポート</dt>
+      <dd>1on1MTG前にメンティーが提出するレポート。業務目標・業務結果・良かった点・改善点・来月目標などが記載されています。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>1on1レポート（公開）</dt>
+      <dd>メンターが作成・公開するMTG後のフィードバックレポート。「公開」するとメンティーにメールで自動送信されます。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>TELレポート（確定）</dt>
+      <dd>週次TEL後にメンターが作成・確定するレポート。「確定」してもメンティーへのメール送信はありません。1on1レポートの「公開」と混同しないよう注意。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>ステータス</dt>
+      <dd>メンティーの現在の状態を示す4段階の指標。「快調（緑）」「順調（青緑）」「注意（黄）」「要注意（赤）」。メンター側で設定します。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>n8n</dt>
+      <dd>システムのバックエンド自動化ツール。録画ファイルのアップロードをトリガーに、ファイルリネーム・文字起こし・AI要約を自動処理します。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>GAS（Google Apps Script）</dt>
+      <dd>システムのバックエンド処理を担うプログラム。ログイン認証・予約管理・レポート公開・メール送信など主要機能を担います。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>Meet URL</dt>
+      <dd>Google MeetのビデオMTG用URL。予約に登録しておくことで、スケジュール画面から直接Meetに参加できます。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>ダッシュボード</dt>
+      <dd>ログイン後に最初に表示されるホーム画面。直近スケジュール・お知らせ・メンティー一覧を一覧で確認できます。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>詳細ドロワー</dt>
+      <dd>メンバー管理画面でメンティーカードをクリックすると画面右側に表示されるパネル。ステータス・メモ・目標・レポート履歴などを確認・編集できます。</dd>
+    </dl>
+  </div>
+
+  <div style="margin-top:40px;padding:20px 24px;background:#f0faf8;border-radius:12px;font-size:13px;color:#4a6460;line-height:1.8">
+    <strong style="display:block;font-size:14px;color:#2c3e3a;margin-bottom:8px">お問い合わせ先</strong>
+    本マニュアルに記載のない操作や、システムに関するご不明な点は管理者にお問い合わせください。<br>
+    エラーが発生した場合は、エラーメッセージの内容とスクリーンショットを添えてご連絡いただくとスムーズに対応できます。
+  </div>
+
+  <div style="margin-top:24px;text-align:center;font-size:12px;color:#aaa;padding-bottom:20px">
+    1on1メンター管理システム 操作マニュアル v1.0 | 2026年4月発行<br>
+    このマニュアルは正社員メンター向けの内部資料です。
+  </div>
+</section>
+
+</div><!-- /main -->
+
+<script>
+// Active sidebar link highlighting on scroll
+const sections = document.querySelectorAll('.content-section');
+const navLinks = document.querySelectorAll('#sidebar nav a');
+
+function updateActiveLink() {
+  let current = '';
+  sections.forEach(section => {
+    const top = section.getBoundingClientRect().top;
+    if (top <= 120) current = section.id;
+  });
+  navLinks.forEach(link => {
+    link.classList.remove('active');
+    if (link.getAttribute('href') === '#' + current) {
+      link.classList.add('active');
+    }
+  });
+}
+
+window.addEventListener('scroll', updateActiveLink, { passive: true });
+updateActiveLink();
+</script>
+</body>
+</html>
