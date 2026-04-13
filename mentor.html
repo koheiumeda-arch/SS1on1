@@ -712,8 +712,29 @@ td{padding:10px 14px;font-size:13px}
 
   <!-- 予約一覧 -->
   <div class="card">
-    <div class="ch"><div class="ct" id="scheduleCount">予約一覧</div></div>
+    <div class="ch">
+      <div class="ct" id="scheduleCount">予約一覧</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <!-- メンティー名絞り込み -->
+        <select id="schedFilterMentee" class="inp" style="font-size:12px;padding:5px 10px;width:130px"
+          onchange="_schedFilterName=this.value;_schedPage=1;renderSchedule()">
+          <option value="">全メンティー</option>
+        </select>
+        <!-- 未実施フィルタ -->
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;white-space:nowrap">
+          <input type="checkbox" id="schedFilterPending"
+            onchange="_schedFilterPending=this.checked;_schedPage=1;renderSchedule()">
+          未実施のみ
+        </label>
+      </div>
+    </div>
     <div class="sched-list" id="scheduleList"><div class="loading">読み込み中…</div></div>
+    <!-- ページネーション -->
+    <div id="schedPager" style="display:none;padding:12px 16px;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <button class="btn btn-g btn-sm" id="schedPrevBtn" onclick="schedChangePage(-1)">← 前へ</button>
+      <span id="schedPageInfo" style="font-size:12px;color:var(--tx3)"></span>
+      <button class="btn btn-g btn-sm" id="schedNextBtn" onclick="schedChangePage(1)">次へ →</button>
+    </div>
   </div>
 </div>
 
@@ -1040,6 +1061,12 @@ var _updateSlots        = {};   // 予約変更用スロット
 var _updateSelectedDate = '';
 var _updateSelectedTime = '';
 
+// スケジュール絞り込み・ページネーション
+var _schedPage       = 1;
+var SCHED_PER_PAGE   = 10;
+var _schedFilterName = '';   // メンティー名絞り込み
+var _schedFilterPending = false; // 未実施のみ
+
 document.addEventListener('DOMContentLoaded', function() {
   if (!Auth.isLoggedIn()) { showOverlay(); return; }
   var user = Auth.getUser();
@@ -1316,13 +1343,14 @@ function renderSidebar() {
 async function loadSchedules() {
   var data = await gasReq('api/mentor/my-bookings');
   if (!data || !data.bookings) {
-    // フォールバック: bookings から自分のmentorのものを取得
     data = await gasReq('api/mentor/bookings');
   }
   _mySchedules = (data && data.bookings) ? data.bookings
     .filter(function(b){ return b.status !== 'cancelled'; })
     .sort(function(a,b){ return (a.scheduled_at||'').localeCompare(b.scheduled_at||''); })
     : [];
+  _schedPage = 1; // ページリセット
+  updateSchedMenteeFilter(); // メンティーフィルタを更新
   renderSchedule();
   renderDashSchedule();
   updateRate();
@@ -1348,17 +1376,76 @@ function renderRecordingBanner() {
 }
 
 function renderSchedule() {
-  var listEl   = document.getElementById('scheduleList');
-  var countEl  = document.getElementById('scheduleCount');
-  if (_mySchedules.length === 0) {
-    listEl.innerHTML = '<div class="loading">予約がありません</div>';
-    countEl.textContent = '予約一覧（0件）';
+  var listEl  = document.getElementById('scheduleList');
+  var countEl = document.getElementById('scheduleCount');
+  var pagerEl = document.getElementById('schedPager');
+
+  // ── 絞り込み ──
+  var filtered = _mySchedules.filter(function(b) {
+    // メンティー名フィルタ
+    if (_schedFilterName) {
+      if (b.mentee_id !== _schedFilterName) return false;
+    }
+    // 未実施フィルタ（status が scheduled または空のもの）
+    if (_schedFilterPending) {
+      var s = (b.status || '').toLowerCase();
+      if (s === 'completed' || s === 'cancelled') return false;
+    }
+    return true;
+  });
+
+  // ── ページネーション ──
+  var total     = filtered.length;
+  var totalPage = Math.max(1, Math.ceil(total / SCHED_PER_PAGE));
+  if (_schedPage > totalPage) _schedPage = totalPage;
+  var start    = (_schedPage - 1) * SCHED_PER_PAGE;
+  var pageItems = filtered.slice(start, start + SCHED_PER_PAGE);
+
+  countEl.textContent = '予約一覧（' + total + '件）';
+
+  if (total === 0) {
+    listEl.innerHTML = '<div class="loading">該当する予約がありません</div>';
+    if (pagerEl) pagerEl.style.display = 'none';
     return;
   }
-  countEl.textContent = '予約一覧（'+_mySchedules.length+'件）';
+
   listEl.innerHTML = '';
-  _mySchedules.forEach(function(b){
-    listEl.appendChild(buildScheduleCard(b, false));
+  pageItems.forEach(function(b) { listEl.appendChild(buildScheduleCard(b, false)); });
+
+  // ページネーション表示
+  if (pagerEl) {
+    if (totalPage <= 1) {
+      pagerEl.style.display = 'none';
+    } else {
+      pagerEl.style.display = 'flex';
+      document.getElementById('schedPageInfo').textContent =
+        _schedPage + ' / ' + totalPage + ' ページ（計' + total + '件）';
+      document.getElementById('schedPrevBtn').disabled = _schedPage <= 1;
+      document.getElementById('schedNextBtn').disabled = _schedPage >= totalPage;
+    }
+  }
+}
+
+function schedChangePage(delta) {
+  _schedPage += delta;
+  renderSchedule();
+  // スクロールをリストトップに戻す
+  var listEl = document.getElementById('scheduleList');
+  if (listEl) listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// スケジュール画面のメンティーフィルタを更新
+function updateSchedMenteeFilter() {
+  var sel = document.getElementById('schedFilterMentee');
+  if (!sel) return;
+  var current = sel.value;
+  sel.innerHTML = '<option value="">全メンティー</option>';
+  _myMentees.forEach(function(m) {
+    var opt = document.createElement('option');
+    opt.value = m.user_id;
+    opt.textContent = m.name;
+    if (m.user_id === current) opt.selected = true;
+    sel.appendChild(opt);
   });
 }
 
