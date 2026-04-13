@@ -332,7 +332,21 @@ body.login-mode .main { display:none !important; }
 <div class="screen" id="s-members">
   <div class="topbar"><div><div class="page-title">メンバー管理</div><div class="page-sub">全メンバー一覧・ステータス確認</div></div></div>
   <div class="card">
-    <div class="ch"><div class="ct" id="memberCount">メンバー一覧</div></div>
+    <div class="ch">
+      <div class="ct" id="memberCount">メンバー一覧</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input class="inp" id="member-search" placeholder="🔍 名前・メールで検索…" style="width:180px;font-size:13px;padding:6px 10px" oninput="filterMembersTable()">
+        <select class="inp" id="member-role-filter" style="width:130px;font-size:13px;padding:6px 8px" onchange="filterMembersTable()">
+          <option value="">全ロール</option>
+          <option value="mentee">メンティー</option>
+          <option value="mentor">メンター</option>
+          <option value="admin">管理者</option>
+        </select>
+        <select class="inp" id="member-leader-filter" style="width:150px;font-size:13px;padding:6px 8px" onchange="filterMembersTable()">
+          <option value="">全リーダー</option>
+        </select>
+      </div>
+    </div>
     <table><thead><tr><th>氏名</th><th>ステータス</th><th>担当メンター</th><th>稼働場所</th><th>雇用形態</th></tr></thead><tbody id="membersTbody"><tr><td colspan="5" class="loading">読み込み中…</td></tr></tbody></table>
   </div>
 </div>
@@ -556,20 +570,45 @@ body.login-mode .main { display:none !important; }
 
 <!-- TELストック追加モーダル -->
 <div class="modal" id="telStockAddModal">
-  <div class="modal-content" style="max-width:580px">
+  <div class="modal-content" style="max-width:620px">
     <span class="modal-close" onclick="closeModal('telStockAddModal')">✕</span>
     <div class="modal-title">📦 TELスペースをストックに追加</div>
     <div style="font-size:13px;color:var(--tx2);background:var(--bg3);border-radius:10px;padding:12px 14px;margin-bottom:16px;line-height:1.7">
       Google Chatで事前に作成したスペースのURLとWebhook URLを登録します。<br>
       <span style="font-size:11px;color:var(--tx3)">スペース名は仮でOK（割り当て時に「TEL: メンティー名」に自動変更）</span>
     </div>
-    <div id="telStockRows">
-      <div class="tel-stock-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-        <div><label class="form-label">スペースURL</label><input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px"/></div>
-        <div><label class="form-label">Webhook URL</label><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px"/></div>
-      </div>
+    <!-- タブ -->
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--bd);margin-bottom:16px">
+      <button id="tsTab-manual" style="padding:7px 16px;font-size:13px;font-weight:600;background:none;border:none;cursor:pointer;color:var(--pr);border-bottom:2px solid var(--pr);margin-bottom:-2px" onclick="switchTsTab('manual')">✏️ 手動入力</button>
+      <button id="tsTab-csv"    style="padding:7px 16px;font-size:13px;font-weight:600;background:none;border:none;cursor:pointer;color:var(--tx2)" onclick="switchTsTab('csv')">📁 CSVインポート</button>
     </div>
-    <button class="btn btn-g btn-sm" onclick="addTelStockRow()" style="margin-bottom:14px">＋ 行を追加</button>
+    <!-- 手動入力 -->
+    <div id="tsPane-manual">
+      <div id="telStockRows">
+        <div class="tel-stock-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div><label class="form-label">スペースURL</label><input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px"/></div>
+          <div><label class="form-label">Webhook URL</label><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px"/></div>
+        </div>
+      </div>
+      <button class="btn btn-g btn-sm" onclick="addTelStockRow()" style="margin-bottom:14px">＋ 行を追加</button>
+    </div>
+    <!-- CSVインポート -->
+    <div id="tsPane-csv" style="display:none">
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">
+        CSV形式：1行目はヘッダー（<code>chat_url,webhook_url</code>）、2行目以降がデータ
+      </div>
+      <button class="btn btn-g btn-sm" onclick="downloadTelStockTemplate()" style="margin-bottom:10px">⬇ テンプレートCSVダウンロード</button>
+      <div id="ts-csv-dropzone" style="border:2px dashed var(--bd2);border-radius:10px;padding:24px;text-align:center;cursor:pointer;margin-bottom:10px"
+        onclick="document.getElementById('ts-csv-file').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--pr)'"
+        ondragleave="this.style.borderColor='var(--bd2)'"
+        ondrop="handleTsCsvDrop(event)">
+        <div style="font-size:24px;margin-bottom:6px">📂</div>
+        <div style="font-size:13px;color:var(--tx2)">クリックまたはドラッグ＆ドロップ</div>
+      </div>
+      <input type="file" id="ts-csv-file" accept=".csv" style="display:none" onchange="handleTsCsvFile(this.files[0])">
+      <div id="ts-csv-preview" style="font-size:12px;color:var(--tx3);margin-bottom:8px"></div>
+    </div>
     <div id="tel-stock-add-result" style="font-size:13px;min-height:16px;margin-bottom:8px"></div>
     <div class="f-foot">
       <button class="btn btn-g" onclick="closeModal('telStockAddModal')">キャンセル</button>
@@ -1031,20 +1070,52 @@ async function loadDashboard() {
 //  メンバー管理
 // ══════════════════════════════════════════════════════════
 function renderMembersTable() {
-  const tbody   = document.getElementById('membersTbody');
-  const countEl = document.getElementById('memberCount');
+  // リーダーフィルター選択肢を更新
+  var lSel = document.getElementById('member-leader-filter');
+  if (lSel && lSel.options.length <= 1) {
+    var leaders = _allMembers.filter(function(u){ return u.has_leader_role === 'TRUE' || u.has_leader_role === true; });
+    lSel.innerHTML = '<option value="">全リーダー</option>'
+      + leaders.map(function(l){ return '<option value="'+esc(l.user_id)+'">'+esc(l.name)+'</option>'; }).join('');
+  }
+  filterMembersTable();
+}
+
+function filterMembersTable() {
+  var tbody    = document.getElementById('membersTbody');
+  var countEl  = document.getElementById('memberCount');
   if (!tbody) return;
-  if (_allMembers.length === 0) { tbody.innerHTML='<tr><td colspan="5" class="loading">データがありません</td></tr>'; return; }
-  countEl.textContent = `メンバー一覧（${_allMembers.length}名）`;
-  tbody.innerHTML = _allMembers.map(m => {
-    const s = statusOf(m.status);
-    return `<tr onclick="showMemberDetail(${JSON.stringify(m).replace(/"/g,'\x26quot;')})">
-      <td><div class="td-name"><div class="dot ${s.dot}"></div>${esc(m.name)}</div></td>
-      <td><span class="tag ${s.cls}">${s.label}</span></td>
-      <td class="td-m">${esc(m.mentor_name||'—')}</td>
-      <td class="td-m">${esc(m.workplace||'—')}</td>
-      <td class="td-m">${esc(m.work_status||'—')}</td>
-    </tr>`;
+  var q       = (document.getElementById('member-search')        || {value:''}).value.toLowerCase();
+  var role    = (document.getElementById('member-role-filter')   || {value:''}).value;
+  var leaderId= (document.getElementById('member-leader-filter') || {value:''}).value;
+
+  var filtered = _allMembers.filter(function(m) {
+    if (q && !((m.name||'').toLowerCase().includes(q) || (m.email||'').toLowerCase().includes(q))) return false;
+    if (role && m.role !== role) return false;
+    if (leaderId) {
+      // リーダーIDでフィルタ：そのリーダーが担当するメンティーを表示
+      // （assignments情報がない場合は leader_id カラムで代替）
+      if (m.user_id === leaderId) return true; // リーダー自身も表示
+      var leaderMember = _allMembers.find(function(u){ return u.user_id === leaderId; });
+      if (!leaderMember) return false;
+      // メンバーのmentor_idがleaderIdの場合も表示
+      return m.mentor_id === leaderId || m.leader_id === leaderId;
+    }
+    return true;
+  });
+
+  countEl.textContent = 'メンバー一覧（'+filtered.length+'名'+(filtered.length < _allMembers.length ? ' / 全'+_allMembers.length+'名' : '')+'）';
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="loading">該当するメンバーがいません</td></tr>'; return;
+  }
+  tbody.innerHTML = filtered.map(function(m) {
+    var s = statusOf(m.status);
+    return '<tr onclick="showMemberDetail('+JSON.stringify(m).replace(/"/g,'\x26quot;')+')">'
+      + '<td><div class="td-name"><div class="dot '+s.dot+'"></div>'+esc(m.name)+'</div></td>'
+      + '<td><span class="tag '+s.cls+'">'+s.label+'</span></td>'
+      + '<td class="td-m">'+esc(m.mentor_name||'—')+'</td>'
+      + '<td class="td-m">'+esc(m.workplace||'—')+'</td>'
+      + '<td class="td-m">'+esc(m.work_status||'—')+'</td>'
+      + '</tr>';
   }).join('');
 }
 
@@ -1064,7 +1135,16 @@ function showMemberDetail(m) {
   const hireDateEl    = document.getElementById('detail-hire-date');
   const tenureCard    = document.getElementById('detail-tenure-card');
   const tenureEl      = document.getElementById('detail-tenure');
-  if (hireDateEl) hireDateEl.textContent = m.hire_date || '—';
+  if (hireDateEl) {
+    if (m.hire_date) {
+      var hd = new Date(m.hire_date);
+      hireDateEl.textContent = isNaN(hd)
+        ? m.hire_date
+        : hd.getFullYear() + '年' + (hd.getMonth()+1) + '月' + hd.getDate() + '日';
+    } else {
+      hireDateEl.textContent = '—';
+    }
+  }
   if (m.hire_date) {
     const tenure = m.tenure_label || (calcTenure(m.hire_date) || {}).label || '—';
     if (tenureCard) tenureCard.style.display = '';
@@ -1259,14 +1339,76 @@ async function loadTelStock() {
 }
 
 function openTelStockAddModal() {
-  // 行を1行にリセット
+  switchTsTab('manual');
   var rows = document.getElementById('telStockRows');
   rows.innerHTML = '<div class="tel-stock-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
     + '<div><label class="form-label">スペースURL</label><input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px"/></div>'
     + '<div><label class="form-label">Webhook URL</label><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px"/></div>'
     + '</div>';
   document.getElementById('tel-stock-add-result').textContent = '';
+  document.getElementById('ts-csv-preview').textContent = '';
+  document.getElementById('ts-csv-file').value = '';
   openModal('telStockAddModal');
+}
+
+function switchTsTab(tab) {
+  ['manual','csv'].forEach(function(t) {
+    var btn  = document.getElementById('tsTab-' + t);
+    var pane = document.getElementById('tsPane-' + t);
+    if (!btn || !pane) return;
+    var active = (t === tab);
+    btn.style.color        = active ? 'var(--pr)' : 'var(--tx2)';
+    btn.style.borderBottom = active ? '2px solid var(--pr)' : 'none';
+    btn.style.marginBottom = active ? '-2px' : '';
+    pane.style.display     = active ? '' : 'none';
+  });
+}
+
+function downloadTelStockTemplate() {
+  var bom  = '\uFEFF';
+  var text = bom + 'chat_url,webhook_url\nhttps://chat.google.com/room/XXXXX,https://chat.googleapis.com/v1/spaces/XXXXX/messages?key=XXX\n';
+  var blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
+  var a    = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tel_stock_template.csv';
+  a.click();
+}
+
+var _tsCsvItems = [];
+function handleTsCsvDrop(event) {
+  event.preventDefault();
+  document.getElementById('ts-csv-dropzone').style.borderColor = 'var(--bd2)';
+  var file = event.dataTransfer.files[0];
+  if (file) handleTsCsvFile(file);
+}
+
+function handleTsCsvFile(file) {
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var text = ev.target.result;
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    var lines = text.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+    if (lines.length < 2) { document.getElementById('ts-csv-preview').textContent = '❌ データ行がありません'; return; }
+    // 1行目はヘッダー
+    var header = lines[0].toLowerCase().split(',');
+    var chatIdx    = header.indexOf('chat_url');
+    var webhookIdx = header.indexOf('webhook_url');
+    if (chatIdx < 0 || webhookIdx < 0) {
+      document.getElementById('ts-csv-preview').textContent = '❌ ヘッダーに chat_url と webhook_url が必要です';
+      return;
+    }
+    _tsCsvItems = [];
+    lines.slice(1).forEach(function(line) {
+      var cells = line.split(',').map(function(c){ return c.trim().replace(/^"|"$/g,''); });
+      var chat    = cells[chatIdx]    || '';
+      var webhook = cells[webhookIdx] || '';
+      if (chat && webhook) _tsCsvItems.push({ chat_url: chat, webhook_url: webhook });
+    });
+    document.getElementById('ts-csv-preview').textContent = '✅ ' + _tsCsvItems.length + '件を読み込みました';
+    document.getElementById('tel-stock-add-result').textContent = '';
+  };
+  reader.readAsText(file, 'UTF-8');
 }
 
 function addTelStockRow() {
@@ -1280,14 +1422,23 @@ function addTelStockRow() {
 }
 
 async function submitTelStockAdd() {
-  var chatUrls    = Array.from(document.querySelectorAll('.ts-chat-url')).map(function(el){ return el.value.trim(); });
-  var webhookUrls = Array.from(document.querySelectorAll('.ts-webhook-url')).map(function(el){ return el.value.trim(); });
-  var items = [];
-  chatUrls.forEach(function(chat, i) {
-    if (chat && webhookUrls[i]) items.push({ chat_url: chat, webhook_url: webhookUrls[i] });
-  });
   var resultEl = document.getElementById('tel-stock-add-result');
-  if (items.length === 0) { resultEl.style.color='var(--rd)'; resultEl.textContent='URLを入力してください'; return; }
+  var isCsv = document.getElementById('tsPane-csv').style.display !== 'none';
+  var items = [];
+
+  if (isCsv) {
+    // CSVモード
+    if (_tsCsvItems.length === 0) { resultEl.style.color='var(--rd)'; resultEl.textContent='CSVを読み込んでください'; return; }
+    items = _tsCsvItems;
+  } else {
+    // 手動入力モード
+    var chatUrls    = Array.from(document.querySelectorAll('.ts-chat-url')).map(function(el){ return el.value.trim(); });
+    var webhookUrls = Array.from(document.querySelectorAll('.ts-webhook-url')).map(function(el){ return el.value.trim(); });
+    chatUrls.forEach(function(chat, i) {
+      if (chat && webhookUrls[i]) items.push({ chat_url: chat, webhook_url: webhookUrls[i] });
+    });
+    if (items.length === 0) { resultEl.style.color='var(--rd)'; resultEl.textContent='URLを入力してください'; return; }
+  }
 
   var btn = document.getElementById('tel-stock-add-btn');
   btn.disabled = true; btn.textContent = '登録中…';
@@ -1298,6 +1449,7 @@ async function submitTelStockAdd() {
   if (r && r.ok) {
     resultEl.style.color = 'var(--gr)';
     resultEl.textContent = '✅ ' + r.added + '件を登録しました';
+    _tsCsvItems = [];
     await loadTelStock();
     setTimeout(function(){ closeModal('telStockAddModal'); }, 1200);
   } else {
@@ -1422,15 +1574,22 @@ async function saveTelMeetUrl() {
 async function loadAdminMemos(userId) {
   const el = document.getElementById('detail-memo-list');
   el.innerHTML = '<div class="loading">読み込み中…</div>';
-  // user_id はbodyに入れてPOST（gasReqはPOSTのみのため）
   const data = await gasReq('api/admin/memos','GET',{user_id: userId});
   if (!data||!data.memos) { el.innerHTML='<div class="loading">取得できませんでした</div>'; return; }
   if (data.memos.length===0) { el.innerHTML='<div class="loading">メモはありません</div>'; return; }
-  el.innerHTML = data.memos.map(m=>`
-    <div style="padding:12px 20px;border-bottom:1px solid var(--bd)">
-      <div style="font-size:11px;color:var(--tx3);margin-bottom:4px">${new Date(m.created_at).toLocaleString('ja-JP')}</div>
+  el.innerHTML = data.memos.map(m => {
+    const isMemo = (m.memo_type || 'memo') === 'memo';
+    const typeLabel = isMemo
+      ? '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:var(--pr-light);color:var(--pr)">📝 メモ</span>'
+      : '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:var(--am-light);color:var(--am)">📨 メッセージ</span>';
+    return `<div style="padding:12px 20px;border-bottom:1px solid var(--bd)">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        ${typeLabel}
+        <span style="font-size:11px;color:var(--tx3)">${new Date(m.created_at).toLocaleString('ja-JP')}</span>
+      </div>
       <div style="font-size:13px;color:var(--tx);line-height:1.6;white-space:pre-wrap">${esc(m.content)}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 async function saveAdminMemo() {
@@ -1549,9 +1708,11 @@ async function loadContents() {
   const data = await gasReq('api/admin/contents');
   const card = document.getElementById('contentsCard');
   if (!data||!data.contents) { card.innerHTML='<div class="ch"><div class="ct">登録済みコンテンツ</div></div><div class="loading">取得に失敗しました</div>'; return; }
+  // ★ 新しい順（降順）でソート
+  const sorted = data.contents.slice().sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); });
   const iconMap={video:'📹',document:'📄',link:'🔗'};
-  const items=data.contents.map(c=>`
-    <div class="content-item">
+  const items = sorted.map(c=>`
+    <div class="content-item" id="content-row-${esc(c.content_id)}">
       <div class="ci-ic">${iconMap[c.type]||'🔗'}</div>
       <div class="ci-info"><div class="ci-title">${esc(c.title)}</div><div class="ci-meta">${esc(c.type)} ${c.duration?c.duration+'分':''} — ${fmtDate(c.created_at)}登録</div></div>
       <div style="display:flex;gap:6px;flex-shrink:0">
@@ -1559,7 +1720,7 @@ async function loadContents() {
         <button class="btn btn-sm" style="background:var(--rd-light);color:var(--rd);border:none" onclick="deleteContent('${esc(c.content_id)}','${esc(c.title)}')">削除</button>
       </div>
     </div>`).join('')||'<div class="loading">コンテンツがありません</div>';
-  card.innerHTML=`<div class="ch"><div class="ct">登録済みコンテンツ（${data.contents.length}件）</div></div>`+items;
+  card.innerHTML=`<div class="ch"><div class="ct">登録済みコンテンツ（${sorted.length}件）</div></div>`+items;
 }
 
 async function addContent() {
@@ -1573,7 +1734,16 @@ async function addContent() {
 async function deleteContent(contentId, title) {
   if(!confirm('「'+title+'」を削除しますか？'))return;
   const r=await gasReq('api/admin/contents/delete','POST',{content_id:contentId});
-  if(r&&(r.ok||!r.error)){await loadContents();toast('削除しました');}
+  if(r&&(r.ok||!r.error)){
+    // ★ UI即時反映: GASレスポンスを待たずにDOMから該当行を削除
+    const row = document.getElementById('content-row-'+contentId);
+    if (row) {
+      row.style.transition = 'opacity .2s';
+      row.style.opacity = '0';
+      setTimeout(function(){ row.remove(); }, 200);
+    }
+    toast('削除しました');
+  }
   else toast('削除に失敗: '+(r&&(r.error||r.message)||'GAS応答なし'),'err');
 }
 
@@ -1643,9 +1813,16 @@ async function loadNotices() {
     else if (notYet)  { statusLabel='⏳ 配信待ち'; statusColor='var(--am)'; }
     else              { statusLabel='✅ 表示中';   statusColor='var(--gr)'; }
 
-    const targetLabel = n.target_id==='all' ? '全員'
-      : n.target_id==='mentor' ? 'メンター'
-      : n.target_id==='mentee' ? 'メンティー' : n.target_id;
+    const targetLabel = n.target_id === 'all'             ? '全員'
+      : n.target_id === 'role:mentor'   ? 'メンター全員'
+      : n.target_id === 'role:mentee'   ? 'メンティー全員'
+      : n.target_id === 'role:admin'    ? '管理者全員'
+      : n.target_id.startsWith('role:') ? n.target_id.replace('role:','') + '全員'
+      : (function(){
+          // 個人指定: user_idから名前に変換
+          var u = _allMembers.find(function(m){ return m.user_id === n.target_id; });
+          return u ? u.name + ' さん' : n.target_id;
+        })();
     const fmt = dt => dt ? (dt.getMonth()+1)+'/'+dt.getDate()+' '+('0'+dt.getHours()).slice(-2)+':'+('0'+dt.getMinutes()).slice(-2) : null;
     const fromStr  = fmt(from)  || '即時';
     const untilStr = fmt(until) || '無期限';
@@ -1810,9 +1987,8 @@ async function sendMsg(){
   const btn=document.getElementById('msgSendBtn');
   if(!content){resultEl.style.color='var(--rd)';resultEl.textContent='メッセージを入力してください';return;}
   btn.textContent='送信中…';btn.disabled=true;
-  // api/admin/memos: 内部メモとして保存（is_notice=FALSE→メンティーには表示されない）
-  // お知らせとして表示したい場合は「お知らせ配信」画面を使用
-  const r=await gasReq('api/admin/memos','POST',{target_id:_msgTargetId, content});
+  // api/admin/memos: memo_type='message' でメッセージとして保存
+  const r=await gasReq('api/admin/memos','POST',{target_id:_msgTargetId, content, memo_type:'message'});
   btn.textContent='送信';btn.disabled=false;
   if(r&&(r.ok||r.memo_id)){closeModal('msgModal');toast('メモを保存しました');}
   else{resultEl.style.color='var(--rd)';resultEl.textContent='保存に失敗しました';}
@@ -1981,9 +2157,39 @@ async function submitAssignment(){
 
 async function deleteAssignment(id){
   if(!confirm('この割り当てを削除しますか？'))return;
-  // GASはDELETEを受け付けないため /delete パスでPOST
   const r=await gasReq('api/admin/leader-assignments/delete','POST',{assignment_id:id});
-  if(r&&!r.error){await loadLeaderAssignments();toast('削除しました');}
+  if(r&&!r.error){
+    // UI即時反映: 削除したIDの行をテーブルとサマリーから除去してから再描画
+    _allAssignments = _allAssignments.filter(function(a){ return a.assignment_id !== id; });
+    // KPI更新
+    const lIds=[...new Set(_allAssignments.map(a=>a.leader_id))];
+    const mIds=[...new Set(_allAssignments.map(a=>a.mentee_id))];
+    document.getElementById('la-kpi-leaders').textContent=lIds.length+'名';
+    document.getElementById('la-kpi-mentees').textContent=mIds.length+'名';
+    document.getElementById('la-kpi-total').textContent  =_allAssignments.length+'件';
+    // テーブル再描画
+    const tableEl=document.getElementById('assignmentsTable');
+    if(_allAssignments.length===0){tableEl.innerHTML='<div class="loading">割り当てがありません</div>';}
+    else{tableEl.innerHTML=`<table><thead><tr><th>Leader</th><th>担当Mentee</th><th>割り当て日</th><th></th></tr></thead><tbody>
+      ${_allAssignments.map(a=>`<tr>
+        <td><strong>${esc(a.leader_name||a.leader_id)}</strong></td>
+        <td>${esc(a.mentee_name||a.mentee_id)}</td>
+        <td class="td-m">${fmtDate(a.created_at)}</td>
+        <td><button class="btn btn-sm" style="background:var(--rd-light);color:var(--rd);border:none" onclick="deleteAssignment('${a.assignment_id}')">削除</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;}
+    // サマリー再描画
+    const sumEl=document.getElementById('leaderSummary');
+    const byL={};
+    _allAssignments.forEach(a=>{if(!byL[a.leader_id])byL[a.leader_id]={name:a.leader_name||a.leader_id,mentees:[]};byL[a.leader_id].mentees.push(a.mentee_name||a.mentee_id);});
+    sumEl.innerHTML=Object.values(byL).map(l=>`
+      <div class="card" style="padding:14px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:8px">📞 ${esc(l.name)}</div>
+        <div style="font-size:12px;color:var(--tx2)">担当: ${l.mentees.map(esc).join('、')}</div>
+        <div style="font-size:11px;color:var(--tx3);margin-top:4px">${l.mentees.length}名担当</div>
+      </div>`).join('');
+    toast('削除しました');
+  }
   else toast('削除に失敗しました','err');
 }
 
