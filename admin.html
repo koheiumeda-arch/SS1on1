@@ -622,21 +622,44 @@ body.login-mode .main { display:none !important; }
     <div class="card" style="margin-bottom:16px">
       <div class="ch"><div class="ct">📋 CSVフォーマット</div></div>
       <div style="padding:14px 18px">
-        <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">列順（1行目はヘッダー不要）:</div>
-        <div style="font-size:12px;font-family:monospace;background:var(--bg3);border-radius:8px;padding:10px;color:var(--tx)">name, email, role, birthday, password, workplace, work_status, hourly_wage, phone_number</div>
-        <div style="margin-top:10px">
-          <button class="btn btn-g btn-sm" onclick="downloadBulkTemplate()">⬇ テンプレートCSVダウンロード</button>
+        <div style="font-size:12px;color:var(--tx2);margin-bottom:4px">列順（1行目はヘッダー行）:</div>
+        <div style="font-size:12px;font-family:monospace;background:var(--bg3);border-radius:8px;padding:10px;color:var(--tx);margin-bottom:10px">name, email, role, birthday, password, workplace, work_status, hourly_wage, phone_number, hire_date</div>
+        <div style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.7">
+          💡 <strong>追加 + 更新（upsert）対応：</strong><br>
+          ・CSVにないユーザー（A,B,C のうち C がCSVにない）→ <span style="color:var(--gr);font-weight:600">変更なし</span><br>
+          ・CSVにある新規ユーザー（D）→ <span style="color:var(--pr);font-weight:600">新規追加</span>（password必須）<br>
+          ・CSVにある既存ユーザー（A,B）→ <span style="color:var(--am);font-weight:600">CSVの内容で更新</span>（passwordは空欄で変更なし）
         </div>
+        <button class="btn btn-g btn-sm" onclick="downloadBulkTemplate()">⬇ テンプレートCSVダウンロード</button>
       </div>
     </div>
     <div class="card">
-      <div class="ch"><div class="ct">📝 CSVを貼り付け</div></div>
+      <div class="ch"><div class="ct">📁 CSVファイルをアップロード</div></div>
       <div style="padding:14px 18px">
-        <textarea class="inp" id="bulk-csv-input" rows="8" placeholder="CSVデータを貼り付けてください（1行目はヘッダーなし）&#10;例: 山田 太郎,yamada@example.com,mentee,1995-06-15,pass123,渋谷,正社員,1500,090-1234-5678" style="font-family:monospace;font-size:12px" oninput="previewBulkCSV()"></textarea>
+        <!-- ドロップゾーン -->
+        <div id="csv-dropzone" style="border:2px dashed var(--bd2);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px"
+          onclick="document.getElementById('csv-file-input').click()"
+          ondragover="event.preventDefault();this.style.borderColor='var(--pr)';this.style.background='var(--pr-light)'"
+          ondragleave="this.style.borderColor='var(--bd2)';this.style.background=''"
+          ondrop="handleCsvDrop(event)">
+          <div style="font-size:32px;margin-bottom:8px">📂</div>
+          <div style="font-size:14px;font-weight:600;color:var(--tx2);margin-bottom:4px">クリックまたはドラッグ＆ドロップ</div>
+          <div style="font-size:12px;color:var(--tx3)">CSVファイル（.csv）を選択してください</div>
+        </div>
+        <input type="file" id="csv-file-input" accept=".csv,text/csv" style="display:none" onchange="handleCsvFile(this.files[0])">
+        <!-- ファイル選択後のプレビュー -->
+        <div id="csv-file-info" style="display:none;margin-bottom:10px;padding:10px 14px;background:var(--bg3);border-radius:8px;display:none;align-items:center;gap:10px">
+          <span style="font-size:18px">📄</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600" id="csv-filename">—</div>
+            <div style="font-size:11px;color:var(--tx3)" id="csv-rowcount">—</div>
+          </div>
+          <button class="btn btn-g btn-sm" onclick="clearCsvFile()" style="flex-shrink:0">✕ クリア</button>
+        </div>
         <div id="bulk-preview" style="margin-top:12px"></div>
         <div id="bulk-msg" style="font-size:13px;margin-top:8px"></div>
         <div style="display:flex;justify-content:flex-end;margin-top:12px">
-          <button class="btn btn-p" id="bulk-import-btn" onclick="executeBulkImport()">✅ 一括登録</button>
+          <button class="btn btn-p" id="bulk-import-btn" onclick="executeBulkImport()" disabled style="opacity:0.5">✅ 一括登録・更新</button>
         </div>
       </div>
     </div>
@@ -2203,14 +2226,11 @@ async function saveMentorDuration() {
 // ══ 一括入出力 ══
 function initBulkIO() {
   switchBulkTab('import');
-  document.getElementById('bulk-csv-input').value = '';
-  document.getElementById('bulk-preview').innerHTML = '';
+  clearCsvFile();
   document.getElementById('bulk-msg').textContent = '';
   document.getElementById('exp-msg').textContent = '';
-  // エクスポート用フィルターセレクトをリセット
   document.getElementById('exp-scope-filter').value = '';
   onExpScopeChange();
-  // メンター／ユーザー選択肢を _allMembers から生成
   var mentors = _allMembers.filter(function(u){ return u.role === 'mentor'; });
   var mSel = document.getElementById('exp-mentor-filter');
   mSel.innerHTML = '<option value="">メンターを選択…</option>' +
@@ -2239,65 +2259,177 @@ function switchBulkTab(tab) {
   });
 }
 
+// ── CSVテンプレートダウンロード（ヘッダー行付き・hire_date追加）──
 function downloadBulkTemplate() {
-  var header = 'name,email,role,birthday,password,workplace,work_status,hourly_wage,phone_number\n';
-  var sample = '山田太郎,yamada@example.com,mentee,1995-06-15,pass123,渋谷,正社員,1500,090-1234-5678\n';
-  var blob = new Blob([header + sample], { type: 'text/csv;charset=utf-8;' });
-  var url  = URL.createObjectURL(blob);
-  var a    = document.createElement('a');
+  var header = 'name,email,role,birthday,password,workplace,work_status,hourly_wage,phone_number,hire_date\n';
+  var sample = '山田太郎,yamada@example.com,mentee,1995-06-15,pass123,渋谷,正社員,1500,090-1234-5678,2023-04-01\n';
+  var bom    = '\uFEFF'; // Excel文字化け防止
+  var blob   = new Blob([bom + header + sample], { type: 'text/csv;charset=utf-8;' });
+  var url    = URL.createObjectURL(blob);
+  var a      = document.createElement('a');
   a.href = url; a.download = 'bulk_import_template.csv';
   a.click(); URL.revokeObjectURL(url);
 }
 
-function previewBulkCSV() {
-  var raw = document.getElementById('bulk-csv-input').value.trim();
-  var previewEl = document.getElementById('bulk-preview');
-  if (!raw) { previewEl.innerHTML = ''; return; }
-  var lines = raw.split('\n').filter(function(l){ return l.trim(); });
-  var cols  = ['氏名','メール','ロール','生年月日','パスワード','稼働場所','雇用形態','時給','電話番号'];
-  var html  = '<div style="font-size:12px;color:var(--tx3);margin-bottom:6px">' + lines.length + '件のプレビュー</div>';
+// ── ドラッグ＆ドロップ ──
+function handleCsvDrop(event) {
+  event.preventDefault();
+  var dz = document.getElementById('csv-dropzone');
+  dz.style.borderColor = 'var(--bd2)';
+  dz.style.background  = '';
+  var file = event.dataTransfer.files[0];
+  if (file) handleCsvFile(file);
+}
+
+// ── CSVファイル読み込み ──
+var _csvRows = [];
+function handleCsvFile(file) {
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var text = ev.target.result;
+    // BOM除去
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    parseCsvAndPreview(text, file.name);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseCsvAndPreview(text, filename) {
+  var lines = text.split('\n').map(function(l){ return l.trim(); }).filter(function(l){ return l; });
+  if (lines.length < 2) {
+    document.getElementById('bulk-msg').style.color = 'var(--rd)';
+    document.getElementById('bulk-msg').textContent = '❌ データ行がありません（ヘッダー行を含めて2行以上必要です）';
+    return;
+  }
+
+  // 1行目はヘッダーとして解析
+  var headerLine = lines[0];
+  var headerCols = headerLine.split(',').map(function(c){ return c.trim().toLowerCase(); });
+
+  // 標準フィールドの列インデックスを特定（順不同対応）
+  var fieldMap = {
+    name: headerCols.indexOf('name'),
+    email: headerCols.indexOf('email'),
+    role: headerCols.indexOf('role'),
+    birthday: headerCols.indexOf('birthday'),
+    password: headerCols.indexOf('password'),
+    workplace: headerCols.indexOf('workplace'),
+    work_status: headerCols.indexOf('work_status'),
+    hourly_wage: headerCols.indexOf('hourly_wage'),
+    phone_number: headerCols.indexOf('phone_number'),
+    hire_date: headerCols.indexOf('hire_date'),
+    mentor_id: headerCols.indexOf('mentor_id'),
+  };
+
+  var dataLines = lines.slice(1);
+  _csvRows = dataLines.map(function(line) {
+    var cells = parseCSVLine(line);
+    var obj = {};
+    Object.keys(fieldMap).forEach(function(field) {
+      var idx = fieldMap[field];
+      obj[field] = idx >= 0 ? (cells[idx] || '').trim() : '';
+    });
+    return obj;
+  }).filter(function(r){ return r.email || r.name; }); // 空行除外
+
+  // ファイル情報表示
+  var fileInfo = document.getElementById('csv-file-info');
+  fileInfo.style.display = 'flex';
+  document.getElementById('csv-filename').textContent  = filename || 'ファイル';
+  document.getElementById('csv-rowcount').textContent  = _csvRows.length + '件のデータ行（ヘッダー除く）';
+
+  // プレビューテーブル表示
+  var dispCols = ['name','email','role','birthday','workplace','work_status','hire_date'];
+  var dispLabels = ['氏名','メール','ロール','生年月日','稼働場所','雇用形態','入社日'];
+  var html = '<div style="font-size:12px;color:var(--tx3);margin-bottom:6px">プレビュー（最大10件）</div>';
   html += '<div style="overflow-x:auto"><table style="width:100%;font-size:11px;border-collapse:collapse">';
-  html += '<thead><tr>' + cols.map(function(c){ return '<th style="padding:5px 8px;border:1px solid var(--bd);background:var(--bg3);text-align:left">' + c + '</th>'; }).join('') + '</tr></thead><tbody>';
-  lines.slice(0,10).forEach(function(line) {
-    var cells = line.split(',');
-    html += '<tr>' + cols.map(function(c,i) {
-      return '<td style="padding:4px 8px;border:1px solid var(--bd)">' + (cells[i] ? cells[i].trim() : '') + '</td>';
+  html += '<thead><tr>' + dispLabels.map(function(c){
+    return '<th style="padding:5px 8px;border:1px solid var(--bd);background:var(--bg3);text-align:left;white-space:nowrap">' + c + '</th>';
+  }).join('') + '</tr></thead><tbody>';
+  _csvRows.slice(0,10).forEach(function(row) {
+    html += '<tr>' + dispCols.map(function(f){
+      return '<td style="padding:4px 8px;border:1px solid var(--bd);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(row[f]||'') + '</td>';
     }).join('') + '</tr>';
   });
-  if (lines.length > 10) html += '<tr><td colspan="' + cols.length + '" style="padding:4px 8px;border:1px solid var(--bd);color:var(--tx3)">...他 '+(lines.length-10)+' 件</td></tr>';
+  if (_csvRows.length > 10) {
+    html += '<tr><td colspan="' + dispCols.length + '" style="padding:4px 8px;border:1px solid var(--bd);color:var(--tx3);text-align:center">他 '+(_csvRows.length-10)+' 件</td></tr>';
+  }
   html += '</tbody></table></div>';
-  previewEl.innerHTML = html;
+  document.getElementById('bulk-preview').innerHTML = html;
+  document.getElementById('bulk-msg').textContent = '';
+
+  // ボタン有効化
+  var btn = document.getElementById('bulk-import-btn');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+}
+
+// CSVの1行をパース（カンマ区切り、ダブルクォート対応）
+function parseCSVLine(line) {
+  var result = [];
+  var cur    = '';
+  var inQ    = false;
+  for (var i = 0; i < line.length; i++) {
+    var ch = line[i];
+    if (ch === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (ch === ',' && !inQ) {
+      result.push(cur); cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+function clearCsvFile() {
+  _csvRows = [];
+  document.getElementById('csv-file-input').value = '';
+  var fileInfo = document.getElementById('csv-file-info');
+  if (fileInfo) fileInfo.style.display = 'none';
+  var preview = document.getElementById('bulk-preview');
+  if (preview) preview.innerHTML = '';
+  var msg = document.getElementById('bulk-msg');
+  if (msg) msg.textContent = '';
+  var btn = document.getElementById('bulk-import-btn');
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+  var dz = document.getElementById('csv-dropzone');
+  if (dz) { dz.style.borderColor = ''; dz.style.background = ''; }
 }
 
 async function executeBulkImport() {
-  var raw = document.getElementById('bulk-csv-input').value.trim();
   var msgEl = document.getElementById('bulk-msg');
-  if (!raw) { msgEl.style.color='var(--rd)'; msgEl.textContent='CSVを入力してください'; return; }
-  var lines = raw.split('\n').filter(function(l){ return l.trim(); });
-  var fieldOrder = ['name','email','role','birthday','password','workplace','work_status','hourly_wage','phone_number'];
-  var rows = lines.map(function(line) {
-    var cells = line.split(',').map(function(c){ return c.trim(); });
-    var obj = {};
-    fieldOrder.forEach(function(f,i){ obj[f] = cells[i] || ''; });
-    return obj;
-  });
+  if (!_csvRows || _csvRows.length === 0) {
+    msgEl.style.color = 'var(--rd)'; msgEl.textContent = '❌ CSVファイルを選択してください'; return;
+  }
   var btn = document.getElementById('bulk-import-btn');
-  btn.disabled = true; btn.textContent = '登録中…';
+  btn.disabled = true; btn.textContent = '登録・更新中…';
   msgEl.textContent = '';
-  var r = await gasReq('api/admin/users/bulk-import','POST',{ rows: rows });
-  btn.disabled = false; btn.textContent = '✅ 一括登録';
+
+  var r = await gasReq('api/admin/users/bulk-import','POST',{ rows: _csvRows });
+  btn.disabled = false; btn.textContent = '✅ 一括登録・更新';
+
   if (r && r.ok) {
     Cache.bust('allusers');
-    msgEl.style.color = 'var(--gr)';
-    msgEl.textContent = '✅ ' + r.success_count + '/' + r.total + '件を登録しました';
-    var errs = (r.results || []).filter(function(x){ return !x.ok; });
-    if (errs.length > 0) {
-      msgEl.textContent += '（失敗: ' + errs.map(function(e){ return e.email + '(' + e.error + ')'; }).join(', ') + '）';
-      msgEl.style.color = 'var(--am)';
+    var added   = r.added_count   || 0;
+    var updated = r.updated_count || 0;
+    var failed  = (r.results || []).filter(function(x){ return !x.ok; });
+    msgEl.style.color = failed.length > 0 ? 'var(--am)' : 'var(--gr)';
+    msgEl.innerHTML =
+      '✅ 完了: <strong>新規追加 '+added+'件</strong> ／ <strong>更新 '+updated+'件</strong>'
+      + (failed.length > 0
+        ? '<br>⚠️ スキップ: ' + failed.map(function(e){ return esc(e.email)+'（'+esc(e.error)+'）'; }).join('、')
+        : '');
+    if (added + updated > 0) {
+      setTimeout(function(){ loadMembers(); }, 800);
     }
   } else {
     msgEl.style.color = 'var(--rd)';
     msgEl.textContent = '❌ 登録に失敗しました: ' + ((r && (r.error || r.message)) || 'GAS応答なし');
+    btn.style.opacity = '1';
   }
 }
 
