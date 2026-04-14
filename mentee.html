@@ -643,6 +643,16 @@ input[type="month"].inp{padding:11px 14px}
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzdwzQYNRRHO5S7Fq1qBE7qYoMEYoJTjqU1MoQivOWxFpzt4w5NcuICTOYROISn6KYpmQ/exec';
 
+// ── HTMLエスケープユーティリティ（XSS防止）──
+function esc(s) {
+  var t = String(s || '');
+  t = t.replace(/&/g, '&amp;');
+  t = t.replace(/</g, '&lt;');
+  t = t.replace(/>/g, '&gt;');
+  t = t.replace(/"/g, '&quot;');
+  return t;
+}
+
 // ── 在籍期間計算ユーティリティ ──
 function calcTenure(hireDateStr) {
   if (!hireDateStr) return null;
