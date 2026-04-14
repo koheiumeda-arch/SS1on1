@@ -637,7 +637,7 @@ body.login-mode .main { display:none !important; }
 
 <!-- TELストック追加モーダル -->
 <div class="modal" id="telStockAddModal">
-  <div class="modal-content" style="max-width:620px">
+  <div class="modal-content" style="max-width:760px;padding:20px 22px">
     <span class="modal-close" onclick="closeModal('telStockAddModal')">✕</span>
     <div class="modal-title">📦 TELスペースをストックに追加</div>
     <div style="font-size:13px;color:var(--tx2);background:var(--bg3);border-radius:10px;padding:12px 14px;margin-bottom:16px;line-height:1.7">
@@ -651,19 +651,21 @@ body.login-mode .main { display:none !important; }
     </div>
     <!-- 手動入力 -->
     <div id="tsPane-manual">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px">
-        <div class="form-label" style="margin:0">スペースURL</div>
-        <div class="form-label" style="margin:0">Webhook URL</div>
-        <div class="form-label" style="margin:0">Meet URL</div>
-      </div>
       <div id="telStockRows">
-        <div class="tel-stock-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;align-items:start">
+        <div class="tel-stock-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;align-items:start">
           <div>
-            <input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px" oninput="onChatUrlInput(this)"/>
+            <div class="form-label" style="margin-bottom:4px">スペースURL</div>
+            <input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px;width:100%" oninput="onChatUrlInput(this)"/>
             <div class="ts-space-id-preview" style="font-size:10px;color:var(--pr);margin-top:3px;min-height:14px"></div>
           </div>
-          <div><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px"/></div>
-          <div><input class="inp ts-meet-url" placeholder="https://meet.google.com/xxx-xxxx-xxx" style="font-size:12px"/></div>
+          <div>
+            <div class="form-label" style="margin-bottom:4px">Webhook URL</div>
+            <input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px;width:100%"/>
+          </div>
+          <div>
+            <div class="form-label" style="margin-bottom:4px">Meet URL</div>
+            <input class="inp ts-meet-url" placeholder="https://meet.google.com/xxx-xxxx-xxx" style="font-size:12px;width:100%"/>
+          </div>
         </div>
       </div>
       <button class="btn btn-g btn-sm" onclick="addTelStockRow()" style="margin-bottom:14px">＋ 行を追加</button>
@@ -1469,11 +1471,24 @@ async function loadTelStock() {
 
 function openTelStockAddModal() {
   switchTsTab('manual');
+  // ★ 3列（スペースURL / Webhook URL / Meet URL）でリセット
   var rows = document.getElementById('telStockRows');
-  rows.innerHTML = '<div class="tel-stock-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
-    + '<div><label class="form-label">スペースURL</label><input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px"/></div>'
-    + '<div><label class="form-label">Webhook URL</label><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px"/></div>'
+  rows.innerHTML = '<div class="tel-stock-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;align-items:start">'
+    + '<div>'
+    +   '<div class="form-label" style="margin-bottom:4px">スペースURL</div>'
+    +   '<input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px;width:100%" oninput="onChatUrlInput(this)"/>'
+    +   '<div class="ts-space-id-preview" style="font-size:10px;color:var(--pr);margin-top:3px;min-height:14px"></div>'
+    + '</div>'
+    + '<div>'
+    +   '<div class="form-label" style="margin-bottom:4px">Webhook URL</div>'
+    +   '<input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px;width:100%"/>'
+    + '</div>'
+    + '<div>'
+    +   '<div class="form-label" style="margin-bottom:4px">Meet URL</div>'
+    +   '<input class="inp ts-meet-url" placeholder="https://meet.google.com/xxx-xxxx-xxx" style="font-size:12px;width:100%"/>'
+    + '</div>'
     + '</div>';
+  _tsCsvItems = [];
   document.getElementById('tel-stock-add-result').textContent = '';
   document.getElementById('ts-csv-preview').textContent = '';
   document.getElementById('ts-csv-file').value = '';
@@ -1568,13 +1583,13 @@ function addTelStockRow() {
   var rows = document.getElementById('telStockRows');
   var div  = document.createElement('div');
   div.className = 'tel-stock-row';
-  div.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;align-items:start';
+  div.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;align-items:start';
   div.innerHTML = '<div>'
-    + '<input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px" oninput="onChatUrlInput(this)"/>'
+    + '<input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px;width:100%" oninput="onChatUrlInput(this)"/>'
     + '<div class="ts-space-id-preview" style="font-size:10px;color:var(--pr);margin-top:3px;min-height:14px"></div>'
     + '</div>'
-    + '<div><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px"/></div>'
-    + '<div><input class="inp ts-meet-url" placeholder="https://meet.google.com/xxx-xxxx-xxx" style="font-size:12px"/></div>';
+    + '<div><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px;width:100%"/></div>'
+    + '<div><input class="inp ts-meet-url" placeholder="https://meet.google.com/xxx-xxxx-xxx" style="font-size:12px;width:100%"/></div>';
   rows.appendChild(div);
 }
 
