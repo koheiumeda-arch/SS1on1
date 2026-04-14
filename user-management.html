@@ -1020,8 +1020,7 @@ let _telStockCache = [];
 // ★ TELスペース割り当て解除
 async function unassignTelStock() {
   if (!editId) return;
-  if (!confirm('このメンティーのTELスペース割り当てを解除しますか？
-Chat URL・Webhook URL・Meet URLがクリアされます。')) return;
+  if (!confirm('このメンティーのTELスペース割り当てを解除しますか？\nChat URL・Webhook URL・Meet URLがクリアされます。')) return;
 
   const btn = document.getElementById('telUnassignBtn');
   if (btn) { btn.disabled = true; btn.textContent = '解除中…'; }
