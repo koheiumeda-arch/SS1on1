@@ -223,8 +223,8 @@ input[type="month"].inp{padding:11px 14px}
   </div>
   <div class="goal-card">
     <div class="card-label">🎯 今月の目標</div>
-    <div class="goal-text" id="currentGoal">TypeScriptの型定義を完全に理解し、新機能開発で独力実装できるようになる</div>
-    <div class="goal-from" id="goalFrom">📋 1/31の1on1レポートより</div>
+    <div class="goal-text" id="currentGoal">読み込み中…</div>
+    <div class="goal-from" id="goalFrom">📋 最新の1on1レポートより</div>
     <div id="home-goals-section" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2)">
       <div class="goal-label" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;margin-bottom:3px">半年業務目標</div>
       <div id="home-goal-work" style="font-size:13px;color:#fff;margin-bottom:8px">—</div>
@@ -405,8 +405,24 @@ input[type="month"].inp{padding:11px 14px}
   <div class="card">
     <div class="ch"><div class="ct">満足度評価</div></div>
     <div style="padding:18px">
-      <div class="form-group"><div class="form-label">進捗・成長についての満足度</div><div class="stars" id="stars-progress" data-val="4" onclick="rateStar(this,'progress')"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div></div>
-      <div class="form-group"><div class="form-label">メンタル・モチベーション</div><div class="stars" id="stars-mental" data-val="3" onclick="rateStar(this,'mental')"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div></div>
+      <div class="form-group"><div class="form-label">進捗・成長についての満足度</div>
+        <div class="stars" id="stars-progress">
+          <span class="star-e" onclick="rateStar(1,'progress')" style="cursor:pointer;font-size:28px">★</span>
+          <span class="star-e" onclick="rateStar(2,'progress')" style="cursor:pointer;font-size:28px">★</span>
+          <span class="star-e" onclick="rateStar(3,'progress')" style="cursor:pointer;font-size:28px">★</span>
+          <span class="star-e" onclick="rateStar(4,'progress')" style="cursor:pointer;font-size:28px">★</span>
+          <span class="star-e" onclick="rateStar(5,'progress')" style="cursor:pointer;font-size:28px">★</span>
+        </div>
+      </div>
+      <div class="form-group"><div class="form-label">メンタル・モチベーション</div>
+        <div class="stars" id="stars-mental">
+          <span class="star-e" onclick="rateStar(1,'mental')" style="cursor:pointer;font-size:28px">★</span>
+          <span class="star-e" onclick="rateStar(2,'mental')" style="cursor:pointer;font-size:28px">★</span>
+          <span class="star-e" onclick="rateStar(3,'mental')" style="cursor:pointer;font-size:28px">★</span>
+          <span class="star-e" onclick="rateStar(4,'mental')" style="cursor:pointer;font-size:28px">★</span>
+          <span class="star-e" onclick="rateStar(5,'mental')" style="cursor:pointer;font-size:28px">★</span>
+        </div>
+      </div>
       <div class="form-group" style="margin-bottom:0"><div class="form-label">自由コメント（任意）</div><textarea class="inp" id="survey-comment" rows="3" placeholder="感想や要望があれば記入してください…"></textarea></div>
     </div>
   </div>
@@ -1040,8 +1056,15 @@ function goScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const s = document.getElementById('s-' + id);
   if (s) s.classList.add('active');
-  // 事前レポート画面: 公開済みレポートの次月目標を readonly 参照表示
   if (id === 'preReport') updatePreReportNextMonthGoals();
+  // ★ アンケート画面を開くたびに星をリセット＆booking_idをセット
+  if (id === 'survey') {
+    _ratings = { progress: 0, mental: 0 };
+    rateStar(0, 'progress');
+    rateStar(0, 'mental');
+    document.getElementById('survey-comment').value = '';
+    loadSurveyData();
+  }
 }
 
 function updatePreReportNextMonthGoals() {
@@ -1096,12 +1119,13 @@ function openMeet(link) {
 
 // ══ 星評価 ══
 var _ratings = { progress: 0, mental: 0 };
-function rateStar(el, type) {
-  var container = el.parentElement;
-  var stars = Array.from(container.children);
-  var val = stars.indexOf(el) + 1;
+function rateStar(val, type) {
   _ratings[type] = val;
-  stars.forEach(function(s, i) { s.className = i < val ? 'star-f' : 'star-e'; });
+  var container = document.getElementById('stars-' + type);
+  if (!container) return;
+  Array.from(container.children).forEach(function(s, i) {
+    s.className = i < val ? 'star-f' : 'star-e';
+  });
 }
 
 // ══ アンケート送信 ══
@@ -1590,6 +1614,27 @@ async function loadReports() {
   if (!data) return;
   const reports = data.reports || [];
   _myMentorReports = reports; // キャッシュ
+
+  // ★ ホーム画面「今月の目標」を最新の公開済みレポートの next_goal から更新
+  var latestWithGoal = reports.find(function(r) {
+    return r.is_published === 'TRUE' && r.next_goal;
+  });
+  var goalEl   = document.getElementById('currentGoal');
+  var fromEl   = document.getElementById('goalFrom');
+  if (goalEl) {
+    if (latestWithGoal) {
+      goalEl.textContent = latestWithGoal.next_goal;
+      if (fromEl) {
+        var dt = new Date(latestWithGoal.created_at);
+        var label = isNaN(dt) ? '' : (dt.getMonth()+1) + '/' + dt.getDate();
+        fromEl.textContent = '📋 ' + label + ' の1on1レポートより';
+      }
+    } else if (reports.length === 0) {
+      goalEl.textContent = 'まだ目標が設定されていません';
+      if (fromEl) fromEl.textContent = 'メンターが1on1レポートを公開すると表示されます';
+    }
+    // レポートはあるが next_goal がない場合はハードコードのまま上書きしない
+  }
 
   // レポート一覧画面
   const container = document.getElementById('reportsList');
