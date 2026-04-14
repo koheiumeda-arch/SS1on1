@@ -783,8 +783,30 @@ td{padding:10px 14px;font-size:13px}
 
     <!-- 半年目標設定 -->
     <div class="card" style="margin-top:10px">
-      <div class="ch"><div class="ct">🎯 半年目標設定</div></div>
+      <div class="ch">
+        <div class="ct">🎯 半年目標設定</div>
+        <div id="md-goal-period-badge" style="font-size:11px;color:var(--pr);font-weight:600"></div>
+      </div>
       <div style="padding:12px 16px 8px">
+        <!-- 現在の目標確認エリア -->
+        <div id="md-goal-current-area" style="display:none;background:var(--pr-light);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px">
+          <div style="font-weight:700;color:var(--pr);margin-bottom:4px">📌 現在設定中の目標</div>
+          <div id="md-goal-current-period" style="color:var(--pr);font-size:11px;margin-bottom:4px"></div>
+          <div style="color:var(--tx2);margin-bottom:2px">【業務】<span id="md-goal-current-work"></span></div>
+          <div style="color:var(--tx2)">【スキル】<span id="md-goal-current-skill"></span></div>
+        </div>
+        <!-- 期間設定 -->
+        <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:10px">
+          <div>
+            <label class="form-label" style="font-size:11px">開始月</label>
+            <input type="month" class="inp" id="md-goal-start" style="font-size:12px;padding:6px 8px" oninput="onGoalStartChange()">
+          </div>
+          <div style="color:var(--tx3);font-size:12px;margin-top:16px">〜</div>
+          <div>
+            <label class="form-label" style="font-size:11px">終了月（自動）</label>
+            <input type="month" class="inp" id="md-goal-end" style="font-size:12px;padding:6px 8px;background:var(--bg3);color:var(--tx3)" readonly>
+          </div>
+        </div>
         <div class="form-group">
           <label class="form-label">半年業務目標</label>
           <textarea class="inp" id="md-goal-work" rows="2" placeholder="業務面での半年後の目標…" style="margin-bottom:8px"></textarea>
@@ -2611,11 +2633,19 @@ function loadMembersTab() {
     card.style.cssText = 'overflow:hidden;cursor:pointer;transition:box-shadow .2s';
     card.setAttribute('data-uid', m.user_id);
 
-    // クリックで詳細表示
-    (function(mentee){ card.onclick = function(e){
+    // クリックで詳細表示（同じカードを再クリックで折りたたむ）
+    (function(mentee, c){ card.onclick = function(e){
       if (e.target.tagName === 'BUTTON') return;
-      openMemberDetail(mentee.user_id, card);
-    }; })(m);
+      var drawer = document.getElementById('memberDetailDrawer');
+      // 既にこのカードの直後にドロワーが開いている場合 → 閉じる
+      if (drawer && drawer.style.display !== 'none'
+          && c.nextSibling === drawer
+          && _mdCurrentMentee && _mdCurrentMentee.user_id === mentee.user_id) {
+        closeMemberDetail();
+        return;
+      }
+      openMemberDetail(mentee.user_id, c);
+    }; })(m, card);
 
     // カード本体をDOM構築
     var mainRow = document.createElement('div');
@@ -2640,8 +2670,18 @@ function loadMembersTab() {
     var subDiv = document.createElement('div');
     subDiv.style.cssText = 'font-size:12px;color:var(--tx3)';
     subDiv.textContent = (m.workplace||'—') + ' · ' + (m.work_status||'—');
+
+    // ★ 目標設定済み/未設定バッジ
+    var goalBadge = document.createElement('span');
+    goalBadge.id = 'goal-badge-' + m.user_id;
+    var hasGoal = !!(m.goal_work_6m || m.goal_skill_6m);
+    goalBadge.textContent = hasGoal ? '🎯 目標設定済み' : '📋 目標未設定';
+    goalBadge.style.cssText = 'font-size:10px;padding:2px 7px;border-radius:8px;font-weight:600;margin-top:4px;display:inline-block;'
+      + (hasGoal ? 'background:var(--pr-light);color:var(--pr)' : 'background:var(--am-light);color:var(--am)');
+
     infoEl.appendChild(nameRow);
     infoEl.appendChild(subDiv);
+    infoEl.appendChild(goalBadge);
 
     var actEl = document.createElement('div');
     actEl.style.cssText = 'display:flex;flex-direction:column;gap:5px;flex-shrink:0';
@@ -2745,8 +2785,15 @@ function openMemberDetail(userId, cardEl) {
   // 半年目標フィールドに現在値を反映
   var goalWorkEl  = document.getElementById('md-goal-work');
   var goalSkillEl = document.getElementById('md-goal-skill');
+  var goalStartEl = document.getElementById('md-goal-start');
+  var goalEndEl   = document.getElementById('md-goal-end');
   if (goalWorkEl)  goalWorkEl.value  = m.goal_work_6m  || '';
   if (goalSkillEl) goalSkillEl.value = m.goal_skill_6m || '';
+  if (goalStartEl) goalStartEl.value = m.goal_start_month || '';
+  if (goalEndEl)   goalEndEl.value   = m.goal_end_month   || '';
+
+  // 目標期間バッジ・現在値エリア更新
+  updateGoalCurrentArea(m);
 
   drawer.scrollIntoView({ behavior:'smooth', block:'nearest' });
   loadMdMemos(userId);
@@ -3334,18 +3381,88 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 });
 
 // ── Menteeの半年目標保存 ──
+// ── 開始月変更時に終了月を自動計算（6ヶ月後）──
+function onGoalStartChange() {
+  var startVal = (document.getElementById('md-goal-start') || {}).value || '';
+  var endEl    = document.getElementById('md-goal-end');
+  if (!startVal || !endEl) return;
+  var d = new Date(startVal + '-01');
+  d.setMonth(d.getMonth() + 5); // 開始月含め6ヶ月 = +5
+  var y = d.getFullYear();
+  var mo = ('0' + (d.getMonth() + 1)).slice(-2);
+  endEl.value = y + '-' + mo;
+}
+
+// ── 目標期間ラベル生成（"yy年m月〜yy年m月"形式）──
+function fmtGoalPeriod(startMonth, endMonth) {
+  if (!startMonth) return '';
+  function fmt(ym) {
+    var parts = ym.split('-');
+    if (parts.length < 2) return ym;
+    var y = String(parts[0]).slice(-2);
+    var m = parseInt(parts[1]);
+    return y + '年' + m + '月';
+  }
+  if (endMonth) return fmt(startMonth) + '〜' + fmt(endMonth);
+  return fmt(startMonth) + '〜';
+}
+
+// ── 目標の現在値エリアを更新 ──
+function updateGoalCurrentArea(m) {
+  var area      = document.getElementById('md-goal-current-area');
+  var periodEl  = document.getElementById('md-goal-current-period');
+  var workEl    = document.getElementById('md-goal-current-work');
+  var skillEl   = document.getElementById('md-goal-current-skill');
+  var badgeEl   = document.getElementById('md-goal-period-badge');
+  var hasGoal   = !!(m.goal_work_6m || m.goal_skill_6m);
+  if (area) area.style.display = hasGoal ? '' : 'none';
+  if (hasGoal) {
+    var period = fmtGoalPeriod(m.goal_start_month, m.goal_end_month);
+    if (periodEl) periodEl.textContent = period ? '📅 ' + period : '';
+    if (workEl)   workEl.textContent  = m.goal_work_6m  || '未設定';
+    if (skillEl)  skillEl.textContent = m.goal_skill_6m || '未設定';
+    if (badgeEl)  badgeEl.textContent = period || '';
+  } else {
+    if (badgeEl) badgeEl.textContent = '';
+  }
+}
+
 async function saveMenteeGoals() {
   var m = _mdCurrentMentee || _currentMentee;
   if (!m) { toast('メンティーを選択してください','err'); return; }
   var goalWork  = (document.getElementById('md-goal-work')  || {}).value || '';
   var goalSkill = (document.getElementById('md-goal-skill') || {}).value || '';
+  var startMonth= (document.getElementById('md-goal-start') || {}).value || '';
+  var endMonth  = (document.getElementById('md-goal-end')   || {}).value || '';
   var r = await gasReq('api/mentor/set-mentee-goals','POST',{
-    mentee_id:    m.user_id,
-    goal_work_6m:  goalWork,
-    goal_skill_6m: goalSkill,
+    mentee_id:         m.user_id,
+    goal_work_6m:      goalWork,
+    goal_skill_6m:     goalSkill,
+    goal_start_month:  startMonth,
+    goal_end_month:    endMonth,
   });
-  if (r && r.ok) { Cache.bust('mentees_'); toast('半年目標を保存しました'); }
+  if (r && r.ok) {
+    // ローカルキャッシュにも反映
+    m.goal_work_6m     = goalWork;
+    m.goal_skill_6m    = goalSkill;
+    m.goal_start_month = startMonth;
+    m.goal_end_month   = endMonth;
+    // ★ メンバーカードのバッジも即時更新
+    updateMemberCardGoalBadge(m.user_id, !!(goalWork || goalSkill));
+    updateGoalCurrentArea(m);
+    Cache.bust('mentees_');
+    toast('半年目標を保存しました');
+  }
   else toast('保存に失敗: '+((r&&(r.error||r.message))||'GAS応答なし'),'err');
+}
+
+// ── メンバーカードの目標バッジを更新 ──
+function updateMemberCardGoalBadge(userId, hasGoal) {
+  var badge = document.getElementById('goal-badge-' + userId);
+  if (!badge) return;
+  badge.textContent = hasGoal ? '🎯 目標設定済み' : '📋 目標未設定';
+  badge.style.background = hasGoal ? 'var(--pr-light)' : 'var(--am-light)';
+  badge.style.color      = hasGoal ? 'var(--pr)'       : 'var(--am)';
 }
 </script>
 </body>

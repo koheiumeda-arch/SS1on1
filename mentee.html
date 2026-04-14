@@ -254,6 +254,7 @@ input[type="month"].inp{padding:11px 14px}
     <div class="goal-text" id="currentGoal">読み込み中…</div>
     <div class="goal-from" id="goalFrom">📋 最新の1on1レポートより</div>
     <div id="home-goals-section" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2)">
+      <div id="home-goal-period" style="font-size:10px;color:rgba(255,255,255,.6);margin-bottom:6px;display:none"></div>
       <div class="goal-label" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;margin-bottom:3px">半年業務目標</div>
       <div id="home-goal-work" style="font-size:13px;color:#fff;margin-bottom:8px">—</div>
       <div class="goal-label" style="font-size:11px;color:rgba(255,255,255,.7);font-weight:600;margin-bottom:3px">半年スキル目標</div>
@@ -537,8 +538,12 @@ input[type="month"].inp{padding:11px 14px}
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">担当リーダー</span><span style="font-size:14px;font-weight:600" id="set-leader">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">稼働場所</span><span style="font-size:14px;font-weight:600" id="set-workplace">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">雇用形態</span><span style="font-size:14px;font-weight:600" id="set-workstatus">—</span></div>
-      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)" id="set-hire-date-row" style="display:none"><span style="font-size:13px;color:var(--tx2)">入社日</span><span style="font-size:14px;font-weight:600" id="set-hire-date">—</span></div>
-      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)" id="set-tenure-row" style="display:none"><span style="font-size:13px;color:var(--tx2)">在籍期間</span><span style="font-size:14px;font-weight:700;color:var(--pr)" id="set-tenure">—</span></div>
+      <div style="display:none;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)" id="set-hire-date-row"><span style="font-size:13px;color:var(--tx2)">入社日</span><span style="font-size:14px;font-weight:600" id="set-hire-date">—</span></div>
+      <div style="display:none;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)" id="set-tenure-row"><span style="font-size:13px;color:var(--tx2)">在籍期間</span><span style="font-size:14px;font-weight:700;color:var(--pr)" id="set-tenure">—</span></div>
+      <div style="display:none;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)" id="set-goal-period-row">
+        <span style="font-size:13px;color:var(--tx2)">目標期間</span>
+        <span style="font-size:13px;font-weight:600;color:var(--pr)" id="set-goal-period">—</span>
+      </div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">半年業務目標</span><span style="font-size:14px;font-weight:600;max-width:60%;text-align:right;line-height:1.5" id="set-goal-work">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">半年スキル目標</span><span style="font-size:14px;font-weight:600;max-width:60%;text-align:right;line-height:1.5" id="set-goal-skill">—</span></div>
       <!-- 時給表示: 表示するには style="display:none" を削除 -->
@@ -804,7 +809,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (user.hire_date && hireDateRow2 && hireDateEl2) {
     var hd = new Date(user.hire_date);
     hireDateEl2.textContent = isNaN(hd) ? user.hire_date : hd.getFullYear()+'年'+(hd.getMonth()+1)+'月'+hd.getDate()+'日';
-    hireDateRow2.style.display = '';
+    hireDateRow2.style.display = 'flex';
   } else if (hireDateRow2) {
     hireDateRow2.style.display = 'none';
   }
@@ -813,7 +818,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   var tenureEl  = document.getElementById('set-tenure');
   var tenure    = calcTenure(user.hire_date);
   if (tenure && tenureRow && tenureEl) {
-    tenureRow.style.display = '';
+    tenureRow.style.display = 'flex';
     tenureEl.textContent    = tenure.label;
   } else if (tenureRow) {
     tenureRow.style.display = 'none';
@@ -1471,7 +1476,7 @@ function renderHome(data) {
     if (u.hire_date && hireDateRowEl2 && hireDateValEl2) {
       var hd2 = new Date(u.hire_date);
       hireDateValEl2.textContent = isNaN(hd2) ? u.hire_date : hd2.getFullYear()+'年'+(hd2.getMonth()+1)+'月'+hd2.getDate()+'日';
-      hireDateRowEl2.style.display = '';
+      hireDateRowEl2.style.display = 'flex';
     } else if (hireDateRowEl2) {
       hireDateRowEl2.style.display = 'none';
     }
@@ -1480,7 +1485,7 @@ function renderHome(data) {
     var tenureValEl = document.getElementById('set-tenure');
     var t = calcTenure(u.hire_date);
     if (t && tenureRowEl && tenureValEl) {
-      tenureRowEl.style.display = '';
+      tenureRowEl.style.display = 'flex';
       tenureValEl.textContent   = t.label;
     } else if (tenureRowEl) {
       tenureRowEl.style.display = 'none';
@@ -1554,10 +1559,33 @@ function renderHome(data) {
   var goalWork  = data.goal_work_6m    || '';
   var goalSkill = data.goal_skill_6m   || '';
   var curProj   = data.current_project || '';
+  var startMonth= data.goal_start_month || '';
+  var endMonth  = data.goal_end_month   || '';
   var GOAL_PLACEHOLDER = '半期目標を設定してください';
+
+  // 期間ラベル生成（"yy年m月〜yy年m月の目標"）
+  function fmtGoalPeriodMentee(start, end) {
+    if (!start) return '';
+    function fmt(ym) {
+      var p = ym.split('-');
+      return String(p[0]).slice(-2) + '年' + parseInt(p[1]) + '月';
+    }
+    return end ? fmt(start) + '〜' + fmt(end) + 'の目標' : fmt(start) + '〜の目標';
+  }
+  var periodLabel = fmtGoalPeriodMentee(startMonth, endMonth);
+
   // ① ホーム画面
   setGoalEl('home-goal-work',  goalWork,  GOAL_PLACEHOLDER);
   setGoalEl('home-goal-skill', goalSkill, GOAL_PLACEHOLDER);
+  var homePeriodEl = document.getElementById('home-goal-period');
+  if (homePeriodEl) {
+    if (periodLabel) {
+      homePeriodEl.textContent = '📅 ' + periodLabel;
+      homePeriodEl.style.display = '';
+    } else {
+      homePeriodEl.style.display = 'none';
+    }
+  }
   // ② 事前アンケート（読み取り専用div）
   setGoalEl('pr-goalWork6m-disp',  goalWork,  GOAL_PLACEHOLDER);
   setGoalEl('pr-goalSkill6m-disp', goalSkill, GOAL_PLACEHOLDER);
@@ -1565,6 +1593,16 @@ function renderHome(data) {
   // ③ 設定画面
   setGoalEl('set-goal-work',  goalWork);
   setGoalEl('set-goal-skill', goalSkill);
+  var setPeriodRow = document.getElementById('set-goal-period-row');
+  var setPeriodEl  = document.getElementById('set-goal-period');
+  if (setPeriodEl && setPeriodRow) {
+    if (periodLabel) {
+      setPeriodEl.textContent    = periodLabel;
+      setPeriodRow.style.display = 'flex'; // ★ flex で表示（display:none→flex）
+    } else {
+      setPeriodRow.style.display = 'none';
+    }
+  }
 
   // ★ アンケートバナー表示（未回答の completed 予約がある場合）
   var banner   = document.getElementById('surveyBanner');
