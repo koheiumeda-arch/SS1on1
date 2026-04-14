@@ -651,10 +651,19 @@ body.login-mode .main { display:none !important; }
     </div>
     <!-- 手動入力 -->
     <div id="tsPane-manual">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:4px">
+        <div class="form-label" style="margin:0">スペースURL</div>
+        <div class="form-label" style="margin:0">Webhook URL</div>
+        <div class="form-label" style="margin:0">Meet URL</div>
+      </div>
       <div id="telStockRows">
-        <div class="tel-stock-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-          <div><label class="form-label">スペースURL</label><input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px"/></div>
-          <div><label class="form-label">Webhook URL</label><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px"/></div>
+        <div class="tel-stock-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;align-items:start">
+          <div>
+            <input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px" oninput="onChatUrlInput(this)"/>
+            <div class="ts-space-id-preview" style="font-size:10px;color:var(--pr);margin-top:3px;min-height:14px"></div>
+          </div>
+          <div><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px"/></div>
+          <div><input class="inp ts-meet-url" placeholder="https://meet.google.com/xxx-xxxx-xxx" style="font-size:12px"/></div>
         </div>
       </div>
       <button class="btn btn-g btn-sm" onclick="addTelStockRow()" style="margin-bottom:14px">＋ 行を追加</button>
@@ -662,7 +671,8 @@ body.login-mode .main { display:none !important; }
     <!-- CSVインポート -->
     <div id="tsPane-csv" style="display:none">
       <div style="font-size:12px;color:var(--tx2);margin-bottom:8px">
-        CSV形式：1行目はヘッダー（<code>chat_url,webhook_url</code>）、2行目以降がデータ
+        CSV形式：1行目はヘッダー（<code>chat_url,webhook_url,meet_url</code>）、2行目以降がデータ<br>
+        <span style="font-size:11px;color:var(--tx3)">※ chat_id列は不要（chat_urlから自動抽出します）</span>
       </div>
       <button class="btn btn-g btn-sm" onclick="downloadTelStockTemplate()" style="margin-bottom:10px">⬇ テンプレートCSVダウンロード</button>
       <div id="ts-csv-dropzone" style="border:2px dashed var(--bd2);border-radius:10px;padding:24px;text-align:center;cursor:pointer;margin-bottom:10px"
@@ -1483,9 +1493,26 @@ function switchTsTab(tab) {
   });
 }
 
+// ── ChatURLからspace_idを抽出するユーティリティ ──
+function extractSpaceId(chatUrl) {
+  var m = chatUrl.match(/\/room\/([^\/?&]+)/);
+  if (!m) m = chatUrl.match(/\/spaces\/([^\/?&]+)/);
+  if (!m) m = chatUrl.match(/\/chat\/([^\/?&]+)/);
+  return m ? m[1] : '';
+}
+
+// ── ChatURL入力時にspace_idをプレビュー表示 ──
+function onChatUrlInput(inputEl) {
+  var preview = inputEl.closest('.tel-stock-row').querySelector('.ts-space-id-preview');
+  if (!preview) return;
+  var spaceId = extractSpaceId(inputEl.value.trim());
+  preview.textContent = spaceId ? 'Space ID: ' + spaceId : '';
+}
+
 function downloadTelStockTemplate() {
   var bom  = '\uFEFF';
-  var text = bom + 'chat_url,webhook_url\nhttps://chat.google.com/room/XXXXX,https://chat.googleapis.com/v1/spaces/XXXXX/messages?key=XXX\n';
+  var text = bom + 'chat_url,webhook_url,meet_url\n'
+    + 'https://chat.google.com/room/XXXXX,https://chat.googleapis.com/v1/spaces/XXXXX/messages?key=XXX,https://meet.google.com/xxx-xxxx-xxx\n';
   var blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
   var a    = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -1510,9 +1537,10 @@ function handleTsCsvFile(file) {
     var lines = text.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
     if (lines.length < 2) { document.getElementById('ts-csv-preview').textContent = '❌ データ行がありません'; return; }
     // 1行目はヘッダー
-    var header = lines[0].toLowerCase().split(',');
+    var header = lines[0].toLowerCase().split(',').map(function(h){ return h.trim().replace(/^"|"$/g,''); });
     var chatIdx    = header.indexOf('chat_url');
     var webhookIdx = header.indexOf('webhook_url');
+    var meetIdx    = header.indexOf('meet_url'); // ★ 追加
     if (chatIdx < 0 || webhookIdx < 0) {
       document.getElementById('ts-csv-preview').textContent = '❌ ヘッダーに chat_url と webhook_url が必要です';
       return;
@@ -1522,9 +1550,15 @@ function handleTsCsvFile(file) {
       var cells = line.split(',').map(function(c){ return c.trim().replace(/^"|"$/g,''); });
       var chat    = cells[chatIdx]    || '';
       var webhook = cells[webhookIdx] || '';
-      if (chat && webhook) _tsCsvItems.push({ chat_url: chat, webhook_url: webhook });
+      var meet    = meetIdx >= 0 ? (cells[meetIdx] || '') : ''; // ★ 追加
+      // ★ chat_urlからspace_idを自動抽出
+      var spaceId = extractSpaceId(chat);
+      if (chat && webhook) _tsCsvItems.push({ chat_url: chat, webhook_url: webhook, meet_url: meet, chat_space_id: spaceId });
     });
-    document.getElementById('ts-csv-preview').textContent = '✅ ' + _tsCsvItems.length + '件を読み込みました';
+    var meetCount = _tsCsvItems.filter(function(i){ return i.meet_url; }).length;
+    document.getElementById('ts-csv-preview').textContent =
+      '✅ ' + _tsCsvItems.length + '件を読み込みました'
+      + '（Space ID自動抽出済み / Meet URL: ' + meetCount + '件）';
     document.getElementById('tel-stock-add-result').textContent = '';
   };
   reader.readAsText(file, 'UTF-8');
@@ -1534,9 +1568,13 @@ function addTelStockRow() {
   var rows = document.getElementById('telStockRows');
   var div  = document.createElement('div');
   div.className = 'tel-stock-row';
-  div.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px';
-  div.innerHTML = '<div><input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px"/></div>'
-    + '<div><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px"/></div>';
+  div.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;align-items:start';
+  div.innerHTML = '<div>'
+    + '<input class="inp ts-chat-url" placeholder="https://chat.google.com/room/..." style="font-size:12px" oninput="onChatUrlInput(this)"/>'
+    + '<div class="ts-space-id-preview" style="font-size:10px;color:var(--pr);margin-top:3px;min-height:14px"></div>'
+    + '</div>'
+    + '<div><input class="inp ts-webhook-url" placeholder="https://chat.googleapis.com/v1/spaces/..." style="font-size:12px"/></div>'
+    + '<div><input class="inp ts-meet-url" placeholder="https://meet.google.com/xxx-xxxx-xxx" style="font-size:12px"/></div>';
   rows.appendChild(div);
 }
 
@@ -1546,15 +1584,19 @@ async function submitTelStockAdd() {
   var items = [];
 
   if (isCsv) {
-    // CSVモード
     if (_tsCsvItems.length === 0) { resultEl.style.color='var(--rd)'; resultEl.textContent='CSVを読み込んでください'; return; }
     items = _tsCsvItems;
   } else {
-    // 手動入力モード
-    var chatUrls    = Array.from(document.querySelectorAll('.ts-chat-url')).map(function(el){ return el.value.trim(); });
-    var webhookUrls = Array.from(document.querySelectorAll('.ts-webhook-url')).map(function(el){ return el.value.trim(); });
-    chatUrls.forEach(function(chat, i) {
-      if (chat && webhookUrls[i]) items.push({ chat_url: chat, webhook_url: webhookUrls[i] });
+    // 手動入力モード: meet_url も取得
+    var rows = Array.from(document.querySelectorAll('.tel-stock-row'));
+    rows.forEach(function(row) {
+      var chat    = (row.querySelector('.ts-chat-url')    || {}).value || '';
+      var webhook = (row.querySelector('.ts-webhook-url') || {}).value || '';
+      var meet    = (row.querySelector('.ts-meet-url')    || {}).value || '';
+      chat = chat.trim(); webhook = webhook.trim(); meet = meet.trim();
+      // ★ chat_urlからspace_idを自動抽出
+      var spaceId = extractSpaceId(chat);
+      if (chat && webhook) items.push({ chat_url: chat, webhook_url: webhook, meet_url: meet, chat_space_id: spaceId });
     });
     if (items.length === 0) { resultEl.style.color='var(--rd)'; resultEl.textContent='URLを入力してください'; return; }
   }
@@ -2623,16 +2665,7 @@ async function loadAiPrompts() {
   if (p1) p1.value = '読み込み中…';
   if (pt) pt.value = '読み込み中…';
   var data = await gasReq('api/admin/ai-prompts');
-  if (!data || !data.ok) {
-    var errMsg = data ? (data.error || 'ok=false') : 'GAS応答なし（タイムアウトまたはデプロイ未反映の可能性）';
-    console.error('[loadAiPrompts] エラー:', errMsg, data);
-    toast('プロンプトの取得に失敗しました: ' + errMsg, 'err');
-    if (p1) p1.placeholder = '❌ 取得失敗: ' + errMsg;
-    if (pt) pt.placeholder = '❌ 取得失敗: ' + errMsg;
-    if (p1) p1.value = '';
-    if (pt) pt.value = '';
-    return;
-  }
+  if (!data || !data.ok) { toast('プロンプトの取得に失敗しました', 'err'); return; }
   if (p1) p1.value = data.prompt_1on1 || '';
   if (pt) pt.value = data.prompt_tel  || '';
   // デフォルト値を保持（リセット用）
