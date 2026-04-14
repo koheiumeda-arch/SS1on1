@@ -268,6 +268,7 @@ td{padding:10px 14px;font-size:13px}
       <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v" id="mqm-workplace">—</div></div>
       <div class="dc"><div class="dc-lb">雇用形態</div><div class="dc-v" id="mqm-workstatus">—</div></div>
       <div class="dc"><div class="dc-lb">時給</div><div class="dc-v ac" id="mqm-wage">—</div></div>
+      <div class="dc" id="mqm-tenure-wrap" style="display:none"><div class="dc-lb">在籍期間</div><div class="dc-v" id="mqm-tenure" style="color:var(--pr);font-weight:700">—</div></div>
     </div>
     <!-- アクションボタン -->
     <div style="display:flex;flex-direction:column;gap:8px">
@@ -591,6 +592,7 @@ td{padding:10px 14px;font-size:13px}
   <div class="header-r">
     <div class="nb" id="notifBtn" onclick="toggleMentorNoticePanel()" style="cursor:pointer">🔔<div class="nd" id="notifDot" style="display:none"></div></div>
     <div class="u-chip"><div class="ava" id="userAva">?</div><div class="u-name" id="userName">読み込み中…</div></div>
+    <button onclick="logoutMentor()" style="padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);transition:all .2s;white-space:nowrap;font-family:'Noto Sans JP',sans-serif" onmouseover="this.style.background='var(--rd-light)';this.style.color='var(--rd)';this.style.borderColor='var(--rd)'" onmouseout="this.style.background='var(--bg3)';this.style.color='var(--tx2)';this.style.borderColor='var(--bd)'">🚪 ログアウト</button>
   </div>
 </header>
 <!-- お知らせパネル -->
@@ -642,6 +644,7 @@ td{padding:10px 14px;font-size:13px}
           <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v" id="dc-place">—</div></div>
           <div class="dc"><div class="dc-lb">稼働状況</div><div class="dc-v" id="dc-work">—</div></div>
           <div class="dc"><div class="dc-lb">時給</div><div class="dc-v ac" id="dc-wage">—</div></div>
+          <div class="dc" id="dc-tenure-wrap" style="display:none"><div class="dc-lb">在籍期間</div><div class="dc-v" id="dc-tenure" style="color:var(--pr);font-weight:700">—</div></div>
         </div>
         <div class="pre-summary" id="preSummary" style="display:none">
           <div class="pre-summary-head">
@@ -714,27 +717,18 @@ td{padding:10px 14px;font-size:13px}
   <div class="card">
     <div class="ch">
       <div class="ct" id="scheduleCount">予約一覧</div>
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <!-- メンティー名絞り込み -->
-        <select id="schedFilterMentee" class="inp" style="font-size:12px;padding:5px 10px;width:130px"
-          onchange="_schedFilterName=this.value;_schedPage=1;renderSchedule()">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="sched-filter-mentee" style="font-size:12px;padding:5px 8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);min-width:110px" onchange="filterSchedule()">
           <option value="">全メンティー</option>
         </select>
-        <!-- 未実施フィルタ -->
-        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;white-space:nowrap">
-          <input type="checkbox" id="schedFilterPending"
-            onchange="_schedFilterPending=this.checked;_schedPage=1;renderSchedule()">
-          未実施のみ
-        </label>
+        <select id="sched-filter-status" style="font-size:12px;padding:5px 8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx)" onchange="filterSchedule()">
+          <option value="">すべて</option>
+          <option value="done">✅ 実施済み</option>
+          <option value="upcoming">📅 未実施</option>
+        </select>
       </div>
     </div>
     <div class="sched-list" id="scheduleList"><div class="loading">読み込み中…</div></div>
-    <!-- ページネーション -->
-    <div id="schedPager" style="display:none;padding:12px 16px;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:8px">
-      <button class="btn btn-g btn-sm" id="schedPrevBtn" onclick="schedChangePage(-1)">← 前へ</button>
-      <span id="schedPageInfo" style="font-size:12px;color:var(--tx3)"></span>
-      <button class="btn btn-g btn-sm" id="schedNextBtn" onclick="schedChangePage(1)">次へ →</button>
-    </div>
   </div>
 </div>
 
@@ -770,6 +764,7 @@ td{padding:10px 14px;font-size:13px}
         <div class="dc"><div class="dc-lb">稼働場所</div><div class="dc-v" id="md-workplace">—</div></div>
         <div class="dc"><div class="dc-lb">雇用形態</div><div class="dc-v" id="md-workstatus">—</div></div>
         <div class="dc"><div class="dc-lb">時給</div><div class="dc-v ac" id="md-wage">—</div></div>
+        <div class="dc" id="md-tenure-wrap" style="display:none"><div class="dc-lb">在籍期間</div><div class="dc-v" id="md-tenure" style="color:var(--pr);font-weight:700">—</div></div>
       </div>
       <!-- ステータス -->
       <div style="padding:12px 16px">
@@ -910,6 +905,37 @@ td{padding:10px 14px;font-size:13px}
 const GAS_URL     = 'https://script.google.com/macros/s/AKfycbzdwzQYNRRHO5S7Fq1qBE7qYoMEYoJTjqU1MoQivOWxFpzt4w5NcuICTOYROISn6KYpmQ/exec';
 const GITHUB_BASE = 'https://koheiumeda-arch.github.io/SS1on1';
 
+// ★ セキュリティ: フロントエンドでSHA-256ハッシュ化（パスワードを平文送信しない）
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── 在籍期間計算ユーティリティ ──
+function calcTenure(hireDateStr) {
+  if (!hireDateStr) return null;
+  const hire = new Date(hireDateStr);
+  if (isNaN(hire)) return null;
+  const now = new Date();
+  let months = (now.getFullYear() - hire.getFullYear()) * 12 + (now.getMonth() - hire.getMonth());
+  if (now.getDate() < hire.getDate()) months--;
+  if (months < 0) months = 0;
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  if (y === 0) return { months, label: m + 'ヶ月' };
+  if (m === 0) return { months, label: y + '年' };
+  return { months, label: y + '年' + m + 'ヶ月' };
+}
+
+// tenureラベルをセットするユーティリティ（wrap/label の id ペアで使用）
+function setTenure(wrapId, labelId, hireDateStr, tenureLabel) {
+  var wrap = document.getElementById(wrapId);
+  var el   = document.getElementById(labelId);
+  var label = tenureLabel || (calcTenure(hireDateStr)||{}).label || null;
+  if (wrap) wrap.style.display = label ? '' : 'none';
+  if (el && label) el.textContent = label;
+}
+
 // ── クライアントサイドキャッシュ ──
 const Cache = {
   set(k, d, ttl) { try { localStorage.setItem('c_'+k, JSON.stringify({d, exp: Date.now()+ttl*1000})); } catch(e){} },
@@ -967,6 +993,12 @@ async function gasReq(path, method, body) {
 }
 
 // GASウォームアップ（コールドスタート対策）
+function logoutMentor() {
+  if (!confirm('ログアウトしますか？')) return;
+  Auth.clearAuth();
+  window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html';
+}
+
 function warmupGAS() {
   fetch(GAS_URL, { method:'POST', body:JSON.stringify({ path:'health', _method:'GET' }) })
     .catch(() => {});
@@ -1018,7 +1050,9 @@ async function doLogin() {
   if (!email || !password) { msgEl.textContent='メールとパスワードを入力してください'; return; }
   btn.textContent='ログイン中…'; btn.disabled=true;
   try {
-    var res  = await fetch(GAS_URL, { method:'POST', body:JSON.stringify({ path:'auth/login', _method:'POST', email:email, password:password }) });
+    // ★ セキュリティ強化: フロントでSHA-256ハッシュ化してから送信
+    var passwordHash = await sha256Hex(password);
+    var res  = await fetch(GAS_URL, { method:'POST', body:JSON.stringify({ path:'auth/login', _method:'POST', email:email, password_hash:passwordHash }) });
     var text = await res.text();
     var data; try { data=JSON.parse(text); } catch(e){ throw new Error('JSONパース失敗'); }
     if (data && data.token && data.user) {
@@ -1030,8 +1064,14 @@ async function doLogin() {
       hideOverlay();
       initPage(data.user);
     } else {
-      var e = data && data.error;
-      msgEl.textContent = e==='INVALID_PASSWORD'?'パスワードが違います':e==='USER_NOT_FOUND'?'ユーザーが見つかりません':'ログインに失敗しました';
+      var errCode = data && data.error;
+      var errMsgMap = {
+        INVALID_PASSWORD:    'パスワードが違います',
+        USER_NOT_FOUND:      'ユーザーが見つかりません',
+        TOO_MANY_ATTEMPTS:   'ログイン試行回数が上限を超えました。5分後に再試行してください',
+        INVALID_EMAIL_FORMAT:'メールアドレスの形式が正しくありません',
+      };
+      msgEl.textContent = errMsgMap[errCode] || 'ログインに失敗しました';
       btn.textContent='ログイン'; btn.disabled=false;
     }
   } catch(e) {
@@ -1060,12 +1100,6 @@ var _createSelectedTime = '';
 var _updateSlots        = {};   // 予約変更用スロット
 var _updateSelectedDate = '';
 var _updateSelectedTime = '';
-
-// スケジュール絞り込み・ページネーション
-var _schedPage       = 1;
-var SCHED_PER_PAGE   = 10;
-var _schedFilterName = '';   // メンティー名絞り込み
-var _schedFilterPending = false; // 未実施のみ
 
 document.addEventListener('DOMContentLoaded', function() {
   if (!Auth.isLoggedIn()) { showOverlay(); return; }
@@ -1211,6 +1245,7 @@ function selectMentee(userId, el) {
   document.getElementById('dc-place').textContent = m.workplace   || '—';
   document.getElementById('dc-work').textContent  = m.work_status || '—';
   document.getElementById('dc-wage').textContent  = m.hourly_wage ? '\xA5'+Number(m.hourly_wage).toLocaleString()+'/h' : '—';
+  setTenure('dc-tenure-wrap', 'dc-tenure', m.hire_date, m.tenure_label);
 
   // ステータスボタン
   ['rd','am','gr','cy'].forEach(function(s){ document.getElementById('sig-'+s).className='sig-btn'; });
@@ -1343,14 +1378,13 @@ function renderSidebar() {
 async function loadSchedules() {
   var data = await gasReq('api/mentor/my-bookings');
   if (!data || !data.bookings) {
+    // フォールバック: bookings から自分のmentorのものを取得
     data = await gasReq('api/mentor/bookings');
   }
   _mySchedules = (data && data.bookings) ? data.bookings
     .filter(function(b){ return b.status !== 'cancelled'; })
-    .sort(function(a,b){ return (a.scheduled_at||'').localeCompare(b.scheduled_at||''); })
+    .sort(function(a,b){ return (b.scheduled_at||'').localeCompare(a.scheduled_at||''); })
     : [];
-  _schedPage = 1; // ページリセット
-  updateSchedMenteeFilter(); // メンティーフィルタを更新
   renderSchedule();
   renderDashSchedule();
   updateRate();
@@ -1376,82 +1410,90 @@ function renderRecordingBanner() {
 }
 
 function renderSchedule() {
-  var listEl  = document.getElementById('scheduleList');
-  var countEl = document.getElementById('scheduleCount');
-  var pagerEl = document.getElementById('schedPager');
-
-  // ── 絞り込み ──
-  var filtered = _mySchedules.filter(function(b) {
-    // メンティー名フィルタ
-    if (_schedFilterName) {
-      if (b.mentee_id !== _schedFilterName) return false;
-    }
-    // 未実施フィルタ（status が scheduled または空のもの）
-    if (_schedFilterPending) {
-      var s = (b.status || '').toLowerCase();
-      if (s === 'completed' || s === 'cancelled') return false;
-    }
-    return true;
-  });
-
-  // ── ページネーション ──
-  var total     = filtered.length;
-  var totalPage = Math.max(1, Math.ceil(total / SCHED_PER_PAGE));
-  if (_schedPage > totalPage) _schedPage = totalPage;
-  var start    = (_schedPage - 1) * SCHED_PER_PAGE;
-  var pageItems = filtered.slice(start, start + SCHED_PER_PAGE);
-
-  countEl.textContent = '予約一覧（' + total + '件）';
-
-  if (total === 0) {
-    listEl.innerHTML = '<div class="loading">該当する予約がありません</div>';
-    if (pagerEl) pagerEl.style.display = 'none';
+  var listEl   = document.getElementById('scheduleList');
+  var countEl  = document.getElementById('scheduleCount');
+  if (_mySchedules.length === 0) {
+    listEl.innerHTML = '<div class="loading">予約がありません</div>';
+    countEl.textContent = '予約一覧（0件）';
     return;
   }
 
-  listEl.innerHTML = '';
-  pageItems.forEach(function(b) { listEl.appendChild(buildScheduleCard(b, false)); });
-
-  // ページネーション表示
-  if (pagerEl) {
-    if (totalPage <= 1) {
-      pagerEl.style.display = 'none';
-    } else {
-      pagerEl.style.display = 'flex';
-      document.getElementById('schedPageInfo').textContent =
-        _schedPage + ' / ' + totalPage + ' ページ（計' + total + '件）';
-      document.getElementById('schedPrevBtn').disabled = _schedPage <= 1;
-      document.getElementById('schedNextBtn').disabled = _schedPage >= totalPage;
-    }
+  // ★ メンティー絞り込みセレクトの選択肢を更新（重複なし）
+  var sel = document.getElementById('sched-filter-mentee');
+  if (sel) {
+    var currentVal = sel.value;
+    var menteeIds = [];
+    _mySchedules.forEach(function(b) {
+      if (b.mentee_id && menteeIds.indexOf(b.mentee_id) < 0) menteeIds.push(b.mentee_id);
+    });
+    sel.innerHTML = '<option value="">全メンティー</option>'
+      + menteeIds.map(function(uid) {
+          var m = _myMentees.find(function(m){ return m.user_id === uid; });
+          var name = m ? m.name : uid;
+          return '<option value="' + esc(uid) + '"' + (uid === currentVal ? ' selected' : '') + '>' + esc(name) + '</option>';
+        }).join('');
   }
+
+  filterSchedule();
 }
 
-function schedChangePage(delta) {
-  _schedPage += delta;
-  renderSchedule();
-  // スクロールをリストトップに戻す
-  var listEl = document.getElementById('scheduleList');
-  if (listEl) listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+// ★ スケジュール絞り込み（メンティー名・実施済み・未実施）
+function filterSchedule() {
+  var listEl  = document.getElementById('scheduleList');
+  var countEl = document.getElementById('scheduleCount');
+  if (!listEl) return;
 
-// スケジュール画面のメンティーフィルタを更新
-function updateSchedMenteeFilter() {
-  var sel = document.getElementById('schedFilterMentee');
-  if (!sel) return;
-  var current = sel.value;
-  sel.innerHTML = '<option value="">全メンティー</option>';
-  _myMentees.forEach(function(m) {
-    var opt = document.createElement('option');
-    opt.value = m.user_id;
-    opt.textContent = m.name;
-    if (m.user_id === current) opt.selected = true;
-    sel.appendChild(opt);
+  var filterMentee = (document.getElementById('sched-filter-mentee') || {}).value || '';
+  var filterStatus = (document.getElementById('sched-filter-status') || {}).value || '';
+
+  var filtered = _mySchedules.filter(function(b) {
+    // メンティー絞り込み
+    if (filterMentee && b.mentee_id !== filterMentee) return false;
+    // 実施状況絞り込み
+    if (filterStatus === 'done'     && b.status !== 'completed') return false;
+    if (filterStatus === 'upcoming' && b.status === 'completed') return false;
+    return true;
   });
+
+  // ★ 実施済みは新しい順（降順）、未実施は近い順（昇順）で表示
+  filtered.sort(function(a, b) {
+    if (filterStatus === 'done') {
+      // 実施済み：新しい順
+      return (b.scheduled_at || '').localeCompare(a.scheduled_at || '');
+    } else if (filterStatus === 'upcoming') {
+      // 未実施：近い順
+      return (a.scheduled_at || '').localeCompare(b.scheduled_at || '');
+    } else {
+      // 混在：未実施を上（昇順）、実施済みを下（降順）
+      var aIsCompleted = a.status === 'completed';
+      var bIsCompleted = b.status === 'completed';
+      if (aIsCompleted !== bIsCompleted) return aIsCompleted ? 1 : -1;
+      if (!aIsCompleted) return (a.scheduled_at || '').localeCompare(b.scheduled_at || '');
+      return (b.scheduled_at || '').localeCompare(a.scheduled_at || '');
+    }
+  });
+
+  var totalLabel = filtered.length < _mySchedules.length
+    ? filtered.length + '件（全' + _mySchedules.length + '件中）'
+    : filtered.length + '件';
+  countEl.textContent = '予約一覧（' + totalLabel + '）';
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div class="loading">該当する予約がありません</div>';
+    return;
+  }
+  listEl.innerHTML = '';
+  filtered.forEach(function(b) { listEl.appendChild(buildScheduleCard(b, false)); });
 }
 
 function renderDashSchedule() {
   var dashEl = document.getElementById('dashSchedule');
-  var upcoming = _mySchedules.slice(0, 5);
+  var now = new Date().toISOString();
+  // ダッシュボードは「これから」の予約を近い順（昇順）で最大5件
+  var upcoming = _mySchedules
+    .filter(function(b){ return (b.scheduled_at||'') >= now; })
+    .sort(function(a,b){ return (a.scheduled_at||'').localeCompare(b.scheduled_at||''); })
+    .slice(0, 5);
   if (upcoming.length === 0) {
     dashEl.innerHTML = '<div class="loading">直近の予約はありません</div>';
     return;
@@ -1492,22 +1534,6 @@ function buildScheduleCard(b, compact) {
     meetBtn.textContent = '▶ Meet参加';
     meetBtn.onclick = function(){ window.open(meetLink, '_blank'); };
     acts.appendChild(meetBtn);
-  }
-
-  // Googleカレンダーへのリンクボタン
-  if (!isNaN(dt)) {
-    var calBtn = document.createElement('button');
-    calBtn.className = 'sc-btn';
-    calBtn.style.cssText = 'background:#e8f0fe;color:#1a73e8;border:1px solid #c5d6f8;font-size:11px';
-    calBtn.textContent = '📅 カレンダー';
-    calBtn.onclick = function(){
-      // Googleカレンダーのその日の表示URLに飛ぶ
-      var y = dt.getFullYear();
-      var m = ('0'+(dt.getMonth()+1)).slice(-2);
-      var d = ('0'+dt.getDate()).slice(-2);
-      window.open('https://calendar.google.com/calendar/r/day/'+y+'/'+m+'/'+d, '_blank');
-    };
-    acts.appendChild(calBtn);
   }
 
   // パネルを確認ボタン（DOM構築でクォート問題を回避）
@@ -1741,7 +1767,11 @@ function open1on1ReportDetail(r) {
   var modal = document.getElementById('mentorReportDetailModal');
   if (!modal) return;
   var published = r.is_published === 'TRUE';
-  document.getElementById('mrd-mentee').textContent = r.mentee_name || r.mentee_id || '—';
+  // ★ 在籍期間をメンティー名の横に表示
+  var mentee   = _myMentees.find(function(m){ return m.user_id === r.mentee_id; }) || {};
+  var tenure   = calcTenure(mentee.hire_date || r.hire_date);
+  var nameText = (r.mentee_name || r.mentee_id || '—') + (tenure ? '（在籍: ' + tenure.label + '）' : '');
+  document.getElementById('mrd-mentee').textContent = nameText;
   document.getElementById('mrd-date').textContent   = fmtDateFull(r.created_at);
   document.getElementById('mrd-status').textContent = published ? '✅ 公開済み' : '📝 未公開';
   document.getElementById('mrd-status').style.color = published ? 'var(--gr)' : 'var(--am)';
@@ -1950,6 +1980,7 @@ function renderReports() {
     var summary   = (r.talk_content || r.ai_summary || '—').slice(0, 50);
     var confirmed = r.is_confirmed === 'TRUE' || r.is_confirmed === true;
     var hasMeet   = !!(r.recording_url || r.meet_url);
+    var tenure    = mentee ? calcTenure(mentee.hire_date) : null;
 
     var item = document.createElement('div');
     item.className = 'rep-item';
@@ -1964,8 +1995,9 @@ function renderReports() {
     var infoEl = document.createElement('div');
     infoEl.className = 'rep-info';
     infoEl.innerHTML =
-      '<div class="rep-title" style="display:flex;align-items:center;gap:6px">'
+      '<div class="rep-title" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
       + '<span>'+esc(name)+'</span>'
+      + (tenure ? '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--pr-light);color:var(--pr);font-weight:600">🗓 '+tenure.label+'</span>' : '')
       + (confirmed
           ? '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--pr-light);color:var(--pr);font-weight:600">✅ 確定</span>'
           : '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--am-light);color:var(--am);font-weight:600">📝 下書き</span>')
@@ -2111,10 +2143,15 @@ async function loadWeeklyTel() {
 
     var info = document.createElement('div');
     info.style.cssText = 'flex:1;min-width:0';
+    var tenureInfo = calcTenure(mentee.hire_date);
+    var tenureRow  = tenureInfo
+      ? '<div class="tel-meta-row"><span>🗓</span><span>在籍: <strong style="color:var(--pr)">' + tenureInfo.label + '</strong></span></div>'
+      : '';
     info.innerHTML = '<div class="tel-name" style="margin-bottom:2px">'+esc(mName)+'</div>'
       + '<div class="tel-meta">'
       + '<div class="tel-meta-row"><span>📅</span><span>最終TEL: '+esc(lastTel)+'</span></div>'
       + '<div class="tel-meta-row"><span>📊</span><span>今月: '+monthCount+'回 / Meet: '+meetCount+'回</span></div>'
+      + tenureRow
       + '</div>';
 
     var acts = document.createElement('div');
@@ -2161,7 +2198,10 @@ async function loadWeeklyTel() {
 
 function openTelModal(name, menteeId) {
   _telMenteeId = menteeId || (_currentMentee && _currentMentee.user_id) || '';
-  document.getElementById('telTarget').textContent = '対象：' + name + ' さん';
+  var mentee   = _myMentees.find(function(m){ return m.user_id === _telMenteeId; });
+  var tenure   = mentee ? calcTenure(mentee.hire_date) : null;
+  var tenureStr = tenure ? '（在籍: ' + tenure.label + '）' : '';
+  document.getElementById('telTarget').textContent = '対象：' + name + ' さん' + tenureStr;
   ['tel-talk','tel-concerns','tel-good','tel-memo'].forEach(function(id){
     document.getElementById(id).value = '';
   });
@@ -2665,6 +2705,7 @@ function openMemberDetail(userId, cardEl) {
   document.getElementById('md-workplace').textContent  = m.workplace   || '—';
   document.getElementById('md-workstatus').textContent = m.work_status || '—';
   document.getElementById('md-wage').textContent       = m.hourly_wage ? '¥'+Number(m.hourly_wage).toLocaleString()+'/h' : '—';
+  setTenure('md-tenure-wrap', 'md-tenure', m.hire_date, m.tenure_label);
 
   var chatBtn = document.getElementById('md-chat-btn');
   if (chatBtn) chatBtn.style.display = m.chat_url ? '' : 'none';
@@ -2705,6 +2746,7 @@ function openMemberDetailModal(m) {
   document.getElementById('mqm-workplace').textContent  = m.workplace   || '—';
   document.getElementById('mqm-workstatus').textContent = m.work_status || '—';
   document.getElementById('mqm-wage').textContent       = m.hourly_wage ? '¥'+Number(m.hourly_wage).toLocaleString()+'/h' : '—';
+  setTenure('mqm-tenure-wrap', 'mqm-tenure', m.hire_date, m.tenure_label);
 
   // チャットボタン
   var chatBtn = document.getElementById('mqm-chat-btn');

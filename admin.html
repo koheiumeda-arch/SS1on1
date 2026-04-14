@@ -286,7 +286,14 @@ body.login-mode .main { display:none !important; }
     <div class="nav-item" id="nav-userManagement" onclick="nav('userManagement',this)"><span class="ic">👤</span>ユーザー管理</div>
   </div>
   <div class="sidebar-foot">
-    <div class="user-pill"><div class="ava" id="sidebarAva">管</div><div><div class="u-name" id="sidebarName">管理者</div><div class="u-role">ADMIN</div></div></div>
+    <div class="user-pill">
+      <div class="ava" id="sidebarAva">管</div>
+      <div style="flex:1;min-width:0">
+        <div class="u-name" id="sidebarName">管理者</div>
+        <div class="u-role">ADMIN</div>
+      </div>
+      <button onclick="logoutAdmin()" title="ログアウト" style="flex-shrink:0;width:30px;height:30px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s" onmouseover="this.style.background='var(--rd-light)';this.style.borderColor='var(--rd)'" onmouseout="this.style.background='var(--bg3)';this.style.borderColor='var(--bd)'">🚪</button>
+    </div>
   </div>
 </div>
 
@@ -772,6 +779,12 @@ const GAS_URL     = 'https://script.google.com/macros/s/AKfycbzdwzQYNRRHO5S7Fq1q
 const GITHUB_BASE = 'https://koheiumeda-arch.github.io/SS1on1';
 
 // ★ セキュリティ: フロントエンドでSHA-256ハッシュ化（パスワードを平文送信しない）
+function logoutAdmin() {
+  if (!confirm('ログアウトしますか？')) return;
+  Auth.clearAuth();
+  window.location.href = 'https://koheiumeda-arch.github.io/SS1on1/login.html';
+}
+
 async function sha256Hex(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
