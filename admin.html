@@ -156,6 +156,16 @@ body.login-mode .main { display:none !important; }
     <!-- 手動入力タブ -->
     <div id="ctPane-form">
       <div class="form-group"><label class="form-label">タイトル<span style="color:var(--rd)">*</span></label><input class="inp" id="ct-title" placeholder="TypeScript基礎講座"/></div>
+      <div class="form-group"><label class="form-label">カテゴリ</label>
+        <select class="inp" id="ct-category">
+          <option value="">未分類</option>
+          <option value="入社時研修">📚 入社時研修</option>
+          <option value="マニュアル">📋 マニュアル</option>
+          <option value="就業規則">📜 就業規則</option>
+          <option value="社内ナレッジ">💡 社内ナレッジ</option>
+          <option value="AWARD/配信">🏆 AWARD/配信</option>
+        </select>
+      </div>
       <div class="form-group"><label class="form-label">種別</label><select class="inp" id="ct-type"><option value="video">動画</option><option value="document">資料</option><option value="link">リンク</option></select></div>
       <div class="form-group"><label class="form-label">URL<span style="color:var(--rd)">*</span></label><input class="inp" id="ct-url" placeholder="https://..."/></div>
       <div class="form-group"><label class="form-label">説明</label><textarea class="inp" id="ct-desc" rows="2"></textarea></div>
@@ -318,6 +328,7 @@ body.login-mode .main { display:none !important; }
     <div class="nav-item" onclick="nav('bulkIO',this)"><span class="ic">📥</span>一括入出力</div>
     <div class="nav-sec">設定</div>
     <div class="nav-item" id="nav-userManagement" onclick="nav('userManagement',this)"><span class="ic">👤</span>ユーザー管理</div>
+    <div class="nav-item" onclick="nav('aiPrompts',this)"><span class="ic">🤖</span>生成AI設定</div>
   </div>
   <div class="sidebar-foot">
     <div class="user-pill">
@@ -450,6 +461,21 @@ body.login-mode .main { display:none !important; }
 <!-- 研修コンテンツ -->
 <div class="screen" id="s-contents">
   <div class="topbar"><div><div class="page-title">研修コンテンツ管理</div><div class="page-sub">動画・資料の登録・管理</div></div><div class="topbar-r"><button class="btn btn-p" onclick="openAddContent()">＋ 新規追加</button></div></div>
+  <!-- 検索・カテゴリフィルター -->
+  <div class="card" style="margin-bottom:12px">
+    <div style="padding:12px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input id="ct-search" class="inp" style="flex:1;min-width:180px;font-size:13px;padding:7px 12px" placeholder="🔍 タイトル・説明で検索…" oninput="filterContents()">
+      <select id="ct-cat-filter" class="inp" style="width:160px;font-size:13px;padding:7px 10px" onchange="filterContents()">
+        <option value="">すべてのカテゴリ</option>
+        <option value="入社時研修">📚 入社時研修</option>
+        <option value="マニュアル">📋 マニュアル</option>
+        <option value="就業規則">📜 就業規則</option>
+        <option value="社内ナレッジ">💡 社内ナレッジ</option>
+        <option value="AWARD/配信">🏆 AWARD/配信</option>
+      </select>
+      <span id="ct-count" style="font-size:12px;color:var(--tx3);white-space:nowrap"></span>
+    </div>
+  </div>
   <div class="card" id="contentsCard"><div class="ch"><div class="ct">登録済みコンテンツ</div></div><div class="loading">読み込み中…</div></div>
 </div>
 
@@ -795,6 +821,52 @@ body.login-mode .main { display:none !important; }
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- 生成AI設定 -->
+<div class="screen" id="s-aiPrompts">
+  <div class="topbar"><div><div class="page-title">🤖 生成AI設定</div><div class="page-sub">1on1・TEL要約のプロンプトを編集</div></div></div>
+
+  <!-- 使い方ガイド -->
+  <div class="card" style="margin-bottom:16px;background:var(--am-light);border-color:var(--am)">
+    <div style="padding:14px 18px;font-size:13px;color:var(--tx2);line-height:1.8">
+      <strong>プレースホルダー一覧（プロンプト内で使用可能）</strong><br>
+      <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:12px">{{mentor_name}}</code> メンター名　
+      <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:12px">{{mentee_name}}</code> メンティー名　
+      <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:12px">{{leader_name}}</code> リーダー名（TEL用）　
+      <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:12px">{{transcript}}</code> 文字起こし全文<br>
+      <span style="font-size:12px;color:var(--tx3)">※ AIは必ずJSON形式で返答するよう指示してください。出力フォーマットを変えると画面表示が崩れます。</span>
+    </div>
+  </div>
+
+  <!-- 1on1要約プロンプト -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="ch">
+      <div class="ct">📋 1on1要約プロンプト</div>
+      <button class="btn btn-g btn-sm" onclick="resetPrompt('1on1')">デフォルトに戻す</button>
+    </div>
+    <div style="padding:14px 18px">
+      <div style="font-size:12px;color:var(--tx3);margin-bottom:8px">出力JSON項目: ai_summary / ai_advice / next_goal / next_month_project_goal / next_month_study_goal</div>
+      <textarea class="inp" id="prompt-1on1" rows="16" style="font-size:12px;font-family:monospace;line-height:1.6;resize:vertical" placeholder="読み込み中…"></textarea>
+    </div>
+  </div>
+
+  <!-- TEL要約プロンプト -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="ch">
+      <div class="ct">📞 TEL要約プロンプト</div>
+      <button class="btn btn-g btn-sm" onclick="resetPrompt('tel')">デフォルトに戻す</button>
+    </div>
+    <div style="padding:14px 18px">
+      <div style="font-size:12px;color:var(--tx3);margin-bottom:8px">出力JSON項目: talk_content / concerns / good_points / memo / ai_summary / ai_mentee_status</div>
+      <textarea class="inp" id="prompt-tel" rows="10" style="font-size:12px;font-family:monospace;line-height:1.6;resize:vertical" placeholder="読み込み中…"></textarea>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:12px;justify-content:flex-end;margin-bottom:24px">
+    <div id="ai-prompt-msg" style="font-size:13px"></div>
+    <button class="btn btn-p" onclick="saveAiPrompts()">💾 保存する</button>
   </div>
 </div>
 
@@ -1751,17 +1823,41 @@ async function loadSurveys() {
 // ══════════════════════════════════════════════════════════
 //  研修コンテンツ
 // ══════════════════════════════════════════════════════════
+var CONTENT_CATEGORIES = ['入社時研修','マニュアル','就業規則','社内ナレッジ','AWARD/配信'];
+var CAT_ICON = {'入社時研修':'📚','マニュアル':'📋','就業規則':'📜','社内ナレッジ':'💡','AWARD/配信':'🏆'};
+var _allContents = []; // キャッシュ
+
 async function loadContents() {
   const data = await gasReq('api/admin/contents');
   const card = document.getElementById('contentsCard');
   if (!data||!data.contents) { card.innerHTML='<div class="ch"><div class="ct">登録済みコンテンツ</div></div><div class="loading">取得に失敗しました</div>'; return; }
-  const sorted = data.contents.slice().sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); });
-  const iconMap={video:'📹',document:'📄',link:'🔗'};
-  const items = sorted.map(c=>`
-    <div class="content-item" id="content-row-${esc(c.content_id)}">
+  _allContents = data.contents.slice().sort(function(a,b){ return (b.created_at||'').localeCompare(a.created_at||''); });
+  filterContents();
+}
+
+function filterContents() {
+  var keyword = (document.getElementById('ct-search')     ||{}).value || '';
+  var cat     = (document.getElementById('ct-cat-filter') ||{}).value || '';
+  var kw      = keyword.toLowerCase();
+  var filtered = _allContents.filter(function(c) {
+    var matchKw  = !kw
+      || (c.title       ||'').toLowerCase().indexOf(kw) >= 0
+      || (c.description ||'').toLowerCase().indexOf(kw) >= 0;
+    var matchCat = !cat || (c.category||'') === cat;
+    return matchKw && matchCat;
+  });
+
+  var countEl = document.getElementById('ct-count');
+  if (countEl) countEl.textContent = filtered.length + '件' + (_allContents.length !== filtered.length ? '（全'+_allContents.length+'件中）' : '');
+
+  const card    = document.getElementById('contentsCard');
+  const iconMap = {video:'📹',document:'📄',link:'🔗'};
+  const items   = filtered.map(function(c) {
+    var catLabel = c.category ? '<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:var(--cy-light);color:var(--cy);font-weight:600;margin-right:5px">'+(CAT_ICON[c.category]||'')+ ' '+esc(c.category)+'</span>' : '';
+    return `<div class="content-item" id="content-row-${esc(c.content_id)}">
       <div class="ci-ic">${iconMap[c.type]||'🔗'}</div>
       <div class="ci-info">
-        <div class="ci-title">${esc(c.title)}</div>
+        <div class="ci-title">${catLabel}${esc(c.title)}</div>
         <div class="ci-meta">${esc(c.type)} ${c.duration?c.duration+'分':''} ${c.level?'/ '+esc(c.level):''} — ${fmtDate(c.created_at)}登録</div>
         ${c.description?'<div class="ci-meta" style="margin-top:2px;color:var(--tx3)">' + esc(c.description) + '</div>':''}
       </div>
@@ -1770,8 +1866,9 @@ async function loadContents() {
         <button class="btn btn-sm" style="background:var(--pr-light);color:var(--pr);border:none" onclick="openEditContent(${JSON.stringify(c).replace(/"/g,'&quot;')})">✏️ 編集</button>
         <button class="btn btn-sm" style="background:var(--rd-light);color:var(--rd);border:none" onclick="deleteContent('${esc(c.content_id)}','${esc(c.title)}')">削除</button>
       </div>
-    </div>`).join('')||'<div class="loading">コンテンツがありません</div>';
-  card.innerHTML=`<div class="ch"><div class="ct">登録済みコンテンツ（${sorted.length}件）</div></div>`+items;
+    </div>`;
+  }).join('') || '<div style="padding:24px;text-align:center;color:var(--tx3)">該当するコンテンツがありません</div>';
+  card.innerHTML = `<div class="ch"><div class="ct">登録済みコンテンツ（${filtered.length}件）</div></div>` + items;
 }
 
 // ── コンテンツモーダル タブ切替 ──
@@ -1796,8 +1893,9 @@ function openAddContent() {
   ['ct-title','ct-url','ct-desc','ct-duration'].forEach(function(id){
     var el = document.getElementById(id); if(el) el.value = '';
   });
-  document.getElementById('ct-type').value  = 'video';
-  document.getElementById('ct-level').value = '初級';
+  document.getElementById('ct-type').value     = 'video';
+  document.getElementById('ct-level').value    = '初級';
+  document.getElementById('ct-category').value = '';
   switchCtTab('form');
   _ctCsvRows = [];
   document.getElementById('ct-csv-preview').textContent = '';
@@ -1818,6 +1916,7 @@ function openEditContent(c) {
   document.getElementById('ct-desc').value     = c.description || '';
   document.getElementById('ct-duration').value = c.duration    || '';
   document.getElementById('ct-level').value    = c.level       || '初級';
+  document.getElementById('ct-category').value = c.category    || '';
   switchCtTab('form');
   openModal('contentModal');
 }
@@ -1832,6 +1931,7 @@ async function submitContent() {
     description: document.getElementById('ct-desc').value.trim(),
     duration:    document.getElementById('ct-duration').value.trim(),
     level:       document.getElementById('ct-level').value,
+    category:    document.getElementById('ct-category').value,
   };
   if (!payload.title || !payload.url) { toast('タイトルとURLは必須です','err'); return; }
   const btn = document.getElementById('ct-submit-btn');
@@ -1855,7 +1955,7 @@ async function submitContent() {
 // ── CSV一括登録 ──
 function downloadContentTemplate() {
   var bom  = '\uFEFF';
-  var text = bom + 'title,type,url,description,duration,level\nTypeScript基礎講座,video,https://example.com/video,TypeScriptの基礎を学ぶ,60,初級\n';
+  var text = bom + 'title,type,url,description,duration,level,category\nTypeScript基礎講座,video,https://example.com/video,TypeScriptの基礎を学ぶ,60,初級,社内ナレッジ\n就業規則2024,document,https://example.com/doc,,,,就業規則\n';
   var a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8;' }));
   a.download = 'contents_template.csv'; a.click();
@@ -1877,10 +1977,10 @@ function handleCtCsvFile(file) {
     var lines = text.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
     if (lines.length < 2) { document.getElementById('ct-csv-preview').textContent = '❌ データ行がありません'; return; }
     var header = lines[0].split(',').map(function(h){ return h.trim().toLowerCase(); });
-    var cols = { title: header.indexOf('title'), type: header.indexOf('type'), url: header.indexOf('url'), description: header.indexOf('description'), duration: header.indexOf('duration'), level: header.indexOf('level') };
+    var cols = { title: header.indexOf('title'), type: header.indexOf('type'), url: header.indexOf('url'), description: header.indexOf('description'), duration: header.indexOf('duration'), level: header.indexOf('level'), category: header.indexOf('category') };
     _ctCsvRows = lines.slice(1).map(function(line) {
       var cells = line.split(',').map(function(c){ return c.trim().replace(/^"|"$/g,''); });
-      return { title: cells[cols.title]||'', type: cells[cols.type]||'link', url: cells[cols.url]||'', description: cells[cols.description]||'', duration: cells[cols.duration]||'', level: cells[cols.level]||'' };
+      return { title: cells[cols.title]||'', type: cells[cols.type]||'link', url: cells[cols.url]||'', description: cells[cols.description]||'', duration: cells[cols.duration]||'', level: cells[cols.level]||'', category: cols.category >= 0 ? (cells[cols.category]||'') : '' };
     }).filter(function(r){ return r.title && r.url; });
     document.getElementById('ct-csv-preview').textContent = '✅ ' + _ctCsvRows.length + '件を読み込みました';
     var btn = document.getElementById('ct-csv-btn');
@@ -2509,6 +2609,51 @@ function nav(id, el) {
   if (id === 'leaderAssignments') { if (!_leaderAssignmentsLoaded) { _leaderAssignmentsLoaded = true; loadLeaderAssignments(); } }
   if (id === 'telStock')         { loadTelStock(); }
   if (id === 'bulkIO')            { initBulkIO(); }
+  if (id === 'aiPrompts')         { loadAiPrompts(); }
+}
+
+// ══════════════════════════════════════════════════════════
+//  生成AI プロンプト管理
+// ══════════════════════════════════════════════════════════
+var _defaultPrompts = {};
+
+async function loadAiPrompts() {
+  var p1 = document.getElementById('prompt-1on1');
+  var pt = document.getElementById('prompt-tel');
+  if (p1) p1.value = '読み込み中…';
+  if (pt) pt.value = '読み込み中…';
+  var data = await gasReq('api/admin/ai-prompts');
+  if (!data || !data.ok) { toast('プロンプトの取得に失敗しました', 'err'); return; }
+  if (p1) p1.value = data.prompt_1on1 || '';
+  if (pt) pt.value = data.prompt_tel  || '';
+  // デフォルト値を保持（リセット用）
+  _defaultPrompts = { '1on1': data.default_1on1 || '', tel: data.default_tel || '' };
+}
+
+function resetPrompt(type) {
+  if (!confirm('デフォルトのプロンプトに戻しますか？\n（保存するまで反映されません）')) return;
+  var el = document.getElementById('prompt-' + type);
+  if (el && _defaultPrompts[type]) {
+    el.value = _defaultPrompts[type];
+    toast('デフォルトプロンプトを適用しました（保存してください）');
+  }
+}
+
+async function saveAiPrompts() {
+  var p1  = (document.getElementById('prompt-1on1') || {}).value || '';
+  var pt  = (document.getElementById('prompt-tel')  || {}).value || '';
+  var msg = document.getElementById('ai-prompt-msg');
+  if (!p1 || !pt) { toast('プロンプトが空です', 'err'); return; }
+  msg.style.color = 'var(--tx3)'; msg.textContent = '保存中…';
+  var r = await gasReq('api/admin/ai-prompts', 'POST', { prompt_1on1: p1, prompt_tel: pt });
+  if (r && r.ok) {
+    msg.style.color = 'var(--gr)'; msg.textContent = '✅ 保存しました';
+    toast('AIプロンプトを保存しました');
+    setTimeout(function(){ msg.textContent = ''; }, 3000);
+  } else {
+    msg.style.color = 'var(--rd)'; msg.textContent = '❌ 保存に失敗しました';
+    toast('保存に失敗しました', 'err');
+  }
 }
 
 // iframe から「← 管理画面」受信

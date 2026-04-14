@@ -71,6 +71,9 @@ body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);
 .sc-acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .sc-btn{padding:5px 11px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:none;font-family:'Noto Sans JP',sans-serif;transition:all .2s}
 .sc-meet{background:var(--pr);color:#fff}.sc-doc{background:var(--bg4);color:var(--tx2);border:1px solid var(--bd)}.sc-del{background:var(--rd-light);color:var(--rd)}
+.mentor-cat-btn{padding:8px 14px;font-size:12px;font-weight:600;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;color:var(--tx2);font-family:'Noto Sans JP',sans-serif;transition:all .15s;flex-shrink:0}
+.mentor-cat-btn.active{color:var(--pr);border-bottom-color:var(--pr)}
+.mentor-cat-btn:hover{color:var(--pr)}
 .sched-badge{font-size:10px;padding:2px 8px;border-radius:5px;background:var(--pr-light);color:var(--pr);font-weight:600}
 .detail-wrap{padding:14px 16px}
 .detail-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -587,6 +590,7 @@ td{padding:10px 14px;font-size:13px}
       <div class="nav-tab" onclick="nav('reports',this)">レポート</div>
       <div class="nav-tab" id="nav-weeklyTel" style="display:none" onclick="nav('weeklyTel',this)">週次TEL</div>
       <div class="nav-tab" onclick="nav('survey',this)">アンケート</div>
+      <div class="nav-tab" onclick="nav('training',this)">研修</div>
     </div>
   </div>
   <div class="header-r">
@@ -917,6 +921,24 @@ td{padding:10px 14px;font-size:13px}
     <div class="ch"><div class="ct">過去の回答履歴</div></div>
     <div id="surveyHistory"><div class="loading">読み込み中…</div></div>
   </div>
+<!-- ════ TRAINING ════ -->
+<div class="screen" id="s-training">
+  <div class="topbar"><div><div class="page-title">研修コンテンツ</div><div class="page-sub">動画・資料・マニュアル</div></div></div>
+  <!-- 検索・カテゴリフィルター -->
+  <div class="card" style="margin-bottom:12px">
+    <div style="padding:10px 16px">
+      <input id="mentor-training-search" class="inp" style="width:100%;font-size:13px;padding:7px 12px" placeholder="🔍 タイトル・説明で検索…" oninput="filterMentorTraining()">
+    </div>
+    <div style="display:flex;gap:0;overflow-x:auto;border-top:1px solid var(--bd);scrollbar-width:none;-webkit-overflow-scrolling:touch">
+      <button class="mentor-cat-btn active" data-cat="" onclick="selectMentorCat(this,'')">すべて</button>
+      <button class="mentor-cat-btn" data-cat="入社時研修" onclick="selectMentorCat(this,'入社時研修')">📚 入社時研修</button>
+      <button class="mentor-cat-btn" data-cat="マニュアル" onclick="selectMentorCat(this,'マニュアル')">📋 マニュアル</button>
+      <button class="mentor-cat-btn" data-cat="就業規則" onclick="selectMentorCat(this,'就業規則')">📜 就業規則</button>
+      <button class="mentor-cat-btn" data-cat="社内ナレッジ" onclick="selectMentorCat(this,'社内ナレッジ')">💡 社内ナレッジ</button>
+      <button class="mentor-cat-btn" data-cat="AWARD/配信" onclick="selectMentorCat(this,'AWARD/配信')">🏆 AWARD/配信</button>
+    </div>
+  </div>
+  <div class="card"><div id="mentorTrainingList"><div class="loading">読み込み中…</div></div></div>
 </div>
 
 </main>
@@ -1017,6 +1039,63 @@ async function gasReq(path, method, body) {
 }
 
 // GASウォームアップ（コールドスタート対策）
+// ══ 研修コンテンツ ══
+var _allMentorTraining = [];
+var _mentorTrainingCat = '';
+var CAT_ICON_MENTOR = {'入社時研修':'📚','マニュアル':'📋','就業規則':'📜','社内ナレッジ':'💡','AWARD/配信':'🏆'};
+
+async function loadMentorTraining() {
+  var container = document.getElementById('mentorTrainingList');
+  if (!container) return;
+  if (_allMentorTraining.length > 0) { filterMentorTraining(); return; } // キャッシュ済み
+  container.innerHTML = '<div class="loading">読み込み中…</div>';
+  var data = await gasReq('api/admin/contents');
+  if (!data || !data.contents || data.contents.length === 0) {
+    container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">コンテンツがありません</div>';
+    return;
+  }
+  _allMentorTraining = data.contents;
+  filterMentorTraining();
+}
+
+function selectMentorCat(btn, cat) {
+  _mentorTrainingCat = cat;
+  document.querySelectorAll('.mentor-cat-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  filterMentorTraining();
+}
+
+function filterMentorTraining() {
+  var container = document.getElementById('mentorTrainingList');
+  if (!container) return;
+  var kw = ((document.getElementById('mentor-training-search')||{}).value || '').toLowerCase();
+  var filtered = _allMentorTraining.filter(function(c) {
+    var matchKw  = !kw
+      || (c.title||'').toLowerCase().indexOf(kw) >= 0
+      || (c.description||'').toLowerCase().indexOf(kw) >= 0;
+    var matchCat = !_mentorTrainingCat || (c.category||'') === _mentorTrainingCat;
+    return matchKw && matchCat;
+  });
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">該当するコンテンツがありません</div>';
+    return;
+  }
+  var iconMap = {video:'📹', document:'📄', link:'🔗'};
+  container.innerHTML = filtered.map(function(c) {
+    var icon    = iconMap[c.type] || '🔗';
+    var catIcon = c.category ? (CAT_ICON_MENTOR[c.category]||'') : '';
+    var catTag  = c.category
+      ? '<span style="display:inline-block;background:var(--cy-light);color:var(--cy);font-size:10px;padding:2px 8px;border-radius:5px;font-weight:600;margin-right:5px">'+ catIcon+' '+esc(c.category)+'</span>'
+      : '';
+    var typeTag = '<span style="display:inline-block;background:var(--pr-light);color:var(--pr);font-size:10px;padding:2px 8px;border-radius:5px;font-weight:700">'+ icon+' '+(c.type||'')+'</span>';
+    return '<div style="padding:14px 18px;border-bottom:1px solid var(--bd);cursor:pointer" onclick="'+(c.url ? 'window.open(\''+c.url.replace(/'/g,"\\'")+"','_blank')" : '')+'">'
+      + '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">'+catTag+typeTag+'</div>'
+      + '<div style="font-size:14px;font-weight:700;margin-bottom:3px">'+esc(c.title||'')+'</div>'
+      + '<div style="font-size:12px;color:var(--tx3)">'+(c.duration?c.duration+'分 — ':'')+esc(c.level||'')+(c.description?' — '+esc(c.description.slice(0,60)):'')+'</div>'
+      + '</div>';
+  }).join('');
+}
+
 function logoutMentor() {
   if (!confirm('ログアウトしますか？')) return;
   Auth.clearAuth();
@@ -2484,11 +2563,11 @@ function nav(id, el) {
   if (id === 'reports') {
     if (_myReports.length === 0) { loadReports(); }
     else { loadReportsScreen(); }
-    // タブを初期化
     if (typeof switchRepTab === 'function') switchRepTab(_currentRepTab || 'tel');
   }
   if (id === 'weeklyTel')  { loadWeeklyTel(); }
   if (id === 'survey')     { loadSurveys(); }
+  if (id === 'training')   { loadMentorTraining(); }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2625,7 +2704,20 @@ function loadMembersTab() {
     listEl.innerHTML = '<div class="card" style="padding:24px;text-align:center;color:var(--tx3)">担当メンティーがいません</div>';
     return;
   }
+
+  // ★ ドロワーを必ずlistElの外に退避してから再構築
+  var drawer = document.getElementById('memberDetailDrawer');
+  if (drawer) {
+    drawer.style.display = 'none';
+    if (drawer.parentNode !== listEl.parentNode) {
+      listEl.parentNode.appendChild(drawer);
+    }
+  }
+  _mdCurrentMentee = null;
+
+  // ★ 毎回カードを再生成（ドロワーのinsertBefore参照を正確に保つ）
   listEl.innerHTML = '';
+
   _myMentees.forEach(function(m) {
     var sig    = SIG_CONFIG[m.status] || SIG_CONFIG.green;
     var card   = document.createElement('div');
@@ -2636,10 +2728,10 @@ function loadMembersTab() {
     // クリックで詳細表示（同じカードを再クリックで折りたたむ）
     (function(mentee, c){ card.onclick = function(e){
       if (e.target.tagName === 'BUTTON') return;
-      var drawer = document.getElementById('memberDetailDrawer');
+      var dw = document.getElementById('memberDetailDrawer');
       // 既にこのカードの直後にドロワーが開いている場合 → 閉じる
-      if (drawer && drawer.style.display !== 'none'
-          && c.nextSibling === drawer
+      if (dw && dw.style.display !== 'none'
+          && c.nextSibling === dw
           && _mdCurrentMentee && _mdCurrentMentee.user_id === mentee.user_id) {
         closeMemberDetail();
         return;
@@ -2752,8 +2844,12 @@ function openMemberDetail(userId, cardEl) {
 
   if (isOnMembersScreen) {
     // ── メンバー管理画面にいる場合：ドロワー方式 ──
-    var drawer    = document.getElementById('memberDetailDrawer');
-    var cardListEl= document.getElementById('memberCardList');
+    var drawer     = document.getElementById('memberDetailDrawer');
+    var cardListEl = document.getElementById('memberCardList');
+    // ★ ドロワーがbodyに退避している場合はcardListElに戻す
+    if (drawer.parentNode !== cardListEl) {
+      cardListEl.appendChild(drawer);
+    }
     if (cardEl) { cardListEl.insertBefore(drawer, cardEl.nextSibling); }
     drawer.style.display = '';
   } else {
@@ -3396,16 +3492,34 @@ function onGoalStartChange() {
 
 // ── 目標期間ラベル生成（"yy年m月〜yy年m月"形式）──
 function fmtGoalPeriod(startMonth, endMonth) {
-  if (!startMonth) return '';
-  function fmt(ym) {
-    var parts = ym.split('-');
-    if (parts.length < 2) return ym;
-    var y = String(parts[0]).slice(-2);
-    var m = parseInt(parts[1]);
-    return y + '年' + m + '月';
+  function parseYM(val) {
+    if (!val) return null;
+    var s = String(val).trim();
+    // YYYY-MM
+    var m1 = s.match(/^(\d{4})-(\d{2})$/);
+    if (m1) return { y: m1[1], m: parseInt(m1[2]) };
+    // YYYY/M/D または YYYY/MM
+    var m2 = s.match(/^(\d{4})\/(\d{1,2})/);
+    if (m2) return { y: m2[1], m: parseInt(m2[2]) };
+    // Date文字列（"Wed Apr 01 2026..."など）→ Dateで解析
+    try {
+      var d = new Date(s);
+      if (!isNaN(d.getTime())) {
+        var jst = new Date(d.getTime() + 9*60*60*1000);
+        return { y: String(jst.getUTCFullYear()), m: jst.getUTCMonth()+1 };
+      }
+    } catch(e2) {}
+    return null;
   }
-  if (endMonth) return fmt(startMonth) + '〜' + fmt(endMonth);
-  return fmt(startMonth) + '〜';
+  function fmt(val) {
+    var p = parseYM(val);
+    if (!p) return '';
+    return String(p.y).slice(-2) + '年' + p.m + '月';
+  }
+  var s = fmt(startMonth);
+  var e = fmt(endMonth);
+  if (!s) return '';
+  return e ? s + '〜' + e : s + '〜';
 }
 
 // ── 目標の現在値エリアを更新 ──

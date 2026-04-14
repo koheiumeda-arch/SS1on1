@@ -139,6 +139,9 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .content-card{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all .2s}
 .content-card:active{background:var(--bg3)}
 .cc-tag{display:inline-block;background:var(--pr-light);color:var(--pr);font-size:10px;padding:3px 9px;border-radius:5px;font-weight:700;margin-bottom:9px}
+.training-cat-btn{padding:8px 14px;font-size:12px;font-weight:600;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;color:var(--tx2);font-family:'Noto Sans JP',sans-serif;transition:all .15s;flex-shrink:0}
+.training-cat-btn.active{color:var(--pr);border-bottom-color:var(--pr)}
+.training-cat-btn:active{opacity:.7}
 .cc-title{font-size:15px;font-weight:700;margin-bottom:5px}
 .cc-meta{font-size:12px;color:var(--tx3)}
 
@@ -517,6 +520,21 @@ input[type="month"].inp{padding:11px 14px}
 <!-- ══════════════════════════════════════  TRAINING -->
 <div class="screen" id="s-training">
   <div style="margin-bottom:4px"><div style="font-size:19px;font-weight:700;margin-bottom:4px">研修コンテンツ</div><div style="font-size:13px;color:var(--tx2)">動画・資料で学ぶ</div></div>
+  <!-- 検索バー -->
+  <div class="card" style="margin-bottom:0">
+    <div style="padding:10px 14px">
+      <input id="training-search" class="inp" style="width:100%;font-size:13px;padding:8px 12px" placeholder="🔍 タイトル・説明で検索…" oninput="filterTraining()">
+    </div>
+    <!-- カテゴリタブ -->
+    <div style="display:flex;gap:0;overflow-x:auto;border-top:1px solid var(--bd);scrollbar-width:none;-webkit-overflow-scrolling:touch">
+      <button class="training-cat-btn active" data-cat="" onclick="selectTrainingCat(this,'')">すべて</button>
+      <button class="training-cat-btn" data-cat="入社時研修" onclick="selectTrainingCat(this,'入社時研修')">📚 入社時研修</button>
+      <button class="training-cat-btn" data-cat="マニュアル" onclick="selectTrainingCat(this,'マニュアル')">📋 マニュアル</button>
+      <button class="training-cat-btn" data-cat="就業規則" onclick="selectTrainingCat(this,'就業規則')">📜 就業規則</button>
+      <button class="training-cat-btn" data-cat="社内ナレッジ" onclick="selectTrainingCat(this,'社内ナレッジ')">💡 社内ナレッジ</button>
+      <button class="training-cat-btn" data-cat="AWARD/配信" onclick="selectTrainingCat(this,'AWARD/配信')">🏆 AWARD/配信</button>
+    </div>
+  </div>
   <div id="trainingList"><div class="loading"><div class="spinner"></div>読み込み中...</div></div>
 </div>
 
@@ -1565,12 +1583,30 @@ function renderHome(data) {
 
   // 期間ラベル生成（"yy年m月〜yy年m月の目標"）
   function fmtGoalPeriodMentee(start, end) {
-    if (!start) return '';
-    function fmt(ym) {
-      var p = ym.split('-');
-      return String(p[0]).slice(-2) + '年' + parseInt(p[1]) + '月';
+    function parseYM(val) {
+      if (!val) return null;
+      var s = String(val).trim();
+      var m1 = s.match(/^(\d{4})-(\d{2})$/);
+      if (m1) return { y: m1[1], m: parseInt(m1[2]) };
+      var m2 = s.match(/^(\d{4})\/(\d{1,2})/);
+      if (m2) return { y: m2[1], m: parseInt(m2[2]) };
+      try {
+        var d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          var jst = new Date(d.getTime() + 9*60*60*1000);
+          return { y: String(jst.getUTCFullYear()), m: jst.getUTCMonth()+1 };
+        }
+      } catch(e2) {}
+      return null;
     }
-    return end ? fmt(start) + '〜' + fmt(end) + 'の目標' : fmt(start) + '〜の目標';
+    function fmt(val) {
+      var p = parseYM(val);
+      if (!p) return '';
+      return String(p.y).slice(-2) + '年' + p.m + '月';
+    }
+    var sf = fmt(start), ef = fmt(end);
+    if (!sf) return '';
+    return ef ? sf + '〜' + ef + 'の目標' : sf + '〜の目標';
   }
   var periodLabel = fmtGoalPeriodMentee(startMonth, endMonth);
 
@@ -1776,28 +1812,59 @@ function showReport(reportId) {
 }
 
 // 研修コンテンツ読み込み
+var _allTrainingContents = [];
+var _trainingCat = '';
+var CAT_ICON_MENTEE = {'入社時研修':'📚','マニュアル':'📋','就業規則':'📜','社内ナレッジ':'💡','AWARD/配信':'🏆'};
+
 async function loadTraining() {
   var container = document.getElementById('trainingList');
   if (!container) return;
-  // mentee向けコンテンツ取得（admin/contentsと同じシートを参照）
   var data = await apiRequest('/api/mentee/contents');
-  if (!data || !data.contents) {
-    // フォールバック: admin/contentsを試す
-    data = await apiRequest('/api/admin/contents');
-  }
+  if (!data || !data.contents) data = await apiRequest('/api/admin/contents');
   if (!data || !data.contents || data.contents.length === 0) {
     container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">コンテンツがありません</div>';
     return;
   }
-  var iconMap = { video:'📹', document:'📄', link:'🔗' };
-  container.innerHTML = data.contents.map(function(c) {
-    var icon = iconMap[c.type] || '🔗';
-    var tagStyle = 'display:inline-block;background:var(--pr-light);color:var(--pr);font-size:10px;padding:3px 9px;border-radius:5px;font-weight:700;margin-bottom:9px';
-    var url = c.url ? ' onclick="window.open(\'' + c.url + '\',\'_blank\')"' : '';
+  _allTrainingContents = data.contents;
+  filterTraining();
+}
+
+function selectTrainingCat(btn, cat) {
+  _trainingCat = cat;
+  document.querySelectorAll('.training-cat-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  filterTraining();
+}
+
+function filterTraining() {
+  var container = document.getElementById('trainingList');
+  if (!container) return;
+  var kw = ((document.getElementById('training-search')||{}).value || '').toLowerCase();
+  var filtered = _allTrainingContents.filter(function(c) {
+    var matchKw  = !kw
+      || (c.title||'').toLowerCase().indexOf(kw) >= 0
+      || (c.description||'').toLowerCase().indexOf(kw) >= 0;
+    var matchCat = !_trainingCat || (c.category||'') === _trainingCat;
+    return matchKw && matchCat;
+  });
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--tx3)">該当するコンテンツがありません</div>';
+    return;
+  }
+  var iconMap = {video:'📹', document:'📄', link:'🔗'};
+  container.innerHTML = filtered.map(function(c) {
+    var icon    = iconMap[c.type] || '🔗';
+    var catIcon = c.category ? (CAT_ICON_MENTEE[c.category] || '') : '';
+    var catTag  = c.category
+      ? '<span style="display:inline-block;background:var(--cy-light);color:var(--cy);font-size:10px;padding:2px 8px;border-radius:5px;font-weight:700;margin-bottom:7px">'+ catIcon+' '+esc(c.category)+'</span>'
+      : '';
+    var typeTag = '<span class="cc-tag">' + icon + ' ' + (c.type||'') + '</span>';
+    var url = c.url ? ' onclick="window.open(\'' + c.url.replace(/'/g,"\\'") + '\',\'_blank\')"' : '';
     return '<div class="content-card"' + url + '>'
-      + '<div style="' + tagStyle + '">' + icon + ' ' + (c.type||'') + '</div>'
-      + '<div class="cc-title">' + (c.title||'') + '</div>'
-      + '<div class="cc-meta">' + (c.duration ? c.duration+'分 — ' : '') + (c.level||'') + '</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">' + catTag + typeTag + '</div>'
+      + '<div class="cc-title">' + esc(c.title||'') + '</div>'
+      + '<div class="cc-meta">' + (c.duration ? c.duration+'分 — ' : '') + esc(c.level||'')
+      + (c.description ? ' — ' + esc(c.description.slice(0,60)) : '') + '</div>'
       + '</div>';
   }).join('');
 }
