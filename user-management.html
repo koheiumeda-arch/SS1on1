@@ -258,7 +258,6 @@
     padding: 16px 24px; border-top: 1px solid var(--border);
     display: flex; gap: 10px; justify-content: flex-end;
     background: var(--surface2);
-    position: sticky; bottom: 0; z-index: 1;
   }
 
   /* FORM */
@@ -536,6 +535,13 @@
       <!-- TELストックから割り当て（menteeのみ） -->
       <div id="telStockSection" style="display:none;margin-top:4px">
         <div class="sec-label" style="margin-bottom:8px">TELスペース割り当て</div>
+        <!-- ★ 割り当て済み状態バナー -->
+        <div id="telAssignedBanner" style="display:none;background:var(--success-light,#e6f9f1);border:1px solid var(--success,#28a745);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--success,#1a7a3a);display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <span>✅ <strong>TELスペース割り当て済み</strong> — Chat・Webhook・Meet URLが設定されています</span>
+          <button type="button" class="btn btn-ghost" id="telUnassignBtn" onclick="unassignTelStock()" style="font-size:11px;padding:4px 12px;color:var(--danger,#dc3545);border-color:var(--danger,#dc3545);white-space:nowrap">
+            🔓 割り当て解除
+          </button>
+        </div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <button type="button" class="btn btn-ghost" onclick="loadAndShowTelStock()" style="font-size:12px;padding:6px 14px">
             📦 ストックから自動入力
@@ -598,10 +604,12 @@ function getToken() {
 
 // action → JWT認証エンドポイントのマッピング
 const ACTION_MAP = {
-  getUsers:   { path: 'api/admin/users/list',            method: 'GET'  },
-  createUser: { path: 'api/admin/users/create',          method: 'POST' },
-  updateUser: { path: 'api/admin/users/update-profile',  method: 'POST' },
-  deleteUser: { path: 'api/admin/users/delete-user',     method: 'POST' },
+  getUsers:      { path: 'api/admin/users/list',            method: 'GET'  },
+  createUser:    { path: 'api/admin/users/create',          method: 'POST' },
+  updateUser:    { path: 'api/admin/users/update-profile',  method: 'POST' },
+  deleteUser:    { path: 'api/admin/users/delete-user',     method: 'POST' },
+  assignStock:   { path: 'api/admin/tel-stock/assign',      method: 'POST' },
+  unassignStock: { path: 'api/admin/tel-stock/unassign',    method: 'POST' },
 };
 
 async function api(action, extra = {}) {
@@ -788,6 +796,10 @@ function editUser(u) {
   // リーダー選択を復元（onRoleChange後に呼ぶ）
   if(u.role==='mentee'){
     populateLeaders(u.leader_id||'');
+    // ★ 割り当て済みバナーの表示制御
+    const banner = document.getElementById('telAssignedBanner');
+    const isAssigned = !!(u.chat_url || u.chat_webhook_url || u.tel_meet_url);
+    if (banner) banner.style.display = isAssigned ? 'flex' : 'none';
   }
   openModal('formModal');
 }
@@ -797,6 +809,9 @@ function resetForm() {
   document.getElementById('tenureHint').textContent='';
   document.getElementById('f_tel_stock').value='';
   document.getElementById('tel_stock_status').textContent='';
+  const _banner = document.getElementById('telAssignedBanner');
+  if (_banner) _banner.style.display = 'none';
+  if (document.getElementById('f_tel_stock')) document.getElementById('f_tel_stock').dataset.stockId = '';
   document.getElementById('f_role').value=''; document.getElementById('f_emp').value='';
   document.getElementById('f_leader').checked=false; document.getElementById('f_mentor').value='';
   document.getElementById('f_mentor').disabled=true;
@@ -896,6 +911,10 @@ async function submitUser() {
     tel_meet_url:document.getElementById('f_tel_meet').value.trim(),
   };
 
+  // ストック割り当て対象のstock_idを保存前に確保
+  const sel = document.getElementById('f_tel_stock');
+  const pendingStockId = sel ? (sel.dataset.stockId || '') : '';
+
   try {
     let d;
     if(editId){
@@ -905,6 +924,27 @@ async function submitUser() {
       d=await api('createUser',payload);
     }
     if(d&&d.ok){
+      const savedUserId = editId || d.user_id || '';
+
+      // ★ ストックが選択されていれば割り当てAPIを呼んでstatusを更新
+      if (pendingStockId && savedUserId) {
+        try {
+          const sr = await api('assignStock', {
+            mentee_id: savedUserId,
+            stock_id:  pendingStockId,
+            meet_url:  payload.tel_meet_url || '',
+          });
+          if (sr && sr.ok) {
+            console.log('[Stock] 割り当て完了:', sr);
+          } else {
+            console.warn('[Stock] 割り当て失敗（ユーザー保存は成功）:', sr);
+            toast('warn', 'ユーザー保存済み。ストック割り当て失敗: ' + (sr?.error || ''));
+          }
+        } catch(se) {
+          console.warn('[Stock] 割り当てエラー:', se);
+        }
+      }
+
       toast('ok',editId?'ユーザー情報を更新しました':'ユーザーを登録しました');
       closeModal('formModal'); await loadUsers();
     } else {
@@ -976,6 +1016,46 @@ async function sha256(str){
 
 // ── TELストック取得・適用 ──
 let _telStockCache = [];
+
+// ★ TELスペース割り当て解除
+async function unassignTelStock() {
+  if (!editId) return;
+  if (!confirm('このメンティーのTELスペース割り当てを解除しますか？
+Chat URL・Webhook URL・Meet URLがクリアされます。')) return;
+
+  const btn = document.getElementById('telUnassignBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '解除中…'; }
+
+  try {
+    const d = await api('unassignStock', { mentee_id: editId });
+    if (d && d.ok) {
+      toast('ok', 'TELスペースの割り当てを解除しました');
+      // フォームのURL欄をクリア
+      document.getElementById('f_chat').value     = '';
+      document.getElementById('f_webhook').value  = '';
+      document.getElementById('f_tel_meet').value = '';
+      // バナーを隠す
+      const banner = document.getElementById('telAssignedBanner');
+      if (banner) banner.style.display = 'none';
+      // ユーザー一覧を更新
+      await loadUsers();
+      // allUsersの該当ユーザーも更新
+      const idx = allUsers.findIndex(u => u.user_id === editId);
+      if (idx >= 0) {
+        allUsers[idx].chat_url         = '';
+        allUsers[idx].chat_webhook_url = '';
+        allUsers[idx].tel_meet_url     = '';
+        allUsers[idx].chat_space_id    = '';
+      }
+    } else {
+      toast('err', '解除失敗: ' + (d?.error || d?.message || 'GAS応答なし'));
+    }
+  } catch(err) {
+    toast('err', '解除エラー: ' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔓 割り当て解除'; }
+  }
+}
 
 async function loadAndShowTelStock() {
   const sel    = document.getElementById('f_tel_stock');
