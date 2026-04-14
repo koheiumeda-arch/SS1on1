@@ -401,7 +401,11 @@ input[type="month"].inp{padding:11px 14px}
 <!-- ══════════════════════════════════════  SURVEY（アンケート） -->
 <div class="screen" id="s-survey">
   <div class="bc"><span class="bc-link" onclick="goScreen('home')">ホーム</span><span>›</span><span>アンケート</span></div>
-  <div style="margin-bottom:4px"><div style="font-size:19px;font-weight:700;margin-bottom:4px">1on1アンケート</div><div style="font-size:13px;color:var(--tx2)" id="surveySubtitle">—</div></div>
+  <div style="margin-bottom:4px">
+    <div style="font-size:19px;font-weight:700;margin-bottom:4px" id="survey-title">1on1アンケート</div>
+    <div style="font-size:13px;color:var(--tx2)" id="surveySubtitle">—</div>
+  </div>
+  <input type="hidden" id="survey-booking-id" value="">
   <div class="card">
     <div class="ch"><div class="ct">満足度評価</div></div>
     <div style="padding:18px">
@@ -1123,8 +1127,15 @@ function rateStar(val, type) {
   _ratings[type] = val;
   var container = document.getElementById('stars-' + type);
   if (!container) return;
-  Array.from(container.children).forEach(function(s, i) {
-    s.className = i < val ? 'star-f' : 'star-e';
+  Array.from(container.querySelectorAll('span')).forEach(function(s, i) {
+    // ★ className + style両方を更新して確実に色を変える
+    if (i < val) {
+      s.className = 'star-f';
+      s.style.color = 'var(--am, #f9ca24)';
+    } else {
+      s.className = 'star-e';
+      s.style.color = 'var(--bd, #ddd)';
+    }
   });
 }
 
