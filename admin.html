@@ -2623,7 +2623,16 @@ async function loadAiPrompts() {
   if (p1) p1.value = '読み込み中…';
   if (pt) pt.value = '読み込み中…';
   var data = await gasReq('api/admin/ai-prompts');
-  if (!data || !data.ok) { toast('プロンプトの取得に失敗しました', 'err'); return; }
+  if (!data || !data.ok) {
+    var errMsg = data ? (data.error || 'ok=false') : 'GAS応答なし（タイムアウトまたはデプロイ未反映の可能性）';
+    console.error('[loadAiPrompts] エラー:', errMsg, data);
+    toast('プロンプトの取得に失敗しました: ' + errMsg, 'err');
+    if (p1) p1.placeholder = '❌ 取得失敗: ' + errMsg;
+    if (pt) pt.placeholder = '❌ 取得失敗: ' + errMsg;
+    if (p1) p1.value = '';
+    if (pt) pt.value = '';
+    return;
+  }
   if (p1) p1.value = data.prompt_1on1 || '';
   if (pt) pt.value = data.prompt_tel  || '';
   // デフォルト値を保持（リセット用）
