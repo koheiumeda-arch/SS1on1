@@ -194,6 +194,17 @@ input[type="month"].inp{padding:11px 14px}
 
 <!-- ══════════════════════════════════════  HOME  -->
 <div class="screen active" id="s-home">
+  <!-- ★ アンケートバナー（未回答時のみ表示） -->
+  <div id="surveyBanner" style="display:none;margin-bottom:12px;background:linear-gradient(135deg,#ff9f43,#ee5a24);border-radius:14px;padding:14px 16px;color:#fff">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:24px">📋</span>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;margin-bottom:2px">1on1アンケートに回答してください</div>
+        <div style="font-size:12px;opacity:.9" id="surveyBannerDate">ミーティングが終了しました</div>
+      </div>
+      <button onclick="goScreen('survey')" style="background:rgba(255,255,255,.25);border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;white-space:nowrap">回答する →</button>
+    </div>
+  </div>
   <div class="greet">
     <div class="greet-sub" id="greetSub">こんにちは</div>
     <div class="greet-name" id="greetName">読み込み中…</div>
@@ -478,6 +489,7 @@ input[type="month"].inp{padding:11px 14px}
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">担当リーダー</span><span style="font-size:14px;font-weight:600" id="set-leader">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">稼働場所</span><span style="font-size:14px;font-weight:600" id="set-workplace">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">雇用形態</span><span style="font-size:14px;font-weight:600" id="set-workstatus">—</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)" id="set-hire-date-row" style="display:none"><span style="font-size:13px;color:var(--tx2)">入社日</span><span style="font-size:14px;font-weight:600" id="set-hire-date">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)" id="set-tenure-row" style="display:none"><span style="font-size:13px;color:var(--tx2)">在籍期間</span><span style="font-size:14px;font-weight:700;color:var(--pr)" id="set-tenure">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">半年業務目標</span><span style="font-size:14px;font-weight:600;max-width:60%;text-align:right;line-height:1.5" id="set-goal-work">—</span></div>
       <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd)"><span style="font-size:13px;color:var(--tx2)">半年スキル目標</span><span style="font-size:14px;font-weight:600;max-width:60%;text-align:right;line-height:1.5" id="set-goal-skill">—</span></div>
@@ -738,6 +750,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   setDisp('set-workplace',  user.workplace || '—');
   setDisp('set-workstatus', user.work_status || '—');
   setDisp('set-wage',       user.hourly_wage ? '¥'+Number(user.hourly_wage).toLocaleString()+'/h' : '—');
+  // ★ 入社日表示
+  var hireDateRow2 = document.getElementById('set-hire-date-row');
+  var hireDateEl2  = document.getElementById('set-hire-date');
+  if (user.hire_date && hireDateRow2 && hireDateEl2) {
+    var hd = new Date(user.hire_date);
+    hireDateEl2.textContent = isNaN(hd) ? user.hire_date : hd.getFullYear()+'年'+(hd.getMonth()+1)+'月'+hd.getDate()+'日';
+    hireDateRow2.style.display = '';
+  } else if (hireDateRow2) {
+    hireDateRow2.style.display = 'none';
+  }
   // ★ 在籍期間表示
   var tenureRow = document.getElementById('set-tenure-row');
   var tenureEl  = document.getElementById('set-tenure');
@@ -1083,8 +1105,10 @@ function rateStar(el, type) {
 }
 
 // ══ アンケート送信 ══
+var _pendingSurveyBookingId = ''; // ホームバナーから設定される
 async function submitSurvey() {
-  const bookingId = document.getElementById('survey-booking-id')?.value || '';
+  // survey-booking-id フィールドか、ホームバナーから設定されたIDを使用
+  const bookingId = (document.getElementById('survey-booking-id')?.value || _pendingSurveyBookingId || '').trim();
   if (!bookingId) { showToast('❌ 対象の予約がありません'); return; }
   if (!_ratings.progress || !_ratings.mental) {
     showToast('❌ 進捗とメンタルを選択してください'); return;
@@ -1093,34 +1117,54 @@ async function submitSurvey() {
   const result = await apiRequest('/api/survey/submit', {
     method: 'POST',
     body: JSON.stringify({
-      booking_id: bookingId,
+      booking_id:      bookingId,
       progress_rating: _ratings.progress,
-      mental_rating: _ratings.mental,
-      comment: comment
+      mental_rating:   _ratings.mental,
+      comment:         comment,
+      role:            'mentee'
     })
   });
   if (result && result.ok) {
     showToast('✅ 回答を送信しました');
     _ratings = { progress: 0, mental: 0 };
+    _pendingSurveyBookingId = '';
+    // ★ バナーを非表示
+    var banner = document.getElementById('surveyBanner');
+    if (banner) banner.style.display = 'none';
     loadSurveyData();
+    // ホーム画面に戻る
+    goNav('home');
   } else {
     showToast('❌ 送信に失敗しました');
   }
 }
 
 async function loadSurveyData() {
-  // 次回予約を取得してsurveyフォームに設定
   const data = await fetchHomeData();
-  const booking = data?.next_booking;
+  // ★ pending_survey（completed & 未回答）を優先、なければ next_booking
+  const survey  = data?.pending_survey;
+  const booking = survey || data?.next_booking;
   const bookingInput = document.getElementById('survey-booking-id');
-  if (bookingInput) {
-    bookingInput.value = booking?.booking_id || '';
-  }
+  if (bookingInput) bookingInput.value = booking?.booking_id || '';
+  if (survey) _pendingSurveyBookingId = survey.booking_id || '';
   const titleEl = document.getElementById('survey-title');
   if (titleEl) {
-    titleEl.textContent = booking
-      ? '📋 アンケート（booking: ' + booking.booking_id + '）'
-      : '📋 アンケート（予約なし）';
+    if (survey) {
+      var dt = new Date(survey.scheduled_at);
+      var label = isNaN(dt) ? '' : (dt.getMonth()+1) + '月' + dt.getDate() + '日';
+      titleEl.textContent = '📋 ' + label + ' の1on1アンケート（未回答）';
+    } else if (booking) {
+      titleEl.textContent = '📋 次回1on1のアンケート';
+    } else {
+      titleEl.textContent = '📋 アンケート（対象の予約なし）';
+    }
+  }
+  // surveySubtitle にも反映
+  var subEl = document.getElementById('surveySubtitle');
+  if (subEl) {
+    subEl.textContent = survey
+      ? '回答待ちのアンケートがあります ⚠️'
+      : (booking ? '次回1on1の後に回答できます' : '— 回答待ちのアンケートなし');
   }
 }
 
@@ -1356,6 +1400,16 @@ function renderHome(data) {
     setEl('set-workplace',    u.workplace);
     setEl('set-workstatus',   u.work_status);
     setEl('set-wage',         u.hourly_wage ? '¥' + Number(u.hourly_wage).toLocaleString() + '/h' : '');
+    // ★ 入社日更新
+    var hireDateRowEl2 = document.getElementById('set-hire-date-row');
+    var hireDateValEl2 = document.getElementById('set-hire-date');
+    if (u.hire_date && hireDateRowEl2 && hireDateValEl2) {
+      var hd2 = new Date(u.hire_date);
+      hireDateValEl2.textContent = isNaN(hd2) ? u.hire_date : hd2.getFullYear()+'年'+(hd2.getMonth()+1)+'月'+hd2.getDate()+'日';
+      hireDateRowEl2.style.display = '';
+    } else if (hireDateRowEl2) {
+      hireDateRowEl2.style.display = 'none';
+    }
     // ★ 在籍期間更新
     var tenureRowEl = document.getElementById('set-tenure-row');
     var tenureValEl = document.getElementById('set-tenure');
@@ -1446,6 +1500,22 @@ function renderHome(data) {
   // ③ 設定画面
   setGoalEl('set-goal-work',  goalWork);
   setGoalEl('set-goal-skill', goalSkill);
+
+  // ★ アンケートバナー表示（未回答の completed 予約がある場合）
+  var banner   = document.getElementById('surveyBanner');
+  var bannerDt = document.getElementById('surveyBannerDate');
+  if (banner) {
+    if (data.pending_survey) {
+      var dt = new Date(data.pending_survey.scheduled_at);
+      var dtLabel = isNaN(dt) ? '' : (dt.getMonth()+1) + '月' + dt.getDate() + '日の1on1が終了しました';
+      if (bannerDt) bannerDt.textContent = dtLabel;
+      // booking_idをsurvey画面に渡すためにグローバル変数に保存
+      _pendingSurveyBookingId = data.pending_survey.booking_id;
+      banner.style.display = '';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
 
   // 直近のスケジュール（ホーム）
   _allUpcomingBookings = (data.all_upcoming_bookings || []).slice();
