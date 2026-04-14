@@ -654,7 +654,9 @@ td{padding:10px 14px;font-size:13px}
           <div class="pre-summary-text" id="preSummaryText"></div>
           <button class="pre-detail-btn" onclick="openPreDetail()">📋 アンケート詳細を確認 →</button>
         </div>
-        <div id="noSurveyMsg" style="display:none;font-size:12px;color:var(--tx3);background:var(--bg3);border-radius:9px;padding:10px;margin-bottom:10px">未回答のアンケートがあります</div>
+        <div id="noSurveyMsg" style="display:none;font-size:12px;border-radius:9px;padding:10px 12px;margin-bottom:10px;background:var(--am-light);color:var(--am);border:1px solid var(--am);cursor:pointer" onclick="nav('survey',document.querySelector('[onclick*=survey]'))">
+          ⚠️ 未回答のアンケートがあります <span style="font-size:11px;text-decoration:underline">→ アンケートへ</span>
+        </div>
         <!-- 最新TEL履歴 -->
         <div id="dashTelHistory" style="display:none;background:var(--bg3);border-radius:10px;padding:10px 12px;margin-bottom:10px">
           <div style="font-size:11px;font-weight:700;color:var(--tx3);margin-bottom:6px">📞 最新TEL</div>
@@ -1293,18 +1295,40 @@ function loadDashTelHistory(userId) {
 }
 
 async function loadLatestSurveyForMentee(userId) {
-  var data = await gasReq('api/admin/surveys');
   var preSummary = document.getElementById('preSummary');
   var noSurvey   = document.getElementById('noSurveyMsg');
   preSummary.style.display = 'none';
   noSurvey.style.display   = 'none';
 
+  // ① メンティーの最新アンケート回答を取得
+  var data = await gasReq('api/admin/surveys');
   if (!data || !data.surveys) return;
-  var surveys = data.surveys.filter(function(s){ return s.user_id === userId; })
-    .sort(function(a,b){ return (b.submitted_at||'').localeCompare(a.submitted_at||''); });
-  if (surveys.length === 0) return;
 
-  var latest = surveys[0];
+  var menteeSurveys = data.surveys
+    .filter(function(s){ return s.user_id === userId && s.role === 'mentee'; })
+    .sort(function(a,b){ return (b.submitted_at||'').localeCompare(a.submitted_at||''); });
+
+  // ② メンター自身が未回答かチェック
+  var mentorAnsweredIds = {};
+  data.surveys
+    .filter(function(s){ return s.user_id === _me.user_id && s.role === 'mentor'; })
+    .forEach(function(s){ mentorAnsweredIds[s.booking_id] = true; });
+
+  // completed & メンター未回答の予約があるか確認
+  var hasPendingForMentor = _mySchedules.some(function(b){
+    return b.status === 'completed' && !mentorAnsweredIds[b.booking_id]
+      && (b.mentee_id === userId);
+  });
+  if (hasPendingForMentor) {
+    noSurvey.style.display = '';
+  }
+
+  // ③ メンティーの最新アンケートを表示
+  if (menteeSurveys.length === 0) {
+    _currentMentee._latestSurvey = null;
+    return;
+  }
+  var latest = menteeSurveys[0];
   preSummary.style.display = '';
   document.getElementById('preSummaryDate').textContent = fmtDateFull(latest.submitted_at)+'提出';
   var summary = [];
