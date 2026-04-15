@@ -321,8 +321,11 @@ td{padding:10px 14px;font-size:13px}
       <label class="form-label">次月学習目標</label>
       <textarea class="inp" id="mrd-next-study" rows="2" placeholder="来月の学習目標"></textarea>
     </div>
+    <!-- AI再生成ステータス表示 -->
+    <div id="mrd-ai-status" style="font-size:12px;color:var(--tx3);padding:0 0 8px;display:none"></div>
     <div class="f-foot">
       <button class="btn btn-g" onclick="closeModal('mentorReportDetailModal')">閉じる</button>
+      <button class="btn btn-g" id="mrd-ai-btn" onclick="regenerateMentorReportAi()" style="background:var(--pr-light);color:var(--pr);border:1px solid var(--pr)">🤖 AI再生成</button>
       <button class="btn btn-g" onclick="saveMentorReport()">💾 保存</button>
       <button id="mrd-publish-btn" class="btn btn-p" onclick="publishMentorReport()">📤 メンティーに公開</button>
     </div>
@@ -1939,6 +1942,42 @@ async function publishMentorReport() {
     toast('メンティーに公開しました');
   } else {
     toast('公開に失敗しました','err');
+  }
+}
+
+// ── AI再生成 ──
+async function regenerateMentorReportAi() {
+  var reportId = document.getElementById('mrd-report-id').value;
+  if (!reportId) { toast('レポートIDが不明です','err'); return; }
+
+  var btn    = document.getElementById('mrd-ai-btn');
+  var status = document.getElementById('mrd-ai-status');
+  btn.disabled    = true;
+  btn.textContent = '🤖 生成中…';
+  if (status) { status.style.display = ''; status.style.color = 'var(--tx3)'; status.textContent = '文字起こしを検索してAI要約を生成しています…'; }
+
+  var r = await gasReq('api/mentor/mentor-reports/regenerate-ai', 'POST', { report_id: reportId });
+
+  btn.disabled    = false;
+  btn.textContent = '🤖 AI再生成';
+
+  if (r && r.ok) {
+    // テキストエリアに反映
+    document.getElementById('mrd-summary').value      = r.ai_summary              || '';
+    document.getElementById('mrd-advice').value       = r.ai_advice               || '';
+    document.getElementById('mrd-goal').value         = r.next_goal               || '';
+    document.getElementById('mrd-next-project').value = r.next_month_project_goal || '';
+    document.getElementById('mrd-next-study').value   = r.next_month_study_goal   || '';
+    if (status) {
+      status.style.color = 'var(--gr)';
+      status.textContent = '✅ AI再生成完了（' + (r.transcript_length || 0) + '文字の文字起こしから生成）'
+        + ' ソース: ' + (r.source || '不明');
+    }
+    toast('AI再生成が完了しました。内容を確認して保存してください');
+  } else {
+    var errMsg = r ? (r.error || r.message || 'GAS応答なし') : 'GAS応答なし';
+    if (status) { status.style.color = 'var(--rd)'; status.textContent = '❌ ' + errMsg; }
+    toast('AI再生成に失敗しました: ' + errMsg, 'err');
   }
 }
 
