@@ -168,10 +168,20 @@ table tr:last-child td{border-bottom:none}
 
 /* Print */
 @media print{
-  #sidebar{display:none}
-  #main{margin-left:0}
-  .content-section{page-break-inside:avoid}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  #sidebar{display:none!important}
+  #main{margin-left:0!important;width:100%!important}
+  body{background:#fff!important;display:block!important}
+  .top-bar{display:none!important}
+  #cover{min-height:auto;padding:60px 48px;page-break-after:always}
+  .content-section{padding:32px 48px;break-inside:avoid-page}
+  .step-card{box-shadow:none!important;border:1px solid #e0eeec}
+  h2{page-break-after:avoid}
+  .why-box,.callout,.trouble-box{break-inside:avoid}
+  .mock-browser{break-inside:avoid;max-width:100%}
+  .flow-diagram{break-inside:avoid}
 }
+@page{margin:18mm 15mm;size:A4}
 
 /* Scroll smooth */
 html{scroll-behavior:smooth}
@@ -197,7 +207,7 @@ html{scroll-behavior:smooth}
 <nav id="sidebar">
   <div class="logo">
     1on1メンター管理システム
-    <span>操作マニュアル v1.0</span>
+    <span>操作マニュアル v2.0</span>
   </div>
   <nav>
     <ul>
@@ -232,7 +242,7 @@ html{scroll-behavior:smooth}
   <h1>1on1メンター管理システム<span>操作マニュアル</span></h1>
   <div class="meta">
     <div class="meta-item"><label>対象読者</label><span>正社員メンター（担当メンティー10名前後）</span></div>
-    <div class="meta-item"><label>バージョン</label><span>1.0</span></div>
+    <div class="meta-item"><label>バージョン</label><span>2.0</span></div>
     <div class="meta-item"><label>発行日</label><span>2026年4月</span></div>
   </div>
   <div class="toc-box">
@@ -361,23 +371,42 @@ html{scroll-behavior:smooth}
     <div class="step-card">
       <div class="step-badge">2</div>
       <div class="step-content">
-        <h4>ダッシュボードでお知らせを確認する</h4>
-        <p><span class="where">ダッシュボード</span><span class="action">画面上部の通知ベル（🔔）をクリックしてお知らせを確認</span><span class="result">新着通知の内容が表示される</span></p>
-        <p style="margin-top:8px">通知ベルに数字が表示されている場合は、未読のお知らせがあります。必ず確認してください。</p>
+        <h4>クイックリンクバーを確認する</h4>
+        <p><span class="where">画面上部（ヘッダー直下）</span><span class="action">クイックリンクバーに表示されているリンクを確認</span><span class="result">よく使うリンク（社内ポータル・研修サイトなど）に素早くアクセスできる</span></p>
+        <p style="margin-top:8px">クイックリンクは管理者が設定します。リンクがない場合はバーが表示されません。</p>
       </div>
     </div>
 
     <div class="step-card">
       <div class="step-badge">3</div>
       <div class="step-content">
-        <h4>直近スケジュールを確認する</h4>
-        <p><span class="where">ダッシュボード中央</span><span class="action">「直近の1on1スケジュール」カードを確認</span><span class="result">当日・今週予定のMTGが一覧表示される</span></p>
-        <p style="margin-top:8px">当日にMTGがある場合は、「Meet」ボタンが表示されます。時間になったらクリックしてMeetに参加します。</p>
+        <h4>ダッシュボードでお知らせを確認する</h4>
+        <p><span class="where">ダッシュボード</span><span class="action">画面上部の通知ベル（🔔）をクリックしてお知らせを確認</span><span class="result">新着通知の内容が表示される</span></p>
+        <p style="margin-top:8px">通知ベルの右側に赤いドット（●）が表示されている場合は、未読のお知らせがあります。必ず確認してください。</p>
       </div>
     </div>
 
     <div class="step-card">
       <div class="step-badge">4</div>
+      <div class="step-content">
+        <h4>直近スケジュールを確認する</h4>
+        <p><span class="where">ダッシュボード中央</span><span class="action">「直近の1on1スケジュール」カードを確認</span><span class="result">当日・今週予定のMTGが一覧表示される</span></p>
+        <p style="margin-top:8px">当日にMTGがある場合は「Meet参加」ボタンが表示されます。時間になったらクリックしてMeetに参加します。完了済みの1on1で録画がアップロードされていないものがある場合は、画面上部に警告バナーが表示されます。</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">5</div>
+      <div class="step-content">
+        <h4>メンバーパネルでメンティーの状況を確認する</h4>
+        <p><span class="where">ダッシュボード右側パネル</span><span class="action">サイドバーのメンティー名をクリックしてパネルを切り替え</span><span class="result">選択したメンティーの基本情報・最新アンケート・最新TEL履歴が表示される</span></p>
+        <p style="margin-top:8px">パネルでは：ステータス変更 / チャット / TEL開始（📞）/ 予約作成（＋予約）ボタンが利用できます。<br>
+        <strong>TEL開始ボタン</strong>: クリックするとMeetが開き、メンティーに自動でチャット通知が送られます。</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">6</div>
       <div class="step-content">
         <h4>サイドバーでメンティーのステータスを確認する</h4>
         <p><span class="where">左サイドバー</span><span class="action">担当メンティーリストのステータス色を確認</span><span class="result">各メンティーの現在の状況が色でわかる</span></p>
@@ -410,24 +439,33 @@ html{scroll-behavior:smooth}
           <div class="mentee" style="color:#aaa;font-style:italic">+4名...</div>
         </div>
         <div class="mock-main">
+          <div class="mock-card" style="background:linear-gradient(90deg,#f0faf8,#fff);border:1px solid #c8e8e4;font-size:9px;display:flex;gap:6px;padding:6px 10px;margin-bottom:6px">
+            <span>🔗 社内ポータル</span><span>📚 研修サイト</span><span>📋 勤怠システム</span>
+          </div>
           <div class="mock-card">
             <h5>📅 直近の1on1スケジュール</h5>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0">
-              <div><div style="font-size:10px;color:#5dafa7;font-weight:700">本日 14:00〜14:30</div><div style="font-size:10px">山田 花子 さん</div></div>
-              <span class="mock-btn-sm">Meetに参加</span>
+              <div><div style="font-size:10px;color:#5dafa7;font-weight:700">本日 14:00〜14:30 <span style="background:#e87171;color:#fff;border-radius:3px;padding:1px 4px;font-size:8px">TODAY</span></div><div style="font-size:10px">山田 花子 さん</div></div>
+              <div style="display:flex;gap:3px"><span class="mock-btn-sm">▶ Meet参加</span><span class="mock-btn-outline">👤 メンバー詳細</span></div>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0">
               <div><div style="font-size:10px;color:#666">明日 10:00〜10:30</div><div style="font-size:10px">佐藤 太郎 さん</div></div>
-              <span class="mock-btn-outline">詳細</span>
+              <div style="display:flex;gap:3px"><span class="mock-btn-outline">👤 メンバー詳細</span><span class="mock-btn-outline">✏️ 変更</span></div>
             </div>
           </div>
           <div class="mock-card">
             <h5>👥 メンバーパネル — 田中 美咲</h5>
             <div style="display:flex;gap:8px;margin-bottom:6px">
               <div style="flex:1;background:#f7faf9;border-radius:6px;padding:6px;font-size:9px"><div style="color:#666;margin-bottom:2px">ステータス</div><div class="tag-red mock-tag">要注意</div></div>
-              <div style="flex:1;background:#f7faf9;border-radius:6px;padding:6px;font-size:9px"><div style="color:#666;margin-bottom:2px">最終1on1</div><div style="font-weight:700">2週間前</div></div>
+              <div style="flex:1;background:#f7faf9;border-radius:6px;padding:6px;font-size:9px"><div style="color:#666;margin-bottom:2px">在籍期間</div><div style="font-weight:700">1年3ヶ月</div></div>
             </div>
-            <span class="mock-btn-sm" style="background:#e8a852">ステータス更新</span>
+            <div style="font-size:9px;color:#666;margin-bottom:4px">📊 最新TEL（4/8）: 課題: 提案のクロージング率が低い… <span style="background:var(--pr-light,#e6f9f2);color:var(--pr,#52c997);border-radius:6px;padding:1px 5px">✅ 確定</span></div>
+            <div style="display:flex;gap:4px">
+              <span class="mock-btn-sm" style="background:#1a73e8">💬</span>
+              <span class="mock-btn-sm" style="background:#5dafa7">📞 TEL開始</span>
+              <span class="mock-btn-sm">＋予約</span>
+              <span class="mock-btn-sm" style="background:#e8a852">ステータス更新</span>
+            </div>
           </div>
         </div>
       </div>
@@ -497,19 +535,19 @@ html{scroll-behavior:smooth}
     <div class="step-card">
       <div class="step-badge">4</div>
       <div class="step-content">
-        <h4>TELレポートを開いて内容を確認・加筆する</h4>
-        <p><span class="where">レポート画面 →「週次TEL」タブ</span><span class="action">または週次TEL画面から対象TELカードの「レポートを書く」ボタンをクリック</span><span class="result">TELレポート入力モーダルが開く</span></p>
+        <h4>TELレポートを開いて内容を入力する</h4>
+        <p><span class="where">週次TEL画面のTELカード</span><span class="action">「📝 レポート」ボタンをクリック</span><span class="result">TELレポート入力モーダルが開く</span></p>
         <p style="margin-top:8px">モーダル内の入力項目:</p>
         <ul style="margin-top:6px;padding-left:20px;font-size:13px;line-height:1.9;color:#4a6460">
-          <li>話した内容</li>
+          <li>話した内容（必須）</li>
           <li>悩み・課題</li>
           <li>良かった点</li>
           <li>メモ（自由記入）</li>
-          <li>AIサマリー（自動生成。修正可能）</li>
+          <li><strong>Meet URL</strong>（ハドル録音URLを入力するとAI要約が実行できる）</li>
         </ul>
         <div class="callout callout-tip" style="margin-top:10px">
-          <strong>💡 AIサマリーについて</strong>
-          通話後しばらくすると、Gemini APIによるAI要約が自動生成されます。内容を確認し、必要に応じて加筆・修正してください。
+          <strong>💡 AI要約ボタンについて</strong>
+          Meet URLを入力して「🤖 AI要約」ボタンをクリックすると、Gemini APIによるAI要約が自動生成されます。話した内容・悩み・良かった点が自動入力されます。内容を確認・編集してから確定してください。
         </div>
       </div>
     </div>
@@ -518,12 +556,25 @@ html{scroll-behavior:smooth}
       <div class="step-badge">5</div>
       <div class="step-content">
         <h4>TELレポートを確定する</h4>
-        <p><span class="where">TELレポート入力モーダル</span><span class="action">内容を確認後「確定」ボタンをクリック</span><span class="result">レポートが確定状態になり、週次TEL実績として記録される</span></p>
+        <p><span class="where">TELレポート入力モーダル</span><span class="action">内容を確認後「✅ 確定」ボタンをクリック</span><span class="result">レポートが確定状態になり、週次TEL実績として記録される</span></p>
         <div class="callout callout-warn" style="margin-top:10px">
           <strong>⚠️ 「確定」と「公開」の違いに注意</strong>
           TELレポートの「確定」ボタンはレポートをシステム内で確定するものです。メンティーへのメール通知は発生しません。一方、1on1レポートの「公開」はメンティーへメールが送信されます。操作を間違えないよう注意してください。
         </div>
         <p style="margin-top:8px">まだ確定したくない場合は「下書き保存」ボタンで一時保存できます。</p>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-badge">6</div>
+      <div class="step-content">
+        <h4>レポート一覧から詳細確認・後から確定する</h4>
+        <p><span class="where">レポート画面 →「週次TEL」タブ</span><span class="action">リスト内の各レポートをクリック</span><span class="result">TELレポート詳細モーダルが開き、内容を確認できる</span></p>
+        <p style="margin-top:8px">詳細モーダルでは：話した内容・悩み・良かった点・AIサマリーを確認できます。下書き状態のレポートは詳細モーダル内の「確定する」ボタンで確定できます。</p>
+        <div class="callout callout-tip" style="margin-top:8px">
+          <strong>💡 TEL録音アップロードバナーについて</strong>
+          週次TEL画面の上部に録音未アップロードのバナーが表示される場合は、バナーのボタンからアップロードガイドを確認してください。
+        </div>
       </div>
     </div>
   </div>
@@ -543,24 +594,35 @@ html{scroll-behavior:smooth}
           <div class="mock-card" style="text-align:center"><div style="font-size:9px;color:#666;margin-bottom:3px">今月の実施数</div><div style="font-size:18px;font-weight:900;color:#5dafa7">8</div></div>
           <div class="mock-card" style="text-align:center"><div style="font-size:9px;color:#666;margin-bottom:3px">担当Mentee数</div><div style="font-size:18px;font-weight:900;color:#5dafa7">10</div></div>
         </div>
-        <div class="mock-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <div><div style="font-size:11px;font-weight:700">山田 花子</div><div style="font-size:9px;color:#666">2026/04/10（木）実施</div></div>
-            <div style="display:flex;gap:4px">
-              <span class="mock-btn-sm">Meetに参加</span>
-              <span class="mock-btn-outline" style="font-size:9px">レポートを書く ▶</span>
-            </div>
-          </div>
-          <div style="font-size:9px;color:#aaa">AIサマリー待機中...</div>
+        <div style="background:#fff8e6;border:1px solid #e8a852;border-radius:6px;padding:7px 10px;margin-bottom:8px;font-size:9px;display:flex;align-items:center;justify-content:space-between">
+          <span>🎙 <strong>2件</strong>のハドル録音がアップロードされていません</span>
+          <span class="mock-btn-sm" style="background:#e8a852;font-size:8px">録音をアップロード →</span>
         </div>
         <div class="mock-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <div><div style="font-size:11px;font-weight:700">佐藤 太郎</div><div style="font-size:9px;color:#666">2026/04/09（水）実施</div></div>
-            <div style="display:flex;gap:4px">
-              <span class="mock-btn-outline" style="font-size:9px">レポート確認 ▶</span>
+            <div>
+              <div style="font-size:11px;font-weight:700">山田 花子 <span style="font-size:9px;font-weight:400;color:#5dafa7">在籍 1年3ヶ月</span></div>
+              <div style="font-size:9px;color:#666">最終TEL: 2026/04/10 / 今月: 2回</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <span class="mock-btn-sm" style="background:#1a73e8">💬</span>
+              <span class="mock-btn-sm">📝 レポート</span>
+              <span class="mock-btn-outline" style="font-size:9px">📋 過去の記録 →</span>
             </div>
           </div>
-          <div class="tag-green mock-tag" style="font-size:9px">確定済み</div>
+        </div>
+        <div class="mock-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div>
+              <div style="font-size:11px;font-weight:700">佐藤 太郎 <span style="font-size:9px;font-weight:400;color:#5dafa7">在籍 8ヶ月</span></div>
+              <div style="font-size:9px;color:#666">最終TEL: 2026/04/09 / 今月: 1回</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <span class="mock-btn-sm">📝 レポート</span>
+              <span class="mock-btn-outline" style="font-size:9px">📋 過去の記録 →</span>
+            </div>
+          </div>
+          <div class="tag-green mock-tag" style="font-size:9px">✅ 確定済み</div>
         </div>
       </div>
     </div>
@@ -715,7 +777,9 @@ html{scroll-behavior:smooth}
       <div class="step-content">
         <h4>スケジュール画面で予約を確認する</h4>
         <p><span class="where">ヘッダーナビ</span><span class="action">「スケジュール」タブをクリック</span><span class="result">予約一覧が表示される</span></p>
-        <p style="margin-top:8px">予約一覧には、メンティーが予約した1on1 MTGが表示されます。日時・メンティー名・Meet URLが確認できます。</p>
+        <p style="margin-top:8px">予約一覧には、メンティーが予約した1on1 MTGが表示されます。日時・メンティー名・Meet URLが確認できます。<br>
+        画面上部の絞り込みバー（<span class="hl">全メンティー ▼</span> / <span class="hl">実施状況 ▼</span>）で、特定のメンティーや「実施済み」「未実施」で絞り込むことができます。<br>
+        完了済みの1on1で録画がアップロードされていないものがある場合は、画面上部に「📹 ○件の1on1の録画がアップロードされていません」バナーが表示されます。</p>
       </div>
     </div>
 
@@ -856,7 +920,8 @@ html{scroll-behavior:smooth}
           <li>AIサマリー（自動生成。加筆・修正可能）</li>
           <li>アドバイス</li>
           <li>次回目標</li>
-          <li>次月目標</li>
+          <li>次月プロジェクト目標（来月の業務目標）</li>
+          <li>次月学習目標（来月のスキルアップ目標）</li>
         </ul>
       </div>
     </div>
@@ -907,8 +972,10 @@ html{scroll-behavior:smooth}
           <div class="mock-input" style="min-height:40px">引き続き提案件数を維持しつつ、質の向上を意識してください。</div>
           <div style="font-size:10px;color:#666;margin-bottom:3px">次回目標</div>
           <div class="mock-input">提案のクロージング率を60%以上にする</div>
-          <div style="font-size:10px;color:#666;margin-bottom:3px">次月目標</div>
+          <div style="font-size:10px;color:#666;margin-bottom:3px">次月プロジェクト目標</div>
           <div class="mock-input">新規顧客開拓12件</div>
+          <div style="font-size:10px;color:#666;margin-bottom:3px">次月学習目標</div>
+          <div class="mock-input">Salesforce操作をマスターする</div>
           <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:10px">
             <span class="mock-btn-outline">保存（下書き）</span>
             <span class="mock-btn" style="background:#52c997;font-size:10px;padding:5px 14px">公開する（メンティーへメール送信）</span>
@@ -1071,15 +1138,35 @@ html{scroll-behavior:smooth}
     <div class="step-card">
       <div class="step-badge">1</div>
       <div class="step-content">
-        <h4>「予約作成」ボタンをクリックする</h4>
-        <p><span class="where">スケジュール画面</span><span class="action">「予約作成」ボタンをクリック</span><span class="result">予約作成モーダルが開く</span></p>
+        <h4>予約作成モーダルを開く</h4>
+        <p><span class="where">メンバー管理画面のメンバーカード</span><span class="action">対象メンティーのカード右上「＋予約」ボタンをクリック</span><span class="result">予約作成モーダルが開く</span></p>
+        <p style="margin-top:8px">ダッシュボードのメンバーパネルやメンバー詳細クイックモーダルの「予約作成」ボタンからも開けます。</p>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-badge">2</div>
+      <div class="step-content">
+        <h4>カレンダーで日付・時間を選択する</h4>
+        <p><span class="where">予約作成モーダル</span><span class="action">カレンダーから空き日程の日付をクリック → 時間帯を選択</span><span class="result">日時が確定され「予約を登録する」ボタンが有効になる</span></p>
         <p style="margin-top:8px">モーダルで入力する項目:</p>
         <ul style="margin-top:6px;padding-left:20px;font-size:13px;line-height:1.9;color:#4a6460">
-          <li>カレンダーで日付・時間を選択</li>
+          <li>カレンダーで日付選択（空きのある日はドット付きで表示）</li>
+          <li>時間帯選択（選択可能な時間が表示される）</li>
           <li>所要時間（30分 / 60分など）</li>
           <li>Meet URL</li>
           <li>メモ</li>
         </ul>
+        <div class="callout callout-tip" style="margin-top:8px">
+          <strong>💡 カレンダーが表示されない場合</strong>
+          スケジュール設定が取得できない場合は、日時直接入力フォームが表示されます。その場合は日時を手動で入力してください。
+        </div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-badge">3</div>
+      <div class="step-content">
+        <h4>「予約を登録する」をクリックして完了する</h4>
+        <p><span class="where">予約作成モーダル</span><span class="action">「予約を登録する」ボタンをクリック</span><span class="result">予約が作成され、メンティーとメンター両方にメール通知が送られる</span></p>
       </div>
     </div>
   </div>
@@ -1168,10 +1255,21 @@ html{scroll-behavior:smooth}
       <div class="step-badge">1</div>
       <div class="step-content">
         <h4>詳細ドロワーで半年目標を入力して保存する</h4>
-        <p><span class="where">詳細ドロワー内「半年目標」欄</span><span class="action">目標を入力して「目標を保存」ボタンをクリック</span><span class="result">半年目標が設定される（メンティーにも共有される）</span></p>
+        <p><span class="where">詳細ドロワー内「半年目標設定」欄</span><span class="action">業務目標・スキル目標・開始月・終了月を入力して「目標を保存」ボタンをクリック</span><span class="result">半年目標が設定される（メンティーにも共有される）</span></p>
+        <p style="margin-top:8px">入力項目:</p>
+        <ul style="margin-top:6px;padding-left:20px;font-size:13px;line-height:1.9;color:#4a6460">
+          <li>業務目標（6ヶ月間の仕事上の目標）</li>
+          <li>スキル目標（6ヶ月間のスキルアップ目標）</li>
+          <li>開始月（年月を選択）</li>
+          <li>終了月（開始月を選ぶと6ヶ月後が自動入力される）</li>
+        </ul>
         <div class="callout callout-warn" style="margin-top:8px">
           <strong>⚠️ 半年目標はメンティーも閲覧できます</strong>
           設定した半年目標はメンティー側のシステムにも表示されます。内容を慎重に確認してから保存してください。
+        </div>
+        <div class="callout callout-tip" style="margin-top:8px">
+          <strong>💡 目標設定済みバッジについて</strong>
+          目標を設定するとメンバーカードに「🎯 目標設定済み」バッジが表示されます。未設定の場合は「📋 目標未設定」（黄色）バッジで視覚的に確認できます。
         </div>
       </div>
     </div>
@@ -1190,38 +1288,54 @@ html{scroll-behavior:smooth}
         <div style="flex:1">
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
             <div class="mock-card" style="cursor:default;border:2px solid #5dafa7">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
                 <div style="width:28px;height:28px;border-radius:50%;background:#e6f9f2;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#5dafa7">山</div>
                 <div><div style="font-size:10px;font-weight:700">山田 花子</div><div class="tag-green mock-tag" style="font-size:8px">快調</div></div>
+                <span class="mock-btn-sm" style="background:#1a73e8;margin-left:auto;font-size:9px;padding:2px 5px">💬</span>
               </div>
+              <div style="font-size:8px;background:#e6f9f2;color:#1a7a4a;border-radius:4px;padding:1px 5px;display:inline-block;margin-bottom:3px">🎯 目標設定済み</div>
               <div style="font-size:9px;color:#666">最終1on1: 4/13</div>
             </div>
             <div class="mock-card">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
                 <div style="width:28px;height:28px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#666">佐</div>
                 <div><div style="font-size:10px;font-weight:700">佐藤 太郎</div><div class="tag-green mock-tag" style="font-size:8px">順調</div></div>
               </div>
+              <div style="font-size:8px;background:#fff8e6;color:#b87c10;border-radius:4px;padding:1px 5px;display:inline-block;margin-bottom:3px">📋 目標未設定</div>
               <div style="font-size:9px;color:#666">最終1on1: 4/10</div>
             </div>
             <div class="mock-card">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
                 <div style="width:28px;height:28px;border-radius:50%;background:#fff8e6;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#b87c10">田</div>
                 <div><div style="font-size:10px;font-weight:700">田中 美咲</div><div class="tag-red mock-tag" style="font-size:8px">要注意</div></div>
               </div>
+              <div style="font-size:8px;background:#e6f9f2;color:#1a7a4a;border-radius:4px;padding:1px 5px;display:inline-block;margin-bottom:3px">🎯 目標設定済み</div>
               <div style="font-size:9px;color:#666">最終1on1: 3/20</div>
             </div>
           </div>
         </div>
         <!-- Drawer -->
-        <div style="width:200px;background:#fff;border-radius:8px;border:1px solid #e0eeec;padding:10px;font-size:10px">
-          <div style="font-size:11px;font-weight:700;margin-bottom:8px;color:#2c3e3a">山田 花子 — 詳細</div>
+        <div style="width:220px;background:#fff;border-radius:8px;border:1px solid #e0eeec;padding:10px;font-size:10px">
+          <div style="font-size:11px;font-weight:700;margin-bottom:4px;color:#2c3e3a">山田 花子 <span style="font-size:9px;font-weight:400;color:#5dafa7">在籍 1年3ヶ月</span></div>
           <div style="margin-bottom:6px"><span style="color:#666">ステータス: </span><span class="tag-green mock-tag">快調</span></div>
-          <div class="mock-btn-sm" style="font-size:9px;display:block;width:100%;text-align:center;margin-bottom:8px">ステータス更新</div>
-          <div style="color:#666;margin-bottom:3px">半年目標</div>
+          <div style="display:flex;gap:4px;margin-bottom:8px">
+            <div class="mock-btn-sm" style="background:#1a73e8;font-size:9px">💬</div>
+            <div class="mock-btn-sm" style="font-size:9px">＋予約</div>
+            <div class="mock-btn-sm" style="background:#e8a852;font-size:9px;flex:1;text-align:center">ステータス更新</div>
+          </div>
+          <div style="color:#666;margin-bottom:3px;font-weight:700">半年目標設定</div>
+          <div style="color:#888;font-size:9px;margin-bottom:2px">現在: 26年1月〜26年6月</div>
+          <div style="color:#666;margin-bottom:2px;font-size:9px">業務目標</div>
           <div class="mock-input" style="font-size:9px">新規顧客開拓20件達成</div>
+          <div style="color:#666;margin-bottom:2px;font-size:9px">スキル目標</div>
+          <div class="mock-input" style="font-size:9px">Salesforceを習得する</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:4px">
+            <div><div style="color:#666;font-size:8px;margin-bottom:2px">開始月</div><div class="mock-input" style="font-size:9px;padding:3px 5px">2026-01</div></div>
+            <div><div style="color:#666;font-size:8px;margin-bottom:2px">終了月</div><div class="mock-input" style="font-size:9px;padding:3px 5px">2026-06</div></div>
+          </div>
           <div class="mock-btn-outline" style="display:block;text-align:center;margin-bottom:8px">目標を保存</div>
-          <div style="color:#666;margin-bottom:3px">メモ（非公開）</div>
-          <div class="mock-input" style="min-height:40px;font-size:9px">4月面談: 時間管理が課題。来月フォロー</div>
+          <div style="color:#666;margin-bottom:3px;font-weight:700">メモ（非公開）</div>
+          <div class="mock-input" style="min-height:32px;font-size:9px">4月面談: 時間管理が課題。来月フォロー</div>
           <div class="mock-btn-outline" style="display:block;text-align:center">メモを保存</div>
         </div>
       </div>
@@ -1310,6 +1424,31 @@ html{scroll-behavior:smooth}
         <strong>対処法:</strong> スケジュール画面の「変更」から新しいMeet URLを登録してください。Meetの新規会議を作成して登録するか、既存の会議のURLを確認してください。
       </div>
     </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q.</span>TELモーダルで「🤖 AI要約」ボタンを押しても要約が生成されない</div>
+      <div class="faq-a">
+        <span class="err-label">原因1</span>Meet URLが空欄、または無効なURLが入力されている。<br>
+        <span class="err-label">原因2</span>Gemini APIの一時的な障害。<br>
+        <strong>対処法:</strong> Meet URLが正しいか確認してください。URLが正しい場合はしばらく待ってから再試行してください。AI要約が生成されない場合は、手動で「話した内容」欄に内容を入力してから確定してください。
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q.</span>メンバーカードに「📋 目標未設定」バッジが表示されている</div>
+      <div class="faq-a">
+        <span class="err-label">原因</span>そのメンティーの半年目標がまだ設定されていません。<br>
+        <strong>対処法:</strong> メンバー管理画面でそのメンティーのカードをクリックし、詳細ドロワーの「半年目標設定」欄に業務目標とスキル目標、開始月・終了月を入力して「目標を保存」してください。
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q"><span>Q.</span>ダッシュボードのメンバーパネルに「📞 TEL開始」ボタンが表示されない</div>
+      <div class="faq-a">
+        <span class="err-label">原因</span>そのメンティーにTEL用Meet URLが設定されていません。<br>
+        <strong>対処法:</strong> 管理者にそのメンティーのユーザー設定にTEL用Meet URLを登録するよう依頼してください。
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1378,6 +1517,22 @@ html{scroll-behavior:smooth}
       <dt>詳細ドロワー</dt>
       <dd>メンバー管理画面でメンティーカードをクリックすると画面右側に表示されるパネル。ステータス・メモ・目標・レポート履歴などを確認・編集できます。</dd>
     </dl>
+    <dl class="glossary-item">
+      <dt>クイックリンクバー</dt>
+      <dd>ヘッダー直下に表示されるリンクバー。管理者が設定したよく使うリンク（社内ポータル・研修サイトなど）に素早くアクセスできます。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>在籍期間</dt>
+      <dd>メンティーの入社日から現在までの期間。TELカード・レポート一覧・メンバーカードに表示されます。入社日はシステムに登録された情報から自動計算されます。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>目標設定バッジ</dt>
+      <dd>メンバー管理画面のメンバーカードに表示されるバッジ。「🎯 目標設定済み」（緑）または「📋 目標未設定」（黄）で、半年目標の有無を視覚的に確認できます。</dd>
+    </dl>
+    <dl class="glossary-item">
+      <dt>TEL開始ボタン</dt>
+      <dd>ダッシュボードのメンバーパネルに表示される「📞 TEL開始」ボタン。クリックするとMeetが開き、同時にメンティーのチャットにMeet URLの通知が自動送信されます。</dd>
+    </dl>
   </div>
 
   <div style="margin-top:40px;padding:20px 24px;background:#f0faf8;border-radius:12px;font-size:13px;color:#4a6460;line-height:1.8">
@@ -1387,7 +1542,7 @@ html{scroll-behavior:smooth}
   </div>
 
   <div style="margin-top:24px;text-align:center;font-size:12px;color:#aaa;padding-bottom:20px">
-    1on1メンター管理システム 操作マニュアル v1.0 | 2026年4月発行<br>
+    1on1メンター管理システム 操作マニュアル v2.0 | 2026年4月発行<br>
     このマニュアルは正社員メンター向けの内部資料です。
   </div>
 </section>
