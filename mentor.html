@@ -438,9 +438,13 @@ td{padding:10px 14px;font-size:13px}
   <div class="modal-content">
     <span class="modal-close" onclick="closeModal('telReportDetailModal')">✕</span>
     <div class="modal-title">📞 TELレポート詳細</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
       <span id="trd-date" style="font-size:13px;color:var(--tx3)">—</span>
       <span id="trd-status" style="font-size:12px;font-weight:700">—</span>
+    </div>
+    <div style="display:flex;gap:16px;margin-bottom:16px;font-size:13px">
+      <div><span style="color:var(--tx3)">メンティー：</span><strong id="trd-mentee-name">—</strong></div>
+      <div><span style="color:var(--tx3)">リーダー：</span><strong id="trd-leader-name">—</strong></div>
     </div>
     <!-- Meet録音リンク -->
     <div id="trd-meet-area" style="background:var(--bg3);border-radius:10px;padding:10px 14px;margin-bottom:14px">
@@ -3370,6 +3374,16 @@ function openTelReportDetail(r) {
   document.getElementById('trd-date').textContent    = dtStr;
   document.getElementById('trd-status').textContent  = confirmed ? '✅ 確定済み' : '📝 下書き';
   document.getElementById('trd-status').style.color  = confirmed ? 'var(--gr)' : 'var(--am)';
+  // ★ メンティー名・リーダー名を表示
+  var trdMentee = document.getElementById('trd-mentee-name');
+  var trdLeader = document.getElementById('trd-leader-name');
+  if (trdMentee) {
+    var menteeObj = _myMentees ? _myMentees.find(function(m){ return m.user_id === r.mentee_id; }) : null;
+    trdMentee.textContent = r.mentee_name || (menteeObj ? menteeObj.name : r.mentee_id) || '—';
+  }
+  if (trdLeader) {
+    trdLeader.textContent = r.leader_name || (_me ? _me.name : '') || '—';
+  }
   document.getElementById('trd-talk').textContent    = r.talk_content   || '—';
   document.getElementById('trd-concerns').textContent= r.concerns       || '（なし）';
   document.getElementById('trd-good').textContent    = r.good_points    || '（なし）';
